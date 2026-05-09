@@ -3,12 +3,16 @@ Delay Watcher is a sleek, modern Android application and Home Screen Widget desi
 
 ## Features
 * **Live Disruption Widget**: A beautifully aligned, customisable widget that sits on your home screen and updates seamlessly.
+![Widget.png](readmeimg/Widget.png)
+
 * **TOC Filtering**: Filter disruptions by your specific Train Operating Companies (e.g., Thameslink, Southeastern, Southern, London Overground).
+![Settings.png](readmeimg/Settings.png)
 * **Smart Caching & Syncing**: Minimises battery drain and API calls. The widget updates instantly when you modify filters or refresh the main app, avoiding background crash loops.
 * **Detailed Incident Reports**: Tap the widget to open the app and read full, clickable HTML incident reports directly from National Rail.
 * **Dynamic Branding**: UI elements dynamically tint to match the official brand colors of the affected train operators.
-
-## Tech Stack
+![TOCDetails.png](readmeimg/TOCDetails.png)
+![HomePage.png](readmeimg/HomePage.png)
+## Back End
 * **Language**: Java
 * **Platform**: Android SDK
 * **Networking**: Retrofit2 & Gson
