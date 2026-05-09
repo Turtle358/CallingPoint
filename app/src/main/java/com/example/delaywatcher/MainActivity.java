@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.ImageButton;
 import android.widget.TextView;
 
@@ -35,9 +36,11 @@ import retrofit2.Response;
 
 public class MainActivity extends AppCompatActivity {
     private ImageButton btnSettings;
-    private TextView liveIndicator;
-    private DisruptionAdapter adapter;
+    private TextView liveIndicator, goodServiceSubtext;
     private SwipeRefreshLayout swipeRefreshLayout;
+    private View cardTracked, cardOthers, cardEngineering, cardGoodService;
+    private DisruptionAdapter adapterTracked, adapterOthers, adapterEngineering;
+
     private NationalRailAPI api;
     private String customerKey;
 
@@ -49,13 +52,29 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         liveIndicator = findViewById(R.id.liveIndicator);
+        goodServiceSubtext = findViewById(R.id.goodServiceSubtext);
         btnSettings = findViewById(R.id.btnSettings);
         swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout);
 
-        RecyclerView recyclerView = findViewById(R.id.recyclerViewTocs);
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        adapter = new DisruptionAdapter(this, new ArrayList<>());
-        recyclerView.setAdapter(adapter);
+        cardTracked = findViewById(R.id.cardTracked);
+        cardOthers = findViewById(R.id.cardOthers);
+        cardEngineering = findViewById(R.id.cardEngineering);
+        cardGoodService = findViewById(R.id.cardGoodService);
+
+        RecyclerView recyclerTracked = findViewById(R.id.recyclerTracked);
+        recyclerTracked.setLayoutManager(new LinearLayoutManager(this));
+        adapterTracked = new DisruptionAdapter(this, new ArrayList<>());
+        recyclerTracked.setAdapter(adapterTracked);
+
+        RecyclerView recyclerOthers = findViewById(R.id.recyclerOthers);
+        recyclerOthers.setLayoutManager(new LinearLayoutManager(this));
+        adapterOthers = new DisruptionAdapter(this, new ArrayList<>());
+        recyclerOthers.setAdapter(adapterOthers);
+
+        RecyclerView recyclerEngineering = findViewById(R.id.recyclerEngineering);
+        recyclerEngineering.setLayoutManager(new LinearLayoutManager(this));
+        adapterEngineering = new DisruptionAdapter(this, new ArrayList<>());
+        recyclerEngineering.setAdapter(adapterEngineering);
 
         api = APIClient.getClient().create(NationalRailAPI.class);
         customerKey = getSharedPreferences("MyPrefs", MODE_PRIVATE).getString("CUSTOMER_KEY", "");
@@ -91,10 +110,26 @@ public class MainActivity extends AppCompatActivity {
                 try {
                     java.lang.reflect.Type type = new TypeToken<ArrayList<DisruptionResponce.ServiceIndicator>>(){}.getType();
                     List<DisruptionResponce.ServiceIndicator> cachedData = new Gson().fromJson(cachedJson, type);
-                    adapter.updateData(cachedData);
+                    List<DisruptionResponce.ServiceIndicator> t = new ArrayList<>();
+                    List<DisruptionResponce.ServiceIndicator> o = new ArrayList<>();
+                    List<DisruptionResponce.ServiceIndicator> e = new ArrayList<>();
+                    int currentList = 0;
+
+                    for (DisruptionResponce.ServiceIndicator si : cachedData) {
+                        if ("SEPARATOR".equals(si.tocCode)) {
+                            if ("OTHER OPERATORS".equals(si.tocName)) currentList = 1;
+                            else if ("ENGINEERING WORKS".equals(si.tocName)) currentList = 2;
+                            continue;
+                        }
+                        if (currentList == 0) t.add(si);
+                        else if (currentList == 1) o.add(si);
+                        else if (currentList == 2) e.add(si);
+                    }
+
+                    updateUI(t, o, e);
+
                     SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm", Locale.getDefault());
                     String syncTime = timeFormat.format(new Date(lastSync));
-
                     liveIndicator.setText("◉ Cached (" + syncTime + ")");
                     return;
                 } catch (Exception e) {
@@ -216,32 +251,22 @@ public class MainActivity extends AppCompatActivity {
                     Collections.sort(othersLive, (a, b) -> a.tocName.compareToIgnoreCase(b.tocName));
                     Collections.sort(plannedWorks, (a, b) -> a.tocName.compareToIgnoreCase(b.tocName));
 
-                    List<DisruptionResponce.ServiceIndicator> finalData = new ArrayList<>(trackedLive);
-
+                    updateUI(trackedLive, othersLive, plannedWorks);
+                    liveIndicator.setText("◉ Live");
+                    List<DisruptionResponce.ServiceIndicator> combinedAppCacheData = new ArrayList<>(trackedLive);
                     if (!trackedLive.isEmpty() && !othersLive.isEmpty()) {
                         DisruptionResponce.ServiceIndicator sep = new DisruptionResponce.ServiceIndicator();
-                        sep.tocCode = "SEPARATOR";
-                        sep.tocName = "OTHER OPERATORS";
-                        finalData.add(sep);
+                        sep.tocCode = "SEPARATOR"; sep.tocName = "OTHER OPERATORS"; combinedAppCacheData.add(sep);
                     }
-                    finalData.addAll(othersLive);
-
+                    combinedAppCacheData.addAll(othersLive);
                     if (!plannedWorks.isEmpty()) {
                         DisruptionResponce.ServiceIndicator sep = new DisruptionResponce.ServiceIndicator();
-                        sep.tocCode = "SEPARATOR";
-                        sep.tocName = "ENGINEERING WORKS";
-                        finalData.add(sep);
-                        finalData.addAll(plannedWorks);
+                        sep.tocCode = "SEPARATOR"; sep.tocName = "ENGINEERING WORKS"; combinedAppCacheData.add(sep);
+                        combinedAppCacheData.addAll(plannedWorks);
                     }
 
-                    adapter.updateData(finalData);
-
-                    TextView goodServiceSubtext = findViewById(R.id.goodServiceSubtext);
-                    goodServiceSubtext.setText(trackedLive.isEmpty() ? "On all lines" : "All other lines");
-                    liveIndicator.setText("◉ Live");
-
                     String widgetJson = new Gson().toJson(new ArrayList<>(trackedLive));
-                    String appJson = new Gson().toJson(finalData);
+                    String appJson = new Gson().toJson(combinedAppCacheData);
 
                     prefs.edit()
                             .putString("CACHED_TOC_DATA", widgetJson)
@@ -262,6 +287,23 @@ public class MainActivity extends AppCompatActivity {
                 liveIndicator.setText("◉ Data Sync Failed");
             }
         });
+    }
+
+    private void updateUI(List<DisruptionResponce.ServiceIndicator> tracked,
+                          List<DisruptionResponce.ServiceIndicator> others,
+                          List<DisruptionResponce.ServiceIndicator> engineering) {
+        adapterTracked.updateData(tracked);
+        adapterOthers.updateData(others);
+        adapterEngineering.updateData(engineering);
+        cardTracked.setVisibility(tracked.isEmpty() ? View.GONE : View.VISIBLE);
+        cardOthers.setVisibility(others.isEmpty() ? View.GONE : View.VISIBLE);
+        cardEngineering.setVisibility(engineering.isEmpty() ? View.GONE : View.VISIBLE);
+        goodServiceSubtext.setText(tracked.isEmpty() ? "On all lines" : "All other lines");
+        if(tracked.isEmpty() && others.isEmpty() && engineering.isEmpty()) {
+            cardGoodService.setVisibility(View.VISIBLE);
+        } else {
+            cardGoodService.setVisibility(View.VISIBLE);
+        }
     }
 
     private void nudgeWidget() {
