@@ -3,8 +3,8 @@ Delay Watcher is a sleek, modern Android application and Home Screen Widget desi
 
 ## Screenshots
 
-|                                                 Home Page                                                  | Settings | Widget View | Detailed Reports |
-|:----------------------------------------------------------------------------------------------------------:| :---: | :---: | :---: |
+|                                                 Home Page                                                  |                                                     Settings                                                     |                                                 Widget View                                                 |                                         Detailed Reports                                          |
+|:----------------------------------------------------------------------------------------------------------:|:----------------------------------------------------------------------------------------------------------------:|:-----------------------------------------------------------------------------------------------------------:|:-------------------------------------------------------------------------------------------------:|
 | <img src="readmeimg/HomePage_2.png" width="200" alt="Delay Watcher Home Page showing tracked operators" /> | <img src="readmeimg/Settings_2.png" width="200" alt="Settings screen with API key input and operator toggles" /> | <img src="readmeimg/Widget_2.png" width="200" alt="Android home screen widget showing disruption status" /> | <img src="readmeimg/TOCDetails_2.jpg" width="200" alt="Detailed incident report view with map" /> |
 
 ## Features
