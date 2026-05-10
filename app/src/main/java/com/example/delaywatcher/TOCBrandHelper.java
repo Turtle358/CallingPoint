@@ -34,6 +34,7 @@ public class TOCBrandHelper {
                 t.code = obj.getString("code");
                 t.name = obj.getString("name");
                 t.colour = obj.getString("colour");
+                t.manager = obj.getString("manager");
                 allTocs.add(t);
             }
             Collections.sort(allTocs, (t1, t2) -> t1.name.compareToIgnoreCase(t2.name));
@@ -76,5 +77,14 @@ public class TOCBrandHelper {
             e.printStackTrace();
         }
         return Color.parseColor("#333333");
+    }
+
+    public static String getManagerForToc(String tocname) {
+        for (Toc t : allTocs) {
+            if(t.name.equalsIgnoreCase(tocname)) {
+                return t.manager;
+            }
+        }
+        return "national";
     }
 }

@@ -7,6 +7,7 @@ import android.text.method.LinkMovementMethod;
 import android.view.View;
 import android.webkit.WebChromeClient;
 import android.webkit.WebView;
+import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.WindowCompat;
@@ -31,6 +32,7 @@ public class TOCDetailActivity extends AppCompatActivity {
         View headerColorBar = findViewById(R.id.headerColorBar);
         TextView tvName = findViewById(R.id.detailTocName);
         TextView tvCode = findViewById(R.id.detailTocCode);
+        ImageView tocIcon = findViewById(R.id.detailTocIcon);
         TextView tvStatus = findViewById(R.id.detailTocStatus);
 
         View cardActiveIncidents = findViewById(R.id.cardActiveIncidents);
@@ -49,6 +51,12 @@ public class TOCDetailActivity extends AppCompatActivity {
             int brandColor = TOCBrandHelper.getColorForToc(tocName);
             headerColorBar.setBackgroundColor(brandColor);
             tvCode.setBackgroundTintList(ColorStateList.valueOf(brandColor));
+            String manager = TOCBrandHelper.getManagerForToc(tocName);
+            if (manager.equalsIgnoreCase("tfl")) {
+                tocIcon.setImageResource(R.drawable.tfl);
+            } else {
+                tocIcon.setImageResource(R.drawable.national_rail_logo_red);
+            }
         }
 
         if (tocDescription != null && !tocDescription.trim().isEmpty()) {
