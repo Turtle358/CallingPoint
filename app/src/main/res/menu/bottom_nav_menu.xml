@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/nav_departures"
+        android:icon="@drawable/ic_train"
+        android:title="Live Board" />
+
+    <item
+        android:id="@+id/nav_disruptions"
+        android:icon="@drawable/ic_alert_diamond"
+        android:title="Disruptions" />
+
+    <item
+        android:id="@+id/nav_settings"
+        android:icon="@drawable/ic_settings_icon"
+        android:title="Settings" />
+
+</menu>
