@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#F2F2F7"
+    android:background="@color/bg_screen"
     android:fitsSystemWindows="true">
 
     <TextView
@@ -13,7 +13,7 @@
         android:text="Settings"
         android:textSize="34sp"
         android:textStyle="bold"
-        android:textColor="#000000"
+        android:textColor="@color/text_primary"
         android:layout_marginHorizontal="24dp"
         android:layout_marginTop="32dp"
         android:layout_marginBottom="16dp"
@@ -36,7 +36,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="12dp"
                 android:layout_marginBottom="16dp"
-                app:cardBackgroundColor="#FFFFFF"
+                app:cardBackgroundColor="@color/bg_card"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="2dp"
                 app:cardUseCompatPadding="true">
@@ -51,26 +51,48 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="RDG Customer Key"
-                        android:textColor="#000000"
+                        android:textColor="@color/text_primary"
                         android:textStyle="bold"
-                        android:layout_marginBottom="8dp"/>
+                        android:layout_marginBottom="12dp"/>
 
-                    <EditText
-                        android:id="@+id/etCustomerKey"
+                    <RelativeLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="Paste Customer Key here..."
-                        android:inputType="text"
-                        android:padding="12dp"
-                        android:background="@android:drawable/edit_text"
-                        android:layout_marginBottom="16dp"/>
+                        android:layout_marginBottom="16dp">
+
+                        <EditText
+                            android:id="@+id/etCustomerKey"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="Paste Customer Key here..."
+                            android:textColor="@color/text_primary"
+                            android:textColorHint="@color/text_secondary"
+                            android:inputType="textPassword"
+                            android:padding="16dp"
+                            android:paddingEnd="48dp"
+                            android:background="@drawable/bg_edit_text" />
+
+                        <ImageButton
+                            android:id="@+id/btnTogglePassword"
+                            android:layout_width="48dp"
+                            android:layout_height="match_parent"
+                            android:layout_alignTop="@id/etCustomerKey"
+                            android:layout_alignBottom="@id/etCustomerKey"
+                            android:layout_alignParentEnd="true"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:src="@drawable/ic_visibility_off"
+                            app:tint="@color/text_secondary"
+                            android:contentDescription="Toggle Password Visibility" />
+                    </RelativeLayout>
 
                     <Button
                         android:id="@+id/btnSaveSettings"
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
+                        android:layout_height="50dp"
                         android:text="Save Credentials"
-                        android:backgroundTint="#000000"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:backgroundTint="#0A56F1"
                         android:textColor="#FFFFFF"/>
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
@@ -80,7 +102,86 @@
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="12dp"
                 android:layout_marginBottom="16dp"
-                app:cardBackgroundColor="#FFFFFF"
+                app:cardBackgroundColor="@color/bg_card"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="2dp"
+                app:cardUseCompatPadding="true">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="16dp"
+                        android:text="Appearance"
+                        android:textColor="@color/text_primary"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+
+                    <RadioGroup
+                        android:id="@+id/themeRadioGroup"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/bg_theme_track"
+                        android:orientation="horizontal"
+                        android:padding="4dp">
+
+                        <RadioButton
+                            android:id="@+id/radioThemeAuto"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_weight="1"
+                            android:background="@drawable/selector_theme_tab"
+                            android:button="@null"
+                            android:gravity="center"
+                            android:paddingVertical="10dp"
+                            android:text="Auto"
+                            android:textColor="@color/selector_theme_text"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+
+                        <RadioButton
+                            android:id="@+id/radioThemeLight"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_weight="1"
+                            android:background="@drawable/selector_theme_tab"
+                            android:button="@null"
+                            android:gravity="center"
+                            android:paddingVertical="10dp"
+                            android:text="Light"
+                            android:textColor="@color/selector_theme_text"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+
+                        <RadioButton
+                            android:id="@+id/radioThemeDark"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_weight="1"
+                            android:background="@drawable/selector_theme_tab"
+                            android:button="@null"
+                            android:gravity="center"
+                            android:paddingVertical="10dp"
+                            android:text="Dark"
+                            android:textColor="@color/selector_theme_text"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+
+                    </RadioGroup>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="12dp"
+                android:layout_marginBottom="16dp"
+                app:cardBackgroundColor="@color/bg_card"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="2dp"
                 app:cardUseCompatPadding="true">
@@ -100,7 +201,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Tracked Operators"
-                            android:textColor="#000000"
+                            android:textColor="@color/text_primary"
                             android:textSize="18sp"
                             android:textStyle="bold"
                             android:layout_marginBottom="8dp"/>
@@ -109,7 +210,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:text="Select which operators to display on your home screen widget. Changes are saved automatically."
-                            android:textColor="#666666"
+                            android:textColor="@color/text_secondary"
                             android:textSize="14sp" />
                     </LinearLayout>
 

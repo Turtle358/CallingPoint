@@ -13,7 +13,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="OTHER OPERATORS"
-        android:textColor="#8E8E93"
+        android:textColor="@color/text_secondary"
         android:textSize="13sp"
         android:textStyle="bold"
         android:letterSpacing="0.05" />

@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#F2F2F7"
+    android:background="@color/bg_screen"
     android:fitsSystemWindows="true">
 
     <RelativeLayout
@@ -29,7 +29,7 @@
                 android:text="Status"
                 android:textSize="34sp"
                 android:textStyle="bold"
-                android:textColor="#000000"
+                android:textColor="@color/text_primary"
                 android:letterSpacing="-0.02"/>
 
             <TextView
@@ -39,7 +39,7 @@
                 android:layout_marginTop="4dp"
                 android:text="◉ Offline - No API Key"
                 android:textSize="14sp"
-                android:textColor="#666666"
+                android:textColor="@color/text_secondary"
                 android:textStyle="bold"/>
         </LinearLayout>
 
@@ -51,7 +51,7 @@
             android:layout_centerVertical="true"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@drawable/ic_settings_icon"
-            android:tint="#000000"
+            app:tint="@color/text_primary"
             android:contentDescription="Settings" />
     </RelativeLayout>
 
@@ -78,7 +78,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginHorizontal="12dp"
                     android:layout_marginBottom="8dp"
-                    app:cardBackgroundColor="#FFFFFF"
+                    app:cardBackgroundColor="@color/bg_card"
                     app:cardCornerRadius="16dp"
                     app:cardElevation="2dp"
                     app:cardUseCompatPadding="true">
@@ -95,7 +95,7 @@
                             android:text="Tracked Operators"
                             android:textSize="18sp"
                             android:textStyle="bold"
-                            android:textColor="#000000"
+                            android:textColor="@color/text_primary"
                             android:layout_marginHorizontal="20dp"
                             android:layout_marginBottom="8dp"/>
 
@@ -114,7 +114,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginHorizontal="12dp"
                     android:layout_marginBottom="8dp"
-                    app:cardBackgroundColor="#FFFFFF"
+                    app:cardBackgroundColor="@color/bg_card"
                     app:cardCornerRadius="16dp"
                     app:cardElevation="2dp"
                     app:cardUseCompatPadding="true">
@@ -131,7 +131,7 @@
                             android:text="Other Operators"
                             android:textSize="18sp"
                             android:textStyle="bold"
-                            android:textColor="#000000"
+                            android:textColor="@color/text_primary"
                             android:layout_marginHorizontal="20dp"
                             android:layout_marginBottom="8dp"/>
 
@@ -150,7 +150,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginHorizontal="12dp"
                     android:layout_marginBottom="16dp"
-                    app:cardBackgroundColor="#FFFFFF"
+                    app:cardBackgroundColor="@color/bg_card"
                     app:cardCornerRadius="16dp"
                     app:cardElevation="2dp"
                     app:cardUseCompatPadding="true">
@@ -167,7 +167,7 @@
                             android:text="Engineering Works"
                             android:textSize="18sp"
                             android:textStyle="bold"
-                            android:textColor="#000000"
+                            android:textColor="@color/text_primary"
                             android:layout_marginHorizontal="20dp"
                             android:layout_marginBottom="8dp"/>
 

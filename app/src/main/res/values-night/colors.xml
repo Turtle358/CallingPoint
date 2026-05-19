@@ -1,0 +1,6 @@
+<resources>
+    <color name="bg_screen">#121212</color> <color name="bg_card">#1E1E1E</color>  <color name="text_primary">#E3E3E3</color> <color name="text_secondary">#A0A0A5</color>
+    <color name="text_tertiary">#6E6E73</color>
+
+    <color name="divider_color">#38383A</color>
+</resources>
