@@ -184,7 +184,9 @@ public class MainActivity extends AppCompatActivity {
                             boolean isEngineering = (currentSummary.contains("engineering") || currentDesc.contains("engineering"))
                                     && !currentSummary.contains("overrun") && !currentDesc.contains("overrun");
 
-                            if (isEngineering) {
+                            if (currentSummary.contains("strike") || currentDesc.contains("strike") || currentSummary.contains("industrial action") || currentDesc.contains("industrial action")) {
+                                simplifiedStatus = "Planned Industrial Action";
+                            } else if (isEngineering) {
                                 simplifiedStatus = "Planned Engineering Works";
                             } else if (currentSummary.contains("major") || currentSummary.contains("suspended") || currentSummary.contains("closed") || currentSummary.contains("blocked")) {
                                 simplifiedStatus = "Major Disruption";
