@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Set;
 
 public class SettingsFragment extends Fragment {
-    private EditText etCustomerKey;
+    private EditText etCustomerKey, etLdbwsKey;
     private Button btnSaveSettings;
     private RadioGroup themeRadioGroup;
     private Set<String> trackedTocs;
@@ -51,24 +51,17 @@ public class SettingsFragment extends Fragment {
         }
 
         etCustomerKey = view.findViewById(R.id.etCustomerKey);
+        etLdbwsKey = view.findViewById(R.id.etLdbwsKey);
         btnSaveSettings = view.findViewById(R.id.btnSaveSettings);
+
         etCustomerKey.setText(prefs.getString("CUSTOMER_KEY", ""));
+        etLdbwsKey.setText(prefs.getString("LDBWS_KEY", ""));
 
         ImageButton btnTogglePassword = view.findViewById(R.id.btnTogglePassword);
-        btnTogglePassword.setOnClickListener(v -> {
-            android.graphics.Typeface currentTypeface = etCustomerKey.getTypeface();
-            boolean isVisible = etCustomerKey.getInputType() == (InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
+        btnTogglePassword.setOnClickListener(v -> togglePasswordVisibility(etCustomerKey, btnTogglePassword));
 
-            if (isVisible) {
-                etCustomerKey.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
-                btnTogglePassword.setImageResource(R.drawable.ic_visibility_off);
-            } else {
-                etCustomerKey.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
-                btnTogglePassword.setImageResource(R.drawable.ic_visibility);
-            }
-            etCustomerKey.setTypeface(currentTypeface);
-            etCustomerKey.setSelection(etCustomerKey.getText().length());
-        });
+        ImageButton btnToggleLdbwsPassword = view.findViewById(R.id.btnToggleLdbwsPassword);
+        btnToggleLdbwsPassword.setOnClickListener(v -> togglePasswordVisibility(etLdbwsKey, btnToggleLdbwsPassword));
 
         themeRadioGroup = view.findViewById(R.id.themeRadioGroup);
         setupThemeControl();
@@ -79,20 +72,19 @@ public class SettingsFragment extends Fragment {
         List<Toc> allTocs = TOCBrandHelper.getAllTocs();
 
         TocSettingAdapter adapter = new TocSettingAdapter(allTocs, trackedTocs, (tocCode, isTracked) -> {
-            if (isTracked) {
-                trackedTocs.add(tocCode);
-            } else {
-                trackedTocs.remove(tocCode);
-            }
+            if (isTracked) trackedTocs.add(tocCode);
+            else trackedTocs.remove(tocCode);
             saveTrackedTocs();
         });
 
         recyclerTocs.setAdapter(adapter);
 
         btnSaveSettings.setOnClickListener(v -> {
-            prefs.edit().putString("CUSTOMER_KEY", etCustomerKey.getText().toString().trim()).apply();
-            Toast.makeText(requireContext(), "API Key Saved", Toast.LENGTH_SHORT).show();
-            // Optional: Tell MainActivity to switch back to the Departures tab here
+            prefs.edit()
+                    .putString("CUSTOMER_KEY", etCustomerKey.getText().toString().trim())
+                    .putString("LDBWS_KEY", etLdbwsKey.getText().toString().trim())
+                    .apply();
+            Toast.makeText(requireContext(), "API Keys Saved", Toast.LENGTH_SHORT).show();
         });
     }
 
@@ -132,5 +124,20 @@ public class SettingsFragment extends Fragment {
         intent.setAction(AppWidgetManager.ACTION_APPWIDGET_UPDATE);
         intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, appWidgetIds);
         requireContext().sendBroadcast(intent);
+    }
+
+    private void togglePasswordVisibility(EditText editText, ImageButton button) {
+        android.graphics.Typeface currentTypeface = editText.getTypeface();
+        boolean isVisible = editText.getInputType() == (InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
+
+        if (isVisible) {
+            editText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+            button.setImageResource(R.drawable.ic_visibility_off);
+        } else {
+            editText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
+            button.setImageResource(R.drawable.ic_visibility);
+        }
+        editText.setTypeface(currentTypeface);
+        editText.setSelection(editText.getText().length());
     }
 }

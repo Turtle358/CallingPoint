@@ -50,10 +50,10 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="RDG Customer Key"
+                        android:text="Disruptions API Key"
                         android:textColor="@color/text_primary"
                         android:textStyle="bold"
-                        android:layout_marginBottom="12dp"/>
+                        android:layout_marginBottom="8dp"/>
 
                     <RelativeLayout
                         android:layout_width="match_parent"
@@ -64,7 +64,7 @@
                             android:id="@+id/etCustomerKey"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:hint="Paste Customer Key here..."
+                            android:hint="Paste Disruptions Key here..."
                             android:textColor="@color/text_primary"
                             android:textColorHint="@color/text_secondary"
                             android:inputType="textPassword"
@@ -82,7 +82,45 @@
                             android:background="?attr/selectableItemBackgroundBorderless"
                             android:src="@drawable/ic_visibility_off"
                             app:tint="@color/text_secondary"
-                            android:contentDescription="Toggle Password Visibility" />
+                            android:contentDescription="Toggle Visibility" />
+                    </RelativeLayout>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Live Departures (LDBWS) Key"
+                        android:textColor="@color/text_primary"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="8dp"/>
+
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="24dp">
+
+                        <EditText
+                            android:id="@+id/etLdbwsKey"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="Paste LDBWS Key here..."
+                            android:textColor="@color/text_primary"
+                            android:textColorHint="@color/text_secondary"
+                            android:inputType="textPassword"
+                            android:padding="16dp"
+                            android:paddingEnd="48dp"
+                            android:background="@drawable/bg_edit_text" />
+
+                        <ImageButton
+                            android:id="@+id/btnToggleLdbwsPassword"
+                            android:layout_width="48dp"
+                            android:layout_height="match_parent"
+                            android:layout_alignTop="@id/etLdbwsKey"
+                            android:layout_alignBottom="@id/etLdbwsKey"
+                            android:layout_alignParentEnd="true"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:src="@drawable/ic_visibility_off"
+                            app:tint="@color/text_secondary"
+                            android:contentDescription="Toggle Visibility" />
                     </RelativeLayout>
 
                     <Button

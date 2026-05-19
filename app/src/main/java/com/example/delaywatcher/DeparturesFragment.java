@@ -90,7 +90,7 @@ public class DeparturesFragment extends Fragment {
     }
 
     private void fetchDepartures(String fromCrs, String toCrs) {
-        String key = requireContext().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE).getString("CUSTOMER_KEY", "");
+        String key = requireContext().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE).getString("LDBWS_KEY", "");
         if (key.isEmpty()) {
             Toast.makeText(requireContext(), "Please enter your API Key in Settings", Toast.LENGTH_LONG).show();
             swipeRefreshLayout.setRefreshing(false);
@@ -110,7 +110,6 @@ public class DeparturesFragment extends Fragment {
                     List<StationDepartureResponse.TrainService> allServices = response.body().trainServices;
 
                     if (allServices != null && !allServices.isEmpty()) {
-                        // Filter the results locally if a destination CRS was provided
                         List<StationDepartureResponse.TrainService> filteredServices = new ArrayList<>();
 
                         if (toCrs.isEmpty()) {
