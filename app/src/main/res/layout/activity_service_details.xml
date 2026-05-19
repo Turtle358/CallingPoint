@@ -5,13 +5,13 @@
     android:layout_height="match_parent"
     android:background="@color/bg_screen"
     android:orientation="vertical">
+
     <LinearLayout
         android:id="@+id/topHeaderBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:fitsSystemWindows="true">
-
     </LinearLayout>
 
     <androidx.core.widget.NestedScrollView
@@ -37,13 +37,11 @@
                 app:cardCornerRadius="16dp"
                 app:cardElevation="2dp"
                 app:cardUseCompatPadding="true">
-
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:padding="20dp">
-
                     <TextView
                         android:id="@+id/tvHeaderDestination"
                         android:layout_width="wrap_content"
@@ -54,13 +52,11 @@
                         android:textColor="@color/text_primary"
                         android:letterSpacing="-0.02"
                         android:layout_marginBottom="12dp"/>
-
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal"
                         android:gravity="center_vertical">
-
                         <TextView
                             android:id="@+id/tvHeaderTime"
                             android:layout_width="wrap_content"
@@ -68,7 +64,6 @@
                             android:textSize="18sp"
                             android:textStyle="bold"
                             android:textColor="@color/text_primary" />
-
                         <TextView
                             android:id="@+id/tvHeaderStatus"
                             android:layout_width="wrap_content"
@@ -77,9 +72,7 @@
                             android:textSize="16sp"
                             android:textStyle="bold"
                             android:textColor="#00875A" />
-
                         <View android:layout_width="0dp" android:layout_height="0dp" android:layout_weight="1" />
-
                         <TextView
                             android:id="@+id/tvHeaderPlatform"
                             android:layout_width="wrap_content"
@@ -88,7 +81,6 @@
                             android:textStyle="bold"
                             android:textColor="@color/text_primary" />
                     </LinearLayout>
-
                     <TextView
                         android:id="@+id/tvHeaderOperator"
                         android:layout_width="wrap_content"
@@ -99,16 +91,54 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <TextView
-                android:layout_width="wrap_content"
+            <androidx.cardview.widget.CardView
+                android:id="@+id/cardTrainDetails"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginHorizontal="16dp"
-                android:layout_marginTop="20dp"
-                android:layout_marginBottom="8dp"
-                android:text="Calling points:"
-                android:textColor="@color/text_primary"
-                android:textSize="20sp"
-                android:textStyle="bold" />
+                android:layout_marginHorizontal="12dp"
+                android:layout_marginBottom="4dp"
+                android:visibility="gone"
+                app:cardBackgroundColor="@color/bg_card"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="2dp"
+                app:cardUseCompatPadding="true">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:paddingTop="20dp"
+                    android:paddingBottom="24dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginHorizontal="20dp"
+                        android:layout_marginBottom="16dp"
+                        android:text="Train &amp; coach facilities"
+                        android:textColor="@color/text_primary"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvCoachCapacity"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginHorizontal="20dp"
+                        android:layout_marginBottom="16dp"
+                        android:text="8 coaches"
+                        android:textColor="@color/text_primary"
+                        android:textSize="15sp" />
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/recyclerCoaches"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:clipToPadding="false"
+                        android:paddingHorizontal="20dp"
+                        android:orientation="horizontal" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
 
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
@@ -120,12 +150,29 @@
                 app:cardElevation="2dp"
                 app:cardUseCompatPadding="true">
 
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/recyclerTimeline"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:nestedScrollingEnabled="false"
-                    android:paddingVertical="8dp" />
+                    android:orientation="vertical"
+                    android:paddingTop="20dp"
+                    android:paddingBottom="12dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginHorizontal="20dp"
+                        android:layout_marginBottom="12dp"
+                        android:text="Calling points"
+                        android:textColor="@color/text_primary"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/recyclerTimeline"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:nestedScrollingEnabled="false" />
+                </LinearLayout>
             </androidx.cardview.widget.CardView>
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>

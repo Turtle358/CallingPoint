@@ -4,8 +4,6 @@ import android.content.Context;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.view.View;
-import android.view.Window;
-import android.view.WindowManager;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -24,8 +22,12 @@ import retrofit2.Response;
 public class ServiceDetailsActivity extends AppCompatActivity {
 
     private RecyclerView recyclerTimeline;
-    private TextView tvHeaderDestination, tvHeaderTime, tvHeaderStatus, tvHeaderPlatform, tvHeaderOperator;
-    private View topHeaderBar;
+    private RecyclerView recyclerCoaches;
+
+    private TextView tvHeaderDestination, tvHeaderTime, tvHeaderStatus;
+    private TextView tvHeaderPlatform, tvHeaderOperator, tvCoachCapacity;
+
+    private View topHeaderBar, cardTrainDetails;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,6 +42,12 @@ public class ServiceDetailsActivity extends AppCompatActivity {
         tvHeaderStatus = findViewById(R.id.tvHeaderStatus);
         tvHeaderPlatform = findViewById(R.id.tvHeaderPlatform);
         tvHeaderOperator = findViewById(R.id.tvHeaderOperator);
+
+        cardTrainDetails = findViewById(R.id.cardTrainDetails);
+        tvCoachCapacity = findViewById(R.id.tvCoachCapacity);
+        recyclerCoaches = findViewById(R.id.recyclerCoaches);
+
+        recyclerCoaches.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
 
         recyclerTimeline = findViewById(R.id.recyclerTimeline);
         recyclerTimeline.setLayoutManager(new LinearLayoutManager(this));
@@ -68,12 +76,14 @@ public class ServiceDetailsActivity extends AppCompatActivity {
             public void onResponse(Call<ServiceDetailsResponse> call, Response<ServiceDetailsResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     ServiceDetailsResponse data = response.body();
+                    System.out.println(response.body());
 
                     String operatorName = data.operator != null ? data.operator : "Unknown";
-                    int brandColour = TOCBrandHelper.getColorForToc(operatorName);
+                    int brandColor = TOCBrandHelper.getColorForToc(operatorName);
 
+                    // 1. Color the Header Bar (It stretches behind the battery automatically via XML)
                     if (topHeaderBar != null) {
-                        topHeaderBar.setBackgroundColor(brandColour);
+                        topHeaderBar.setBackgroundColor(brandColor);
                     }
 
                     String destination = "Unknown Destination";
@@ -100,15 +110,41 @@ public class ServiceDetailsActivity extends AppCompatActivity {
                         tvHeaderStatus.setTextColor(Color.parseColor("#FF8C00"));
                     }
 
+                    if (data.formation != null && data.formation.coaches != null && !data.formation.coaches.isEmpty()) {
+                        cardTrainDetails.setVisibility(View.VISIBLE);
+                        tvCoachCapacity.setText(data.formation.coaches.size() + " coaches");
+
+                        CoachAdapter coachAdapter = new CoachAdapter(data.formation.coaches);
+                        recyclerCoaches.setAdapter(coachAdapter);
+                    } else {
+                        cardTrainDetails.setVisibility(View.GONE);
+                    }
+
                     List<ServiceDetailsResponse.TimelinePoint> allPoints = new ArrayList<>();
+
                     if (data.previousCallingPoints != null && !data.previousCallingPoints.isEmpty()) {
                         allPoints.addAll(data.previousCallingPoints.get(0).callingPoint);
                     }
+
+                    ServiceDetailsResponse.TimelinePoint currentStation = new ServiceDetailsResponse.TimelinePoint();
+                    currentStation.locationName = data.locationName != null ? data.locationName : "Current Station";
+                    currentStation.scheduledTime = data.std != null ? data.std : "";
+                    currentStation.estimatedTime = data.etd;
+                    currentStation.isCancelled = "Cancelled".equalsIgnoreCase(data.etd);
+
+                    if (data.atd != null) {
+                        currentStation.actualTime = data.atd;
+                    } else if (data.ata != null) {
+                        currentStation.actualTime = data.ata;
+                    }
+
+                    allPoints.add(currentStation);
+
                     if (data.subsequentCallingPoints != null && !data.subsequentCallingPoints.isEmpty()) {
                         allPoints.addAll(data.subsequentCallingPoints.get(0).callingPoint);
                     }
 
-                    TimelineAdapter adapter = new TimelineAdapter(allPoints, brandColour);
+                    TimelineAdapter adapter = new TimelineAdapter(allPoints, brandColor);
                     recyclerTimeline.setAdapter(adapter);
 
                 } else {

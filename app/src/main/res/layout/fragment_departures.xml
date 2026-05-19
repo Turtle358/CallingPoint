@@ -11,104 +11,107 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Live Trains"
-        android:textSize="28sp"
+        android:textSize="34sp"
         android:textStyle="bold"
         android:textColor="@color/text_primary"
         android:layout_marginHorizontal="24dp"
-        android:layout_marginTop="24dp"
+        android:layout_marginTop="32dp"
         android:layout_marginBottom="16dp"
         android:letterSpacing="-0.02"/>
 
-    <LinearLayout
+    <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:layout_marginHorizontal="16dp"
-        android:layout_marginBottom="16dp">
+        android:layout_marginHorizontal="12dp"
+        android:layout_marginBottom="16dp"
+        app:cardBackgroundColor="@color/bg_card"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="2dp"
+        app:cardUseCompatPadding="true">
 
-        <RelativeLayout
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:padding="8dp">
 
-            <androidx.cardview.widget.CardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="20dp"
-                app:cardBackgroundColor="@color/bg_card"
-                app:cardCornerRadius="8dp"
-                app:cardElevation="2dp"
-                app:cardUseCompatPadding="true">
+            <AutoCompleteTextView
+                android:id="@+id/etFromCrs"
+                android:layout_width="0dp"
+                android:layout_height="64dp"
+                android:background="@android:color/transparent"
+                android:hint="Departing from"
+                android:completionThreshold="1"
+                android:paddingHorizontal="16dp"
+                android:textColor="@color/text_primary"
+                android:textColorHint="@color/text_secondary"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toStartOf="@id/btnSwapStations" />
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical">
+            <View
+                android:id="@+id/divider"
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:background="#33999999"
+                android:layout_marginStart="16dp"
+                app:layout_constraintTop_toBottomOf="@id/etFromCrs"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toStartOf="@id/btnSwapStations" />
 
-                    <AutoCompleteTextView
-                        android:id="@+id/etFromCrs"
-                        android:layout_width="match_parent"
-                        android:layout_height="64dp"
-                        android:background="@android:color/transparent"
-                        android:hint="Departing from"
-                        android:completionThreshold="1"
-                        android:paddingHorizontal="16dp"
-                        android:textColor="@color/text_primary"
-                        android:textColorHint="@color/text_secondary"
-                        android:textSize="16sp"
-                        android:textStyle="bold" />
-
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:background="@color/divider_color" />
-
-                    <AutoCompleteTextView
-                        android:id="@+id/etToCrs"
-                        android:layout_width="match_parent"
-                        android:layout_height="64dp"
-                        android:background="@android:color/transparent"
-                        android:hint="Going to (optional)"
-                        android:completionThreshold="1"
-                        android:paddingHorizontal="16dp"
-                        android:textColor="@color/text_primary"
-                        android:textColorHint="@color/text_secondary"
-                        android:textSize="16sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
-            </androidx.cardview.widget.CardView>
+            <AutoCompleteTextView
+                android:id="@+id/etToCrs"
+                android:layout_width="0dp"
+                android:layout_height="64dp"
+                android:background="@android:color/transparent"
+                android:hint="Going to (optional)"
+                android:completionThreshold="1"
+                android:paddingHorizontal="16dp"
+                android:textColor="@color/text_primary"
+                android:textColorHint="@color/text_secondary"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                app:layout_constraintTop_toBottomOf="@id/divider"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toStartOf="@id/btnSwapStations" />
 
             <ImageButton
                 android:id="@+id/btnSwapStations"
                 android:layout_width="48dp"
                 android:layout_height="48dp"
-                android:layout_alignParentEnd="true"
-                android:layout_centerVertical="true"
+                android:layout_marginEnd="8dp"
                 android:background="@drawable/bg_pill_base"
-                android:elevation="4dp"
-                android:src="@drawable/ic_swap_vert"
-                android:contentDescription="Swap stations" />
-        </RelativeLayout>
+                android:backgroundTint="@color/bg_screen"
+                android:src="@drawable/ic_chevron_down"
+                android:rotation="180"
+                app:tint="@color/text_primary"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="@id/divider"
+                app:layout_constraintBottom_toBottomOf="@id/divider" />
 
-        <Button
-            android:id="@+id/btnSearchDepartures"
-            android:layout_width="match_parent"
-            android:layout_height="60dp"
-            android:layout_marginTop="8dp"
-            android:layout_marginHorizontal="4dp"
-            android:backgroundTint="#2E2A74"
-            android:text="Show live trains"
-            android:textAllCaps="false"
-            android:textColor="#FFCA28"
-            android:textSize="18sp"
-            android:textStyle="bold" />
-    </LinearLayout>
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </androidx.cardview.widget.CardView>
+
+    <Button
+        android:id="@+id/btnSearchDepartures"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_marginHorizontal="24dp"
+        android:layout_marginBottom="16dp"
+        android:text="Show live trains"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:backgroundTint="#2E2A74"
+        android:textColor="#FFFFFF"/>
 
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
         android:id="@+id/swipeRefreshDepartures"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="0dp"
+        android:layout_weight="1">
 
-        <FrameLayout
+        <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent">
 
@@ -117,18 +120,19 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:clipToPadding="false"
-                android:paddingBottom="24dp" />
+                android:paddingBottom="16dp"
+                android:visibility="gone" />
 
             <TextView
                 android:id="@+id/tvEmptyState"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center"
+                android:layout_centerInParent="true"
                 android:layout_marginHorizontal="32dp"
-                android:gravity="center"
-                android:text="Enter a station code (e.g. WAT) to see live trains."
+                android:text="Search for a station name to see live departures."
                 android:textColor="@color/text_secondary"
-                android:textSize="16sp" />
-        </FrameLayout>
+                android:textSize="16sp"
+                android:textAlignment="center" />
+        </RelativeLayout>
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 </LinearLayout>

@@ -8,6 +8,7 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,11 +36,13 @@ public class TimelineAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
     public TimelineAdapter(List<ServiceDetailsResponse.TimelinePoint> allPoints, int brandColor) {
         this.allPoints = allPoints;
         this.brandColor = brandColor;
-        buildDisplayList();
+        buildDisplayList(false);
     }
 
-    private void buildDisplayList() {
-        displayList.clear();
+    private void buildDisplayList(boolean animate) {
+        List<TimelineItem> oldList = new ArrayList<>(displayList);
+        List<TimelineItem> newList = new ArrayList<>();
+
         List<ServiceDetailsResponse.TimelinePoint> past = new ArrayList<>();
         List<ServiceDetailsResponse.TimelinePoint> future = new ArrayList<>();
 
@@ -49,28 +52,51 @@ public class TimelineAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
         }
 
         if (past.isEmpty()) {
-            for (ServiceDetailsResponse.TimelinePoint p : future) displayList.add(new TimelineItem(TYPE_STOP, p));
+            for (ServiceDetailsResponse.TimelinePoint p : future) newList.add(new TimelineItem(TYPE_STOP, p));
         } else {
-            displayList.add(new TimelineItem(TYPE_STOP, past.get(0)));
+            newList.add(new TimelineItem(TYPE_STOP, past.get(0)));
 
             if (past.size() > 1) {
                 if (isExpanded) {
                     for (int i = 1; i < past.size(); i++) {
-                        displayList.add(new TimelineItem(TYPE_STOP, past.get(i)));
+                        newList.add(new TimelineItem(TYPE_STOP, past.get(i)));
                     }
-                    TimelineItem header = new TimelineItem(TYPE_HEADER, null);
-                    header.hiddenCount = past.size() - 1;
-                    displayList.add(header);
-                } else {
-                    // Show Expand button instead of middle stops
-                    TimelineItem header = new TimelineItem(TYPE_HEADER, null);
-                    header.hiddenCount = past.size() - 1;
-                    displayList.add(header);
                 }
+                TimelineItem header = new TimelineItem(TYPE_HEADER, null);
+                header.hiddenCount = past.size() - 1;
+                newList.add(header);
             }
-            for (ServiceDetailsResponse.TimelinePoint p : future) displayList.add(new TimelineItem(TYPE_STOP, p));
+            for (ServiceDetailsResponse.TimelinePoint p : future) newList.add(new TimelineItem(TYPE_STOP, p));
         }
-        notifyDataSetChanged();
+
+        if (animate) {
+            DiffUtil.DiffResult result = DiffUtil.calculateDiff(new DiffUtil.Callback() {
+                @Override
+                public int getOldListSize() { return oldList.size(); }
+                @Override
+                public int getNewListSize() { return newList.size(); }
+                @Override
+                public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
+                    TimelineItem oldItem = oldList.get(oldItemPosition);
+                    TimelineItem newItem = newList.get(newItemPosition);
+                    if (oldItem.type != newItem.type) return false;
+                    if (oldItem.type == TYPE_HEADER) return true;
+                    return oldItem.point.locationName.equals(newItem.point.locationName);
+                }
+                @Override
+                public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
+                    if (oldList.get(oldItemPosition).type == TYPE_HEADER) return false;
+                    return true;
+                }
+            });
+            displayList.clear();
+            displayList.addAll(newList);
+            result.dispatchUpdatesTo(this);
+        } else {
+            displayList.clear();
+            displayList.addAll(newList);
+            notifyDataSetChanged();
+        }
     }
 
     @Override
@@ -98,9 +124,10 @@ public class TimelineAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
             HeaderViewHolder h = (HeaderViewHolder) holder;
             h.tvStopsCount.setText(item.hiddenCount + " stops");
             h.iconExpand.setImageResource(isExpanded ? R.drawable.ic_chevron_up : R.drawable.ic_chevron_down);
+
             h.itemView.setOnClickListener(v -> {
                 isExpanded = !isExpanded;
-                buildDisplayList();
+                buildDisplayList(true);
             });
 
         } else if (holder instanceof StopViewHolder) {

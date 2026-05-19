@@ -15,6 +15,12 @@ public class ServiceDetailsResponse {
     @SerializedName("etd")
     public String etd;
 
+    @SerializedName("ata")
+    public String ata;
+
+    @SerializedName("atd")
+    public String atd;
+
     @SerializedName("platform")
     public String platform;
 
@@ -26,6 +32,9 @@ public class ServiceDetailsResponse {
 
     @SerializedName("subsequentCallingPoints")
     public List<CallingPointList> subsequentCallingPoints;
+
+    @SerializedName("formation")
+    public Formation formation;
 
     public static class CallingPointList {
         @SerializedName("callingPoint")
@@ -50,5 +59,29 @@ public class ServiceDetailsResponse {
 
         @SerializedName("isCancelled")
         public boolean isCancelled;
+    }
+
+    public static class Formation {
+        @SerializedName("coaches")
+        public List<Coach> coaches;
+    }
+
+    public static class Coach {
+        @SerializedName("coachClass")
+        public String coachClass;
+
+        @SerializedName("number")
+        public String number;
+
+        @SerializedName("toilet")
+        public Toilet toilet;
+    }
+
+    public static class Toilet {
+        @SerializedName(value = "value", alternate = {"type", "Type", "Value", "$", "#text"})
+        public String value;
+
+        @SerializedName("status")
+        public String status;
     }
 }
