@@ -25,6 +25,9 @@ public class StationDepartureResponse {
 
         @SerializedName("subsequentCallingPoints")
         public List<SubsequentCallingPointList> subsequentCallingPoints;
+
+        @SerializedName("serviceID")
+        public String serviceID;
     }
 
     public static class SubsequentCallingPointList {

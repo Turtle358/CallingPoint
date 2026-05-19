@@ -6,6 +6,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.content.Intent;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import java.util.List;
@@ -39,7 +40,6 @@ public class DeparturesAdapter extends RecyclerView.Adapter<DeparturesAdapter.Vi
         holder.tvOperator.setText(service.operatorName);
         holder.tvPlatform.setText(service.platform != null ? "Plat " + service.platform : "---");
 
-        // Handle Destination Name
         if (service.destination != null && !service.destination.isEmpty()) {
             holder.tvDestination.setText(service.destination.get(0).locationName);
         } else {
@@ -54,6 +54,12 @@ public class DeparturesAdapter extends RecyclerView.Adapter<DeparturesAdapter.Vi
         } else {
             holder.tvLiveStatus.setTextColor(Color.parseColor("#FF8C00"));
         }
+
+        holder.itemView.setOnClickListener(v -> {
+            Intent intent = new Intent(context, ServiceDetailsActivity.class);
+            intent.putExtra("SERVICE_ID", service.serviceID);
+            context.startActivity(intent);
+        });
     }
 
     @Override

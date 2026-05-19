@@ -21,4 +21,10 @@ public interface NationalRailAPI {
             @Header("x-apikey") String customerKey,
             @Path("crs") String crsCode
     );
+
+    @GET("1010-service-details1_2/LDBWS/api/20220120/GetServiceDetails/{serviceID}")
+    Call<ServiceDetailsResponse> getServiceDetails(
+            @Header("x-apikey") String serviceDetailsKey,
+            @Path("serviceID") String serviceID
+    );
 }

@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Set;
 
 public class SettingsFragment extends Fragment {
-    private EditText etCustomerKey, etLdbwsKey;
+    private EditText etCustomerKey, etLdbwsKey, etServiceDetailsKey;
     private Button btnSaveSettings;
     private RadioGroup themeRadioGroup;
     private Set<String> trackedTocs;
@@ -52,16 +52,21 @@ public class SettingsFragment extends Fragment {
 
         etCustomerKey = view.findViewById(R.id.etCustomerKey);
         etLdbwsKey = view.findViewById(R.id.etLdbwsKey);
+        etServiceDetailsKey = view.findViewById(R.id.etServiceDetailsKey);
         btnSaveSettings = view.findViewById(R.id.btnSaveSettings);
 
         etCustomerKey.setText(prefs.getString("CUSTOMER_KEY", ""));
         etLdbwsKey.setText(prefs.getString("LDBWS_KEY", ""));
+        etServiceDetailsKey.setText(prefs.getString("SERVICE_DETAILS_KEY", ""));
 
         ImageButton btnTogglePassword = view.findViewById(R.id.btnTogglePassword);
         btnTogglePassword.setOnClickListener(v -> togglePasswordVisibility(etCustomerKey, btnTogglePassword));
 
         ImageButton btnToggleLdbwsPassword = view.findViewById(R.id.btnToggleLdbwsPassword);
         btnToggleLdbwsPassword.setOnClickListener(v -> togglePasswordVisibility(etLdbwsKey, btnToggleLdbwsPassword));
+
+        ImageButton btnToggleService = view.findViewById(R.id.btnToggleServiceDetailsPassword);
+        btnToggleService.setOnClickListener(v -> togglePasswordVisibility(etServiceDetailsKey, btnToggleService));
 
         themeRadioGroup = view.findViewById(R.id.themeRadioGroup);
         setupThemeControl();
@@ -83,6 +88,7 @@ public class SettingsFragment extends Fragment {
             prefs.edit()
                     .putString("CUSTOMER_KEY", etCustomerKey.getText().toString().trim())
                     .putString("LDBWS_KEY", etLdbwsKey.getText().toString().trim())
+                    .putString("SERVICE_DETAILS_KEY", etServiceDetailsKey.getText().toString().trim())
                     .apply();
             Toast.makeText(requireContext(), "API Keys Saved", Toast.LENGTH_SHORT).show();
         });
