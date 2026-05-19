@@ -44,14 +44,13 @@
                     android:layout_height="wrap_content"
                     android:orientation="vertical">
 
-                    <EditText
+                    <AutoCompleteTextView
                         android:id="@+id/etFromCrs"
                         android:layout_width="match_parent"
                         android:layout_height="64dp"
                         android:background="@android:color/transparent"
-                        android:hint="Departing from (CRS)"
-                        android:inputType="textCapCharacters"
-                        android:maxLength="3"
+                        android:hint="Departing from"
+                        android:completionThreshold="1"
                         android:paddingHorizontal="16dp"
                         android:textColor="@color/text_primary"
                         android:textColorHint="@color/text_secondary"
@@ -63,14 +62,13 @@
                         android:layout_height="1dp"
                         android:background="@color/divider_color" />
 
-                    <EditText
+                    <AutoCompleteTextView
                         android:id="@+id/etToCrs"
                         android:layout_width="match_parent"
                         android:layout_height="64dp"
                         android:background="@android:color/transparent"
                         android:hint="Going to (optional)"
-                        android:inputType="textCapCharacters"
-                        android:maxLength="3"
+                        android:completionThreshold="1"
                         android:paddingHorizontal="16dp"
                         android:textColor="@color/text_primary"
                         android:textColorHint="@color/text_secondary"
