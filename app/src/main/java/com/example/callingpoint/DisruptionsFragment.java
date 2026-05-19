@@ -1,4 +1,4 @@
-package com.example.delaywatcher;
+package com.example.callingpoint;
 
 import android.appwidget.AppWidgetManager;
 import android.content.ComponentName;

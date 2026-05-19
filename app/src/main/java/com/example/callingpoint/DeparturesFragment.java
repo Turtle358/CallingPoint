@@ -1,4 +1,4 @@
-package com.example.delaywatcher;
+package com.example.callingpoint;
 
 import android.content.Context;
 import android.os.Bundle;
@@ -58,14 +58,18 @@ public class DeparturesFragment extends Fragment {
         swipeRefreshLayout = view.findViewById(R.id.swipeRefreshDepartures);
         recyclerDepartures = view.findViewById(R.id.recyclerDepartures);
         tvEmptyState = view.findViewById(R.id.tvEmptyState);
+
         List<String> stations = StationHelper.getStationNames();
         ArrayAdapter<String> autoCompleteAdapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_dropdown_item_1line, stations);
         etFromCrs.setAdapter(autoCompleteAdapter);
         etToCrs.setAdapter(autoCompleteAdapter);
+
         recyclerDepartures.setLayoutManager(new LinearLayoutManager(requireContext()));
         adapter = new DeparturesAdapter(requireContext(), new ArrayList<>());
         recyclerDepartures.setAdapter(adapter);
+
         api = APIClient.getClient().create(NationalRailAPI.class);
+
         btnSwap.setOnClickListener(v -> {
             String tempText = etFromCrs.getText().toString();
             etFromCrs.setText(etToCrs.getText().toString());
@@ -74,24 +78,25 @@ public class DeparturesFragment extends Fragment {
             etToCrs.dismissDropDown();
         });
 
-        // Search Button Logic
         btnSearch.setOnClickListener(v -> {
             String fromName = etFromCrs.getText().toString().trim();
             String toName = etToCrs.getText().toString().trim();
             String fromCrs = StationHelper.getCrsFromName(fromName);
             String toCrs = toName.isEmpty() ? "" : StationHelper.getCrsFromName(toName);
+
             if (fromCrs == null && fromName.length() == 3) fromCrs = fromName.toUpperCase();
             if (toCrs == null && toName.length() == 3) toCrs = toName.toUpperCase();
+
             if (fromCrs != null && fromCrs.length() == 3) {
                 currentFromCrs = fromCrs;
                 currentToCrs = toCrs == null ? "" : toCrs;
-
                 hideKeyboard();
                 fetchDepartures(currentFromCrs, currentToCrs);
             } else {
                 Toast.makeText(requireContext(), "Please select a valid departing station", Toast.LENGTH_SHORT).show();
             }
         });
+
         swipeRefreshLayout.setOnRefreshListener(() -> {
             if (!currentFromCrs.isEmpty()) {
                 fetchDepartures(currentFromCrs, currentToCrs);
@@ -129,6 +134,7 @@ public class DeparturesFragment extends Fragment {
                         } else {
                             for (StationDepartureResponse.TrainService service : allServices) {
                                 boolean matchesDestination = false;
+
                                 if (service.destination != null) {
                                     for (StationDepartureResponse.Location loc : service.destination) {
                                         if (toCrs.equalsIgnoreCase(loc.crs)) {
@@ -137,18 +143,7 @@ public class DeparturesFragment extends Fragment {
                                         }
                                     }
                                 }
-                                if (!matchesDestination && service.subsequentCallingPoints != null) {
-                                    for (StationDepartureResponse.SubsequentCallingPointList list : service.subsequentCallingPoints) {
-                                        if (list.callingPoint != null) {
-                                            for (StationDepartureResponse.CallingPoint cp : list.callingPoint) {
-                                                if (toCrs.equalsIgnoreCase(cp.crs)) {
-                                                    matchesDestination = true;
-                                                    break;
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
+
 
                                 if (matchesDestination) {
                                     filteredServices.add(service);

@@ -1,4 +1,4 @@
-package com.example.delaywatcher;
+package com.example.callingpoint;
 
 import android.app.PendingIntent;
 import android.appwidget.AppWidgetManager;
@@ -68,7 +68,7 @@ public class AppWidgetProvider extends android.appwidget.AppWidgetProvider {
         views.setOnClickPendingIntent(R.id.titleContainer, piApp);
 
         Intent refreshIntent = new Intent(context, AppWidgetProvider.class);
-        refreshIntent.setAction("com.example.delaywatcher.ACTION_REFRESH_WIDGET");
+        refreshIntent.setAction("com.example.callingpoint.ACTION_REFRESH_WIDGET");
         refreshIntent.putExtra("IS_GOOD_SERVICE", data.isEmpty());
 
         PendingIntent piRefresh = PendingIntent.getBroadcast(
@@ -152,7 +152,7 @@ public class AppWidgetProvider extends android.appwidget.AppWidgetProvider {
     public void onReceive(Context context, Intent intent) {
         super.onReceive(context, intent);
 
-        if ("com.example.delaywatcher.ACTION_REFRESH_WIDGET".equals(intent.getAction())) {
+        if ("com.example.callingpoint.ACTION_REFRESH_WIDGET".equals(intent.getAction())) {
             TOCBrandHelper.init(context);
             boolean isGoodService = intent.getBooleanExtra("IS_GOOD_SERVICE", false);
             AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);

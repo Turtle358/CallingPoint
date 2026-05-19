@@ -1,4 +1,4 @@
-package com.example.delaywatcher;
+package com.example.callingpoint;
 
 import org.junit.Test;
 

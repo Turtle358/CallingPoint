@@ -1,4 +1,4 @@
-package com.example.delaywatcher;
+package com.example.callingpoint;
 
 public class DividerSpan implements android.text.style.LineBackgroundSpan {
     private final int colour;

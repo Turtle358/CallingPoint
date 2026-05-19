@@ -1,8 +1,8 @@
-package com.example.delaywatcher;
+package com.example.callingpoint;
 
 import android.app.Application;
 
-public class DelayWatcherApp extends Application {
+public class CallingPointApp extends Application {
 
     @Override
     public void onCreate() {

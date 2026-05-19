@@ -1,4 +1,4 @@
-package com.example.delaywatcher;
+package com.example.callingpoint;
 
 import com.google.gson.annotations.SerializedName;
 import java.util.List;
@@ -23,19 +23,19 @@ public class StationDepartureResponse {
         @SerializedName("destination")
         public List<Location> destination;
 
-        @SerializedName("subsequentCallingPoints")
-        public List<SubsequentCallingPointList> subsequentCallingPoints;
+        @SerializedName("subsequentcallingpoints")
+        public List<SubsequentcallingpointList> subsequentcallingpoints;
 
         @SerializedName("serviceID")
         public String serviceID;
     }
 
-    public static class SubsequentCallingPointList {
-        @SerializedName("callingPoint")
-        public List<CallingPoint> callingPoint;
+    public static class SubsequentcallingpointList {
+        @SerializedName("callingpoint")
+        public List<callingpoint> callingpoint;
     }
 
-    public static class CallingPoint {
+    public static class callingpoint {
         @SerializedName("locationName")
         public String locationName;
 
