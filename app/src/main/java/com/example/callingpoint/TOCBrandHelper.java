@@ -9,7 +9,6 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 
 public class TOCBrandHelper {
@@ -58,7 +57,7 @@ public class TOCBrandHelper {
     public static List<Toc> getVisibleTocs() {
         List<Toc> visibleTocs = new ArrayList<>();
         for (Toc t : allTocs) {
-            if (!t.name.equalsIgnoreCase("London North Eastern Railway")) {
+            if (!t.name.equalsIgnoreCase("London North Eastern Railway") && !t.name.equalsIgnoreCase("LNR & WMR")) {
                 visibleTocs.add(t);
             }
         }
