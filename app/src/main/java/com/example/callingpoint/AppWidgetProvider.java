@@ -63,8 +63,8 @@ public class AppWidgetProvider extends android.appwidget.AppWidgetProvider {
 
         renderWidgetVisuals(views, data);
         Intent openApp = new Intent(context, MainActivity.class);
-        PendingIntent piApp = PendingIntent.getActivity(context, 0, openApp,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        openApp.putExtra("NAVIGATE_TO", "disruptions");
+        PendingIntent piApp = PendingIntent.getActivity(context, 0, openApp, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         views.setOnClickPendingIntent(R.id.titleContainer, piApp);
 
         Intent refreshIntent = new Intent(context, AppWidgetProvider.class);
@@ -207,7 +207,9 @@ public class AppWidgetProvider extends android.appwidget.AppWidgetProvider {
                         boolean isEngineering = (currentSummary.contains("engineering") || currentDesc.contains("engineering"))
                                 && !currentSummary.contains("overrun") && !currentDesc.contains("overrun");
 
-                        if (isEngineering) {
+                        if (currentSummary.contains("strike") || currentDesc.contains("strike") || currentSummary.contains("industrial action") || currentDesc.contains("industrial action")) {
+                            simplifiedStatus = "Planned Industrial Action";
+                        } else if (isEngineering) {
                             simplifiedStatus = "Planned Engineering Works";
                         } else if (currentSummary.contains("major") || currentSummary.contains("suspended") || currentSummary.contains("closed") || currentSummary.contains("blocked")) {
                             simplifiedStatus = "Major Disruption";

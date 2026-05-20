@@ -25,13 +25,6 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
-
-        if (savedInstanceState == null) {
-            getSupportFragmentManager().beginTransaction()
-                    .replace(R.id.fragment_container, new DeparturesFragment())
-                    .commit();
-        }
-
         bottomNav.setOnItemSelectedListener(item -> {
             Fragment selectedFragment = null;
             int itemId = item.getItemId();
@@ -52,5 +45,16 @@ public class MainActivity extends AppCompatActivity {
             }
             return false;
         });
+        if (savedInstanceState == null) {
+            String navigateTo = getIntent().getStringExtra("NAVIGATE_TO");
+
+            if ("disruptions".equals(navigateTo)) {
+                bottomNav.setSelectedItemId(R.id.nav_disruptions);
+            } else {
+                getSupportFragmentManager().beginTransaction()
+                        .replace(R.id.fragment_container, new DeparturesFragment())
+                        .commit();
+            }
+        }
     }
 }
