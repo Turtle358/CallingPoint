@@ -117,9 +117,9 @@ public class DeparturesFragment extends Fragment {
 
         swipeRefreshLayout.setRefreshing(true);
         tvEmptyState.setVisibility(View.GONE);
-        api.getStationDepartures(key, fromCrs).enqueue(new Callback<StationDepartureResponse>() {
+        api.getStationDepartures(key, fromCrs).enqueue(new Callback<>() {
             @Override
-            public void onResponse(Call<StationDepartureResponse> call, Response<StationDepartureResponse> response) {
+            public void onResponse(@NonNull Call<StationDepartureResponse> call, @NonNull Response<StationDepartureResponse> response) {
                 if (!isAdded()) return;
                 swipeRefreshLayout.setRefreshing(false);
 
@@ -144,6 +144,18 @@ public class DeparturesFragment extends Fragment {
                                     }
                                 }
 
+                                if (!matchesDestination && service.subsequentCallingPoints != null) {
+                                    for (StationDepartureResponse.CallingPointList list : service.subsequentCallingPoints) {
+                                        if (list.callingPoint != null) {
+                                            for (StationDepartureResponse.CallingPoint cp : list.callingPoint) {
+                                                if (toCrs.equalsIgnoreCase(cp.crs)) {
+                                                    matchesDestination = true;
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
 
                                 if (matchesDestination) {
                                     filteredServices.add(service);
@@ -157,7 +169,6 @@ public class DeparturesFragment extends Fragment {
                         } else {
                             showEmptyState("No direct trains found from " + fromCrs + " to " + toCrs + " right now.");
                         }
-
                     } else {
                         showEmptyState("No live departures found for this station right now.");
                     }
@@ -167,7 +178,7 @@ public class DeparturesFragment extends Fragment {
             }
 
             @Override
-            public void onFailure(Call<StationDepartureResponse> call, Throwable t) {
+            public void onFailure(@NonNull Call<StationDepartureResponse> call, @NonNull Throwable t) {
                 if (!isAdded()) return;
                 swipeRefreshLayout.setRefreshing(false);
                 showEmptyState("Network error. Please try again.");
@@ -181,7 +192,6 @@ public class DeparturesFragment extends Fragment {
         tvEmptyState.setText(message);
         tvEmptyState.setVisibility(View.VISIBLE);
     }
-
     private void hideKeyboard() {
         View view = requireActivity().getCurrentFocus();
         if (view != null) {

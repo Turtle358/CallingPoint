@@ -23,21 +23,23 @@ public class StationDepartureResponse {
         @SerializedName("destination")
         public List<Location> destination;
 
-        @SerializedName("subsequentcallingpoints")
-        public List<SubsequentcallingpointList> subsequentcallingpoints;
+        // UPDATED: Variable and Class name now perfectly match the Fragment
+        @SerializedName("subsequentCallingPoints")
+        public List<CallingPointList> subsequentCallingPoints;
 
         @SerializedName("serviceID")
         public String serviceID;
     }
 
-    public static class SubsequentcallingpointList {
-        @SerializedName("callingpoint")
-        public List<callingpoint> callingpoint;
+    // UPDATED: Class name capitalized
+    public static class CallingPointList {
+        // UPDATED: JSON key has a capital P!
+        @SerializedName("callingPoint")
+        public List<CallingPoint> callingPoint;
     }
 
-    public static class callingpoint {
-        @SerializedName("locationName")
-        public String locationName;
+    // UPDATED: Class name capitalized
+    public static class CallingPoint {
 
         @SerializedName("crs")
         public String crs;
