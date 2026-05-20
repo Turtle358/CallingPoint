@@ -35,9 +35,11 @@ public class DeparturesAdapter extends RecyclerView.Adapter<DeparturesAdapter.Vi
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         StationDepartureResponse.TrainService service = services.get(position);
+        int brandColour = TOCBrandHelper.getColorForToc(service.operatorName);
 
         holder.tvSchTime.setText(service.std);
         holder.tvOperator.setText(service.operatorName);
+        holder.tocColourBar.setBackgroundColor(brandColour);
         holder.tvPlatform.setText(service.platform != null ? "Plat " + service.platform : "---");
 
         if (service.destination != null && !service.destination.isEmpty()) {
@@ -69,6 +71,7 @@ public class DeparturesAdapter extends RecyclerView.Adapter<DeparturesAdapter.Vi
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
         TextView tvSchTime, tvDestination, tvOperator, tvLiveStatus, tvPlatform;
+        View tocColourBar;
         public ViewHolder(View v) {
             super(v);
             tvSchTime = v.findViewById(R.id.tvSchTime);
@@ -76,6 +79,7 @@ public class DeparturesAdapter extends RecyclerView.Adapter<DeparturesAdapter.Vi
             tvOperator = v.findViewById(R.id.tvOperator);
             tvLiveStatus = v.findViewById(R.id.tvLiveStatus);
             tvPlatform = v.findViewById(R.id.tvPlatform);
+            tocColourBar = v.findViewById(R.id.tocColourBar);
         }
     }
 }

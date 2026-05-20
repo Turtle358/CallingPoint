@@ -74,7 +74,7 @@ public class SettingsFragment extends Fragment {
         RecyclerView recyclerTocs = view.findViewById(R.id.recyclerTocsSettings);
         recyclerTocs.setLayoutManager(new LinearLayoutManager(requireContext()));
 
-        List<Toc> allTocs = TOCBrandHelper.getAllTocs();
+        List<Toc> allTocs = TOCBrandHelper.getVisibleTocs();
 
         TocSettingAdapter adapter = new TocSettingAdapter(allTocs, trackedTocs, (tocCode, isTracked) -> {
             if (isTracked) trackedTocs.add(tocCode);

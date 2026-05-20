@@ -55,6 +55,16 @@ public class TOCBrandHelper {
         return allTocs;
     }
 
+    public static List<Toc> getVisibleTocs() {
+        List<Toc> visibleTocs = new ArrayList<>();
+        for (Toc t : allTocs) {
+            if (!t.name.equalsIgnoreCase("London North Eastern Railway")) {
+                visibleTocs.add(t);
+            }
+        }
+        return visibleTocs;
+    }
+
     public static String getNameForCode(String code) {
         if (code == null) return "Unknown";
         for (Toc t : allTocs) {
