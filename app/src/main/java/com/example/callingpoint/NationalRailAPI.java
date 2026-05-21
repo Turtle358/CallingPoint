@@ -7,6 +7,7 @@ import retrofit2.http.Header;
 import retrofit2.http.POST;
 import retrofit2.http.GET;
 import retrofit2.http.Path;
+import retrofit2.http.Query;
 
 public interface NationalRailAPI {
 
@@ -16,10 +17,13 @@ public interface NationalRailAPI {
             @Body IncidentSearchRequest requestBody
     );
 
-    @GET("1010-live-departure-board-dep1_2/LDBWS/api/20220120/GetDepBoardWithDetails/{crs}")
+    @GET("1010-live-departure-board-dep1_2/LDBWS/api/20220120/GetDepartureBoard/{crs}")
     Call<StationDepartureResponse> getStationDepartures(
             @Header("x-apikey") String customerKey,
-            @Path("crs") String crsCode
+            @Path("crs") String crsCode,
+            @Query("numRows") int numRows,
+            @Query("timeWindow") int timeWindow,
+            @Query("filterCrs") String filterCrs
     );
 
     @GET("1010-service-details1_2/LDBWS/api/20220120/GetServiceDetails/{serviceID}")

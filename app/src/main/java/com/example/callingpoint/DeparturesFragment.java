@@ -117,9 +117,12 @@ public class DeparturesFragment extends Fragment {
 
         swipeRefreshLayout.setRefreshing(true);
         tvEmptyState.setVisibility(View.GONE);
-        api.getStationDepartures(key, fromCrs).enqueue(new Callback<>() {
+
+        String apiFilterCrs = toCrs.isEmpty() ? null : toCrs;
+
+        api.getStationDepartures(key, fromCrs, 150, 120, apiFilterCrs).enqueue(new Callback<StationDepartureResponse>() {
             @Override
-            public void onResponse(@NonNull Call<StationDepartureResponse> call, @NonNull Response<StationDepartureResponse> response) {
+            public void onResponse(Call<StationDepartureResponse> call, Response<StationDepartureResponse> response) {
                 if (!isAdded()) return;
                 swipeRefreshLayout.setRefreshing(false);
 
@@ -127,50 +130,14 @@ public class DeparturesFragment extends Fragment {
                     List<StationDepartureResponse.TrainService> allServices = response.body().trainServices;
 
                     if (allServices != null && !allServices.isEmpty()) {
-                        List<StationDepartureResponse.TrainService> filteredServices = new ArrayList<>();
-
-                        if (toCrs.isEmpty()) {
-                            filteredServices.addAll(allServices);
-                        } else {
-                            for (StationDepartureResponse.TrainService service : allServices) {
-                                boolean matchesDestination = false;
-
-                                if (service.destination != null) {
-                                    for (StationDepartureResponse.Location loc : service.destination) {
-                                        if (toCrs.equalsIgnoreCase(loc.crs)) {
-                                            matchesDestination = true;
-                                            break;
-                                        }
-                                    }
-                                }
-
-                                if (!matchesDestination && service.subsequentCallingPoints != null) {
-                                    for (StationDepartureResponse.CallingPointList list : service.subsequentCallingPoints) {
-                                        if (list.callingPoint != null) {
-                                            for (StationDepartureResponse.CallingPoint cp : list.callingPoint) {
-                                                if (toCrs.equalsIgnoreCase(cp.crs)) {
-                                                    matchesDestination = true;
-                                                    break;
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-
-                                if (matchesDestination) {
-                                    filteredServices.add(service);
-                                }
-                            }
-                        }
-
-                        if (!filteredServices.isEmpty()) {
-                            adapter.updateData(filteredServices);
-                            recyclerDepartures.setVisibility(View.VISIBLE);
-                        } else {
-                            showEmptyState("No direct trains found from " + fromCrs + " to " + toCrs + " right now.");
-                        }
+                        adapter.updateData(allServices);
+                        recyclerDepartures.setVisibility(View.VISIBLE);
                     } else {
-                        showEmptyState("No live departures found for this station right now.");
+                        if (apiFilterCrs != null) {
+                            showEmptyState("No direct trains found from " + fromCrs + " to " + toCrs + " right now.");
+                        } else {
+                            showEmptyState("No live departures found for this station right now.");
+                        }
                     }
                 } else {
                     showEmptyState("API Error: Please check your CRS codes and API subscription.");
@@ -178,7 +145,7 @@ public class DeparturesFragment extends Fragment {
             }
 
             @Override
-            public void onFailure(@NonNull Call<StationDepartureResponse> call, @NonNull Throwable t) {
+            public void onFailure(Call<StationDepartureResponse> call, Throwable t) {
                 if (!isAdded()) return;
                 swipeRefreshLayout.setRefreshing(false);
                 showEmptyState("Network error. Please try again.");
