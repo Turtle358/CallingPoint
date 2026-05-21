@@ -79,15 +79,15 @@ public class TrainTrackerWorker extends Worker {
                 intent,
                 android.app.PendingIntent.FLAG_IMMUTABLE
         );
-        String title = "The" + scheduledTime + " " + operator + "service";
+        String title = "The " + scheduledTime + " " + operator + " service";
         String delayedTime = calculateDelayString(scheduledTime, status);
         String message;
         if (status.equalsIgnoreCase("cancelled") || status.equalsIgnoreCase("canceled")) {
             message = "has been cancelled.";
         } else if (!delayedTime.isEmpty()) {
-            message = "is delayed by " + delayedTime + " (expected at " + status + ").";
+            message = "Is delayed by " + delayedTime + " (expected at " + status + ").";
         } else {
-            message = "is currently showing as " + status + ".";
+            message = "Is currently showing as " + status + ".";
         }
         androidx.core.app.NotificationCompat.Builder builder = new androidx.core.app.NotificationCompat.Builder(getApplicationContext(), io.github.turtle358.callingpoint.CallingPointApp.CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_app_outline)
