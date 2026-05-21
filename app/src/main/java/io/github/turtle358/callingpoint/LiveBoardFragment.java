@@ -71,7 +71,7 @@ public class LiveBoardFragment extends Fragment {
         pinnedDataManager = new PinnedDataManager(requireContext());
 
         List<String> stations = StationHelper.getStationNames();
-        ArrayAdapter<String> autoCompleteAdapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_dropdown_item_1line, stations);
+        StationAutoCompleteAdapter autoCompleteAdapter = new StationAutoCompleteAdapter(requireContext(), stations);
         etFromCrs.setAdapter(autoCompleteAdapter);
         etToCrs.setAdapter(autoCompleteAdapter);
 
