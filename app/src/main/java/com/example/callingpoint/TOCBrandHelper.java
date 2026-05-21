@@ -94,6 +94,6 @@ public class TOCBrandHelper {
                 return t.manager;
             }
         }
-        return "national";
+        return "other";
     }
 }

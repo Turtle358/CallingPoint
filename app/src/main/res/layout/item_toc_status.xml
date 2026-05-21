@@ -8,7 +8,7 @@
     android:focusable="true">
 
     <View
-        android:id="@+id/tocColorBar"
+        android:id="@+id/tocColourBar"
         android:layout_width="12dp"
         android:layout_height="match_parent"
         android:background="#D32F2F" />

@@ -46,7 +46,7 @@ public class TOCAdapter extends RecyclerView.Adapter<TOCAdapter.TocViewHolder> {
         holder.tocStatusText.setText(actualStatus);
 
         int brandColor = TOCBrandHelper.getColorForToc(currentToc.tocName);
-        holder.tocColorBar.setBackgroundColor(brandColor);
+        holder.tocColourBar.setBackgroundColor(brandColor);
 
         holder.itemView.setOnClickListener(v -> {
             Intent detailIntent = new Intent(context, TOCDetailActivity.class);
@@ -63,12 +63,12 @@ public class TOCAdapter extends RecyclerView.Adapter<TOCAdapter.TocViewHolder> {
         return tocList != null ? tocList.size() : 0;
     }
     public static class TocViewHolder extends RecyclerView.ViewHolder {
-        View tocColorBar;
+        View tocColourBar;
         TextView tocName;
         TextView tocStatusText;
         public TocViewHolder(@NonNull View itemView) {
             super(itemView);
-            tocColorBar = itemView.findViewById(R.id.tocColorBar);
+            tocColourBar = itemView.findViewById(R.id.tocColourBar);
             tocName = itemView.findViewById(R.id.tocName);
             tocStatusText = itemView.findViewById(R.id.tocStatusText);
         }

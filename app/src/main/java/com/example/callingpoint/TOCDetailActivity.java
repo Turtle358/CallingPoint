@@ -52,10 +52,16 @@ public class TOCDetailActivity extends AppCompatActivity {
             headerColorBar.setBackgroundColor(brandColor);
             tvCode.setBackgroundTintList(ColorStateList.valueOf(brandColor));
             String manager = TOCBrandHelper.getManagerForToc(tocName);
+            System.out.println(manager);
+
             if (manager.equalsIgnoreCase("tfl")) {
-                tocIcon.setImageResource(R.drawable.tfl);
+                tocIcon.setImageResource(R.drawable.ic_tfl);
+            } else if (manager.equalsIgnoreCase("national")){
+                tocIcon.setImageResource(R.drawable.ic_national_rail);
+            } else if (manager.equalsIgnoreCase("eurostar")) {
+                tocIcon.setImageResource(R.drawable.ic_eurostar);
             } else {
-                tocIcon.setImageResource(R.drawable.national_rail_logo_red);
+                tocIcon.setImageResource(R.drawable.ic_train);
             }
         }
 

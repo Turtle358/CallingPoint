@@ -5,6 +5,7 @@ import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -34,7 +35,16 @@ public class PinnedServiceAdapter extends RecyclerView.Adapter<PinnedServiceAdap
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         ServiceDetailsResponse service = liveServices.get(position);
         holder.tvOperator.setText(service.operator);
-        holder.tocColorBar.setBackgroundColor(TOCBrandHelper.getColorForToc(service.operator));
+        holder.tocColourBar.setBackgroundColor(TOCBrandHelper.getColorForToc(service.operator));
+        if (TOCBrandHelper.getManagerForToc(service.operator).equalsIgnoreCase("tfl")) {
+            holder.ivManagerLogo.setImageResource(R.drawable.ic_tfl);
+        } else if (TOCBrandHelper.getManagerForToc(service.operator).equalsIgnoreCase("national")){
+            holder.ivManagerLogo.setImageResource(R.drawable.ic_national_rail);
+        } else if (TOCBrandHelper.getManagerForToc(service.operator).equalsIgnoreCase("eurostar")) {
+            holder.ivManagerLogo.setImageResource(R.drawable.ic_eurostar);
+        } else {
+            holder.ivManagerLogo.setImageResource(R.drawable.ic_train);
+        }
         String origin = service.locationName;
         if (service.previousCallingPoints != null && !service.previousCallingPoints.isEmpty()
                 && service.previousCallingPoints.get(0).callingPoint != null) {
@@ -109,16 +119,18 @@ public class PinnedServiceAdapter extends RecyclerView.Adapter<PinnedServiceAdap
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
-        View tocColorBar;
+        View tocColourBar;
+        ImageView ivManagerLogo;
         TextView tvServiceRoute, tvOperator, tvNextStop, tvLiveStatus;
 
         public ViewHolder(View v) {
             super(v);
-            tocColorBar = v.findViewById(R.id.tocColorBar);
+            tocColourBar = v.findViewById(R.id.tocColourBar);
             tvServiceRoute = v.findViewById(R.id.tvServiceRoute);
             tvOperator = v.findViewById(R.id.tvOperator);
             tvNextStop = v.findViewById(R.id.tvNextStop);
             tvLiveStatus = v.findViewById(R.id.tvLiveStatus);
+            ivManagerLogo = v.findViewById(R.id.ivManagerLogo);
         }
     }
 }

@@ -76,7 +76,7 @@
             android:layout_width="16dp"
             android:layout_height="16dp"
             android:layout_marginEnd="6dp"
-            android:src="@drawable/national_rail_logo_red"
+            android:src="@drawable/ic_national_rail"
             android:tint="#111111" />
 
         <TextView

@@ -16,7 +16,7 @@
         android:orientation="horizontal">
 
         <View
-            android:id="@+id/tocColorBar"
+            android:id="@+id/tocColourBar"
             android:layout_width="8dp"
             android:layout_height="match_parent"
             android:background="#666666" />
@@ -53,10 +53,10 @@
                 android:gravity="center_vertical">
 
                 <ImageView
-                    android:layout_width="16dp"
-                    android:layout_height="16dp"
-                    android:src="@drawable/ic_train"
-                    app:tint="@color/text_primary" />
+                    android:id="@+id/ivManagerLogo"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:contentDescription="Operator Logo" />
 
                 <TextView
                     android:id="@+id/tvNextStop"
