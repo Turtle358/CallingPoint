@@ -37,21 +37,38 @@
                 app:cardCornerRadius="16dp"
                 app:cardElevation="2dp"
                 app:cardUseCompatPadding="true">
+
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:padding="20dp">
-                    <TextView
-                        android:id="@+id/tvHeaderDestination"
-                        android:layout_width="wrap_content"
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Loading destination..."
-                        android:textSize="26sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/text_primary"
-                        android:letterSpacing="-0.02"
-                        android:layout_marginBottom="12dp"/>
+                        android:orientation="horizontal"
+                        android:gravity="top"
+                        android:layout_marginBottom="12dp">
+
+                        <TextView
+                            android:id="@+id/tvHeaderDestination"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Loading destination..."
+                            android:textSize="26sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/text_primary"
+                            android:letterSpacing="-0.02"
+                            android:layout_marginEnd="8dp"/> <ImageButton
+                        android:id="@+id/btnPinService"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:src="@drawable/ic_bookmark_outline"
+                        app:tint="@color/text_primary" />
+                    </LinearLayout>
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -81,6 +98,7 @@
                             android:textStyle="bold"
                             android:textColor="@color/text_primary" />
                     </LinearLayout>
+
                     <TextView
                         android:id="@+id/tvHeaderOperator"
                         android:layout_width="wrap_content"

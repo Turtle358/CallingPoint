@@ -4,6 +4,9 @@ import com.google.gson.annotations.SerializedName;
 import java.util.List;
 
 public class ServiceDetailsResponse {
+
+    public String customServiceID;
+
     @SerializedName("locationName")
     public String locationName;
     @SerializedName("serviceType")

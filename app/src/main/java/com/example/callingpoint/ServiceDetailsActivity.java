@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -59,6 +60,17 @@ public class ServiceDetailsActivity extends AppCompatActivity {
             Toast.makeText(this, "Error: No Service ID provided", Toast.LENGTH_SHORT).show();
             finish();
         }
+        ImageButton btnPinService = findViewById(R.id.btnPinService);
+        PinnedDataManager pinnedManager = new PinnedDataManager(this);
+        boolean isPinned = pinnedManager.isServicePinned(serviceId);
+        btnPinService.setImageResource(isPinned ? R.drawable.ic_bookmark : R.drawable.ic_bookmark_outline);
+        btnPinService.setOnClickListener(v -> {
+            pinnedManager.toggleServicePin(serviceId);
+
+            boolean isNowPinned = pinnedManager.isServicePinned(serviceId);
+            btnPinService.setImageResource(isNowPinned ? R.drawable.ic_bookmark : R.drawable.ic_bookmark_outline);
+            Toast.makeText(this, isNowPinned ? "Train Pinned!" : "Pin Removed", Toast.LENGTH_SHORT).show();
+        });
     }
 
     private void fetchServiceDetails(String serviceId) {

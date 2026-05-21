@@ -30,7 +30,7 @@ public class MainActivity extends AppCompatActivity {
             int itemId = item.getItemId();
 
             if (itemId == R.id.nav_departures) {
-                selectedFragment = new DeparturesFragment();
+                selectedFragment = new LiveBoardFragment();
             } else if (itemId == R.id.nav_disruptions) {
                 selectedFragment = new DisruptionsFragment();
             } else if (itemId == R.id.nav_settings) {
@@ -48,11 +48,11 @@ public class MainActivity extends AppCompatActivity {
         if (savedInstanceState == null) {
             String navigateTo = getIntent().getStringExtra("NAVIGATE_TO");
 
-            if ("disruptions".equals(navigateTo)) {
+            if ("disruptions".equalsIgnoreCase(navigateTo)) {
                 bottomNav.setSelectedItemId(R.id.nav_disruptions);
             } else {
                 getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.fragment_container, new DeparturesFragment())
+                        .replace(R.id.fragment_container, new LiveBoardFragment())
                         .commit();
             }
         }
