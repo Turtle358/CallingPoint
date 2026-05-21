@@ -13,7 +13,7 @@
         android:theme="@style/Theme.callingpoint">
 
         <activity
-            android:name="io.github.turtle358.callingpoint.MainActivity"
+            android:name="io.github.turtle358.callingpoint.ui.activities.MainActivity"
             android:exported="true"
             android:screenOrientation="portrait">
             <intent-filter>
@@ -26,15 +26,15 @@
 <!--            android:name=".SettingsActivity"-->
 <!--            android:screenOrientation="portrait" />-->
 
-        <activity android:name="io.github.turtle358.callingpoint.ServiceDetailsActivity"
+        <activity android:name="io.github.turtle358.callingpoint.ui.activities.ServiceDetailsActivity"
             android:screenOrientation="portrait" />
 
         <activity
-            android:name="io.github.turtle358.callingpoint.TOCDetailActivity"
+            android:name="io.github.turtle358.callingpoint.ui.activities.TOCDetailActivity"
             android:screenOrientation="portrait" />
 
         <receiver
-            android:name="io.github.turtle358.callingpoint.AppWidgetProvider"
+            android:name="io.github.turtle358.callingpoint.widget.AppWidgetProvider"
             android:exported="false">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
