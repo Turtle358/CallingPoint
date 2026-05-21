@@ -1,21 +1,36 @@
 package io.github.turtle358.callingpoint.ui.activities;
 
+import android.Manifest;
+import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.content.res.Configuration;
+import android.os.Build;
 import android.os.Bundle;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
+import androidx.work.Constraints;
+import androidx.work.ExistingPeriodicWorkPolicy;
+import androidx.work.NetworkType;
+import androidx.work.PeriodicWorkRequest;
+import androidx.work.WorkManager;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.color.DynamicColors;
 
+import java.util.concurrent.TimeUnit;
+
+import io.github.turtle358.callingpoint.R;
 import io.github.turtle358.callingpoint.ui.fragments.DisruptionsFragment;
 import io.github.turtle358.callingpoint.ui.fragments.LiveBoardFragment;
-import io.github.turtle358.callingpoint.R;
 import io.github.turtle358.callingpoint.ui.fragments.SettingsFragment;
 import io.github.turtle358.callingpoint.utils.TOCBrandHelper;
+import io.github.turtle358.callingpoint.workers.TrainTrackerWorker;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -27,7 +42,11 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         TOCBrandHelper.init(this);
+
+        DynamicColors.applyToActivityIfAvailable(this);
+
         int currentNightMode = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
         boolean isDarkMode = currentNightMode == Configuration.UI_MODE_NIGHT_YES;
 
@@ -36,9 +55,30 @@ public class MainActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_main);
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.POST_NOTIFICATIONS}, 101);
+            }
+        }
+
+        Constraints constraints = new Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build();
+
+        PeriodicWorkRequest trackerRequest = new PeriodicWorkRequest.Builder(TrainTrackerWorker.class, 15, TimeUnit.MINUTES)
+                .setConstraints(constraints)
+                .build();
+
+
+
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+                "TrainTracker",
+                ExistingPeriodicWorkPolicy.KEEP,
+                trackerRequest
+        );
+
         BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
         FragmentManager fm = getSupportFragmentManager();
-
         bottomNav.setOnItemSelectedListener(item -> {
             int itemId = item.getItemId();
 
@@ -69,9 +109,12 @@ public class MainActivity extends AppCompatActivity {
 
             activeFragment = liveBoardFragment;
 
-            String navigateTo = getIntent().getStringExtra("NAVIGATE_TO");
-            if ("disruptions".equalsIgnoreCase(navigateTo)) {
-                bottomNav.setSelectedItemId(R.id.nav_disruptions);
+            Intent intent = getIntent();
+            if (intent != null) {
+                String navigateTo = intent.getStringExtra("NAVIGATE_TO");
+                if ("disruptions".equalsIgnoreCase(navigateTo)) {
+                    bottomNav.setSelectedItemId(R.id.nav_disruptions);
+                }
             }
         } else {
             liveBoardFragment = fm.findFragmentByTag("1");
