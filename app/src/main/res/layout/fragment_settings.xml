@@ -168,7 +168,7 @@
                         android:text="Save Credentials"
                         android:textSize="16sp"
                         android:textStyle="bold"
-                        android:backgroundTint="#0A56F1"
+                        android:backgroundTint="@color/brand_primary"
                         android:textColor="#FFFFFF"/>
                 </LinearLayout>
             </androidx.cardview.widget.CardView>

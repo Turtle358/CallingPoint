@@ -32,6 +32,26 @@ public class MainActivity extends AppCompatActivity {
 
         BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
         FragmentManager fm = getSupportFragmentManager();
+
+        bottomNav.setOnItemSelectedListener(item -> {
+            int itemId = item.getItemId();
+
+            if (itemId == R.id.nav_departures) {
+                fm.beginTransaction().hide(activeFragment).show(liveBoardFragment).commit();
+                activeFragment = liveBoardFragment;
+                return true;
+            } else if (itemId == R.id.nav_disruptions) {
+                fm.beginTransaction().hide(activeFragment).show(disruptionsFragment).commit();
+                activeFragment = disruptionsFragment;
+                return true;
+            } else if (itemId == R.id.nav_settings) {
+                fm.beginTransaction().hide(activeFragment).show(settingsFragment).commit();
+                activeFragment = settingsFragment;
+                return true;
+            }
+            return false;
+        });
+
         if (savedInstanceState == null) {
             liveBoardFragment = new LiveBoardFragment();
             disruptionsFragment = new DisruptionsFragment();
@@ -53,24 +73,5 @@ public class MainActivity extends AppCompatActivity {
             settingsFragment = fm.findFragmentByTag("3");
             activeFragment = liveBoardFragment;
         }
-
-        bottomNav.setOnItemSelectedListener(item -> {
-            int itemId = item.getItemId();
-
-            if (itemId == R.id.nav_departures) {
-                fm.beginTransaction().hide(activeFragment).show(liveBoardFragment).commit();
-                activeFragment = liveBoardFragment;
-                return true;
-            } else if (itemId == R.id.nav_disruptions) {
-                fm.beginTransaction().hide(activeFragment).show(disruptionsFragment).commit();
-                activeFragment = disruptionsFragment;
-                return true;
-            } else if (itemId == R.id.nav_settings) {
-                fm.beginTransaction().hide(activeFragment).show(settingsFragment).commit();
-                activeFragment = settingsFragment;
-                return true;
-            }
-            return false;
-        });
     }
 }

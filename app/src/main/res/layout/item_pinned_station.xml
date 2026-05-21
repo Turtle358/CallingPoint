@@ -22,7 +22,7 @@
             android:layout_width="48dp"
             android:layout_height="48dp"
             app:cardCornerRadius="24dp"
-            app:cardBackgroundColor="#2E2A74"
+            app:cardBackgroundColor="@color/brand_primary"
             app:cardElevation="0dp">
 
             <ImageView
