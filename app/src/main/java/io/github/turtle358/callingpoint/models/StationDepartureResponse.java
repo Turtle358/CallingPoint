@@ -23,14 +23,40 @@ public class StationDepartureResponse {
         @SerializedName("destination")
         public List<Location> destination;
 
+        @SerializedName("subsequentCallingPoints")
+        public List<CallingPointList> subsequentCallingPoints;
+
+        @SerializedName("previousCallingPoints")
+        public List<CallingPointList> previousCallingPoints;
 
         @SerializedName("serviceID")
         public String serviceID;
+    }
+
+    public static class CallingPointList {
+        @SerializedName("callingPoint")
+        public List<CallingPoint> callingPoint;
+    }
+
+    public static class CallingPoint {
+        @SerializedName("locationName")
+        public String locationName;
+
+        @SerializedName("st")
+        public String st;
+
+        @SerializedName("et")
+        public String et;
+
+        @SerializedName("at")
+        public String at;
     }
 
     public static class Location {
         @SerializedName("locationName")
         public String locationName;
 
+        @SerializedName("crs")
+        public String crs;
     }
 }

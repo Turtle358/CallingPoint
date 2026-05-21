@@ -81,6 +81,7 @@ public class MainActivity extends AppCompatActivity {
         FragmentManager fm = getSupportFragmentManager();
         bottomNav.setOnItemSelectedListener(item -> {
             int itemId = item.getItemId();
+            getSupportFragmentManager().popBackStack(null, FragmentManager.POP_BACK_STACK_INCLUSIVE);
 
             if (itemId == R.id.nav_departures) {
                 fm.beginTransaction().hide(activeFragment).show(liveBoardFragment).commit();

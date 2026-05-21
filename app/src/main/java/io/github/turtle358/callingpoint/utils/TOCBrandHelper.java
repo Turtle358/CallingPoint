@@ -10,6 +10,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
+import io.github.turtle358.callingpoint.R;
 import io.github.turtle358.callingpoint.models.Toc;
 
 public class TOCBrandHelper {
@@ -93,5 +94,17 @@ public class TOCBrandHelper {
             }
         }
         return "other";
+    }
+
+    public static int getIconForToc(String operatorName) {
+        if (getManagerForToc(operatorName).equalsIgnoreCase("tfl")) {
+            return R.drawable.ic_tfl;
+        } else if (getManagerForToc(operatorName).equalsIgnoreCase("national")){
+            return R.drawable.ic_national_rail;
+        } else if (getManagerForToc(operatorName).equalsIgnoreCase("eurostar")) {
+            return R.drawable.ic_eurostar;
+        } else {
+            return R.drawable.ic_train;
+        }
     }
 }

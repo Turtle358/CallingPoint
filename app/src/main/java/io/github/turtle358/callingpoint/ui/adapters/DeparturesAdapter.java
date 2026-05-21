@@ -5,6 +5,7 @@ import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.content.Intent;
 import androidx.annotation.NonNull;
@@ -40,17 +41,25 @@ public class DeparturesAdapter extends RecyclerView.Adapter<DeparturesAdapter.Vi
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         StationDepartureResponse.TrainService service = services.get(position);
+
         int brandColour = TOCBrandHelper.getColorForToc(service.operatorName);
+        holder.tocColourBar.setBackgroundColor(brandColour);
+        holder.ivManagerLogo.setImageResource(TOCBrandHelper.getIconForToc(service.operatorName));
 
         holder.tvSchTime.setText(service.std);
         holder.tvOperator.setText(service.operatorName);
-        holder.tocColourBar.setBackgroundColor(brandColour);
-        holder.tvPlatform.setText(service.platform != null ? "Plat " + service.platform : "---");
 
         if (service.destination != null && !service.destination.isEmpty()) {
             holder.tvDestination.setText(service.destination.get(0).locationName);
         } else {
             holder.tvDestination.setText("Unknown");
+        }
+
+
+        if (service.platform != null && !service.platform.isEmpty()) {
+            holder.tvPlatform.setText("Platform " + service.platform);
+        } else {
+            holder.tvPlatform.setText("Platform TBC");
         }
 
         holder.tvLiveStatus.setText(service.etd);
@@ -77,6 +86,8 @@ public class DeparturesAdapter extends RecyclerView.Adapter<DeparturesAdapter.Vi
     public static class ViewHolder extends RecyclerView.ViewHolder {
         TextView tvSchTime, tvDestination, tvOperator, tvLiveStatus, tvPlatform;
         View tocColourBar;
+        ImageView ivManagerLogo;
+
         public ViewHolder(View v) {
             super(v);
             tvSchTime = v.findViewById(R.id.tvSchTime);
@@ -85,6 +96,7 @@ public class DeparturesAdapter extends RecyclerView.Adapter<DeparturesAdapter.Vi
             tvLiveStatus = v.findViewById(R.id.tvLiveStatus);
             tvPlatform = v.findViewById(R.id.tvPlatform);
             tocColourBar = v.findViewById(R.id.tocColourBar);
+            ivManagerLogo = v.findViewById(R.id.ivManagerLogo);
         }
     }
 }
