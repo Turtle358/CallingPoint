@@ -9,6 +9,7 @@ import androidx.work.WorkerParameters;
 
 import java.util.List;
 
+import io.github.turtle358.callingpoint.R;
 import io.github.turtle358.callingpoint.api.APIClient;
 import io.github.turtle358.callingpoint.api.NationalRailAPI;
 import io.github.turtle358.callingpoint.data.PinnedDataManager;
@@ -50,11 +51,12 @@ public class TrainTrackerWorker extends Worker {
                     ServiceDetailsResponse data = response.body();
 
                     String status = data.etd;
+                    String scheduledTime = data.std;
 
                     if (status != null && !status.equalsIgnoreCase("On time")) {
                         Log.d("TrainTracker", "Train Delayed or Cancelled! " + status);
 
-                        sendNotification(data.operator, data.locationName, status);
+                        sendNotification(data.operator, data.locationName, status, scheduledTime);
                     }
                 }
 
@@ -67,7 +69,7 @@ public class TrainTrackerWorker extends Worker {
         return Result.success();
     }
 
-    private void sendNotification(String operator, String location, String status) {
+    private void sendNotification(String operator, String location, String status, String scheduledTime) {
         android.content.Intent intent = new android.content.Intent(getApplicationContext(), io.github.turtle358.callingpoint.ui.activities.MainActivity.class);
         intent.setFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK | android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK);
 
@@ -77,11 +79,20 @@ public class TrainTrackerWorker extends Worker {
                 intent,
                 android.app.PendingIntent.FLAG_IMMUTABLE
         );
-
+        String title = "The" + scheduledTime + " " + operator + "service";
+        String delayedTime = calculateDelayString(scheduledTime, status);
+        String message;
+        if (status.equalsIgnoreCase("cancelled") || status.equalsIgnoreCase("canceled")) {
+            message = "has been cancelled.";
+        } else if (!delayedTime.isEmpty()) {
+            message = "is delayed by " + delayedTime + " (expected at " + status + ").";
+        } else {
+            message = "is currently showing as " + status + ".";
+        }
         androidx.core.app.NotificationCompat.Builder builder = new androidx.core.app.NotificationCompat.Builder(getApplicationContext(), io.github.turtle358.callingpoint.CallingPointApp.CHANNEL_ID)
-                .setSmallIcon(io.github.turtle358.callingpoint.R.drawable.ic_alert_diamond)
-                .setContentTitle(operator + " Update")
-                .setContentText("Your train at " + location + " is " + status)
+                .setSmallIcon(R.drawable.ic_app_outline)
+                .setContentTitle(title)
+                .setContentText(message)
                 .setPriority(androidx.core.app.NotificationCompat.PRIORITY_HIGH)
                 .setContentIntent(pendingIntent)
                 .setAutoCancel(true);
@@ -91,5 +102,40 @@ public class TrainTrackerWorker extends Worker {
         if (androidx.core.content.ContextCompat.checkSelfPermission(getApplicationContext(), android.Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
             notificationManager.notify((int) System.currentTimeMillis(), builder.build());
         }
+    }
+
+    private String calculateDelayString(String scheduledTime, String estimatedTime) {
+        if (estimatedTime == null || !estimatedTime.matches("\\d{2}:\\d{2}")) {
+            return "";
+        }
+        try {
+            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("HH:mm", java.util.Locale.UK);
+            java.util.Date std = sdf.parse(scheduledTime);
+            java.util.Date etd = sdf.parse(estimatedTime);
+
+            if (std != null && etd != null) {
+                long diffMs = etd.getTime() - std.getTime();
+                long diffMins = diffMs / (60 * 1000);
+                if (diffMins < -720) {
+                    diffMins += 24 * 60;
+                } else if (diffMins < 0) {
+                    return "";
+                }
+
+                if (diffMins == 0) return "";
+
+                long hours = diffMins / 60;
+                long mins = diffMins % 60;
+
+                if (hours > 0) {
+                    return hours + " hr " + mins + " mins";
+                } else {
+                    return mins + " mins";
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "";
     }
 }
