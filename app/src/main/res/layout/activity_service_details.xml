@@ -6,13 +6,11 @@
     android:background="@color/bg_screen"
     android:orientation="vertical">
 
-    <LinearLayout
+    <View
         android:id="@+id/topHeaderBar"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:fitsSystemWindows="true">
-    </LinearLayout>
+        android:layout_height="48dp"
+        android:background="@color/bg_card" />
 
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"

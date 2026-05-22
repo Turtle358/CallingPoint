@@ -1,4 +1,4 @@
-package io.github.turtle358.callingpoint.workers; // Adjust if you put it in the 'data' folder
+package io.github.turtle358.callingpoint.workers;
 
 import android.content.Context;
 import android.util.Log;
@@ -14,6 +14,7 @@ import io.github.turtle358.callingpoint.api.APIClient;
 import io.github.turtle358.callingpoint.api.NationalRailAPI;
 import io.github.turtle358.callingpoint.data.PinnedDataManager;
 import io.github.turtle358.callingpoint.models.ServiceDetailsResponse;
+import io.github.turtle358.callingpoint.utils.TOCBrandHelper;
 import retrofit2.Call;
 import retrofit2.Response;
 
@@ -52,11 +53,17 @@ public class TrainTrackerWorker extends Worker {
 
                     String status = data.etd;
                     String scheduledTime = data.std;
+                    String platform = data.platform;
 
                     if (status != null && !status.equalsIgnoreCase("On time")) {
-                        Log.d("TrainTracker", "Train Delayed or Cancelled! " + status);
+                        android.content.SharedPreferences prefs = context.getSharedPreferences("NotifiedTrains", Context.MODE_PRIVATE);
+                        String lastKnownStatus = prefs.getString(serviceId, "");
+                        if (!status.equalsIgnoreCase(lastKnownStatus)) {
+                            Log.d("TrainTracker", "New Delay or Change Detected! " + status);
 
-                        sendNotification(data.operator, data.locationName, status, scheduledTime);
+                            sendNotification(data.operator, data.locationName, status, scheduledTime, platform, serviceId);
+                            prefs.edit().putString(serviceId, status).apply();
+                        }
                     }
                 }
 
@@ -69,30 +76,50 @@ public class TrainTrackerWorker extends Worker {
         return Result.success();
     }
 
-    private void sendNotification(String operator, String location, String status, String scheduledTime) {
-        android.content.Intent intent = new android.content.Intent(getApplicationContext(), io.github.turtle358.callingpoint.ui.activities.MainActivity.class);
-        intent.setFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK | android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK);
+    private void sendNotification(String operator, String location, String status, String scheduledTime, String platform, String serviceID) {
+        android.content.Intent mainIntent = new android.content.Intent(getApplicationContext(), io.github.turtle358.callingpoint.ui.activities.MainActivity.class);
+        android.content.Intent detailsIntent = new android.content.Intent(getApplicationContext(), io.github.turtle358.callingpoint.ui.activities.ServiceDetailsActivity.class);
+        detailsIntent.putExtra("SERVICE_ID", serviceID);
 
-        android.app.PendingIntent pendingIntent = android.app.PendingIntent.getActivity(
-                getApplicationContext(),
-                0,
-                intent,
-                android.app.PendingIntent.FLAG_IMMUTABLE
+        android.app.TaskStackBuilder stackBuilder = android.app.TaskStackBuilder.create(getApplicationContext());
+        stackBuilder.addNextIntent(mainIntent);
+        stackBuilder.addNextIntent(detailsIntent);
+
+        android.app.PendingIntent pendingIntent = stackBuilder.getPendingIntent(
+                serviceID.hashCode(),
+                android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE
         );
-        String title = "The " + scheduledTime + " " + operator + " service";
+
+        android.widget.RemoteViews customView = new android.widget.RemoteViews(getApplicationContext().getPackageName(), R.layout.notification_custom_train);
+
+        customView.setTextViewText(R.id.notifTitle, scheduledTime + " to " + location);
+        customView.setTextViewText(R.id.notifOperator, operator);
+        customView.setTextViewText(R.id.notifPlatform, (platform != null && !platform.isEmpty()) ? "Plat " + platform : "");
+
+        int brandColour = TOCBrandHelper.getColorForToc(operator);
+
+        customView.setInt(R.id.notifTocBar, "setBackgroundColor", brandColour);
+
+        customView.setImageViewResource(R.id.notifLogo, TOCBrandHelper.getIconForToc(operator));
+
         String delayedTime = calculateDelayString(scheduledTime, status);
-        String message;
+
         if (status.equalsIgnoreCase("cancelled") || status.equalsIgnoreCase("canceled")) {
-            message = "has been cancelled.";
+            customView.setTextViewText(R.id.notifStatus, "Cancelled");
+            customView.setTextColor(R.id.notifStatus, android.graphics.Color.parseColor("#DE350B"));
         } else if (!delayedTime.isEmpty()) {
-            message = "Is delayed by " + delayedTime + " (expected at " + status + ").";
+            customView.setTextViewText(R.id.notifStatus, delayedTime + " late");
+            customView.setTextColor(R.id.notifStatus, android.graphics.Color.parseColor("#FF8C00"));
         } else {
-            message = "Is currently showing as " + status + ".";
+            customView.setTextViewText(R.id.notifStatus, "On time");
+            customView.setTextColor(R.id.notifStatus, android.graphics.Color.parseColor("#00875A"));
         }
+
         androidx.core.app.NotificationCompat.Builder builder = new androidx.core.app.NotificationCompat.Builder(getApplicationContext(), io.github.turtle358.callingpoint.CallingPointApp.CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_app_outline)
-                .setContentTitle(title)
-                .setContentText(message)
+                .setColor(brandColour)
+                .setStyle(new androidx.core.app.NotificationCompat.DecoratedCustomViewStyle())
+                .setCustomContentView(customView)
                 .setPriority(androidx.core.app.NotificationCompat.PRIORITY_HIGH)
                 .setContentIntent(pendingIntent)
                 .setAutoCancel(true);

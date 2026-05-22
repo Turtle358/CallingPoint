@@ -101,8 +101,6 @@ public class ServiceDetailsActivity extends AppCompatActivity {
 
                     String operatorName = data.operator != null ? data.operator : "Unknown";
                     int brandColor = TOCBrandHelper.getColorForToc(operatorName);
-
-                    // 1. Color the Header Bar (It stretches behind the battery automatically via XML)
                     if (topHeaderBar != null) {
                         topHeaderBar.setBackgroundColor(brandColor);
                     }
