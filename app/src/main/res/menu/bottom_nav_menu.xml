@@ -7,6 +7,11 @@
         android:title="Departure Board" />
 
     <item
+        android:id="@+id/nav_journey"
+        android:icon="@android:drawable/ic_dialog_map"
+        android:title="Journey Planner" />
+
+    <item
         android:id="@+id/nav_disruptions"
         android:icon="@drawable/ic_alert_diamond"
         android:title="Disruptions" />

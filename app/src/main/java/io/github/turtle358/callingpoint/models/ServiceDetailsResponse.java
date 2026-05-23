@@ -10,6 +10,9 @@ public class ServiceDetailsResponse {
     @SerializedName("locationName")
     public String locationName;
 
+    @SerializedName("crs")
+    public String crs;
+
     @SerializedName("std")
     public String std;
 
@@ -21,6 +24,12 @@ public class ServiceDetailsResponse {
 
     @SerializedName("atd")
     public String atd;
+
+    @SerializedName("sta")
+    public String sta;
+
+    @SerializedName("eta")
+    public String eta;
 
     @SerializedName("platform")
     public String platform;
@@ -46,6 +55,8 @@ public class ServiceDetailsResponse {
         @SerializedName("locationName")
         public String locationName;
 
+        @SerializedName("crs")
+        public String crs;
 
         @SerializedName("st")
         public String scheduledTime;

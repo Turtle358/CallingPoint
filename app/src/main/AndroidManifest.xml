@@ -31,6 +31,10 @@
             android:name="io.github.turtle358.callingpoint.ui.activities.TOCDetailActivity"
             android:screenOrientation="portrait" />
 
+        <activity
+            android:name="io.github.turtle358.callingpoint.ui.activities.JourneyDetailsActivity"
+            android:screenOrientation="portrait" />
+
         <receiver
             android:name="io.github.turtle358.callingpoint.widget.AppWidgetProvider"
             android:exported="false">

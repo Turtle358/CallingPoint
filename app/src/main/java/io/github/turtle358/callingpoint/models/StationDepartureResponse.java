@@ -42,6 +42,9 @@ public class StationDepartureResponse {
         @SerializedName("locationName")
         public String locationName;
 
+        @SerializedName("crs")
+        public String crs;
+
         @SerializedName("st")
         public String st;
 

@@ -100,9 +100,9 @@ public class ServiceDetailsActivity extends AppCompatActivity {
                     System.out.println(response.body());
 
                     String operatorName = data.operator != null ? data.operator : "Unknown";
-                    int brandColor = TOCBrandHelper.getColorForToc(operatorName);
+                    int brandColour = TOCBrandHelper.getColorForToc(operatorName);
                     if (topHeaderBar != null) {
-                        topHeaderBar.setBackgroundColor(brandColor);
+                        topHeaderBar.setBackgroundColor(brandColour);
                     }
 
                     String destination = "Unknown Destination";
@@ -163,7 +163,7 @@ public class ServiceDetailsActivity extends AppCompatActivity {
                         allPoints.addAll(data.subsequentCallingPoints.get(0).callingPoint);
                     }
 
-                    TimelineAdapter adapter = new TimelineAdapter(allPoints, brandColor);
+                    TimelineAdapter adapter = new TimelineAdapter(allPoints, brandColour);
                     recyclerTimeline.setAdapter(adapter);
 
                 } else {

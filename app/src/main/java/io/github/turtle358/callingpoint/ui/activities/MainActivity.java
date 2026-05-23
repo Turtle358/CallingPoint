@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 
 import io.github.turtle358.callingpoint.R;
 import io.github.turtle358.callingpoint.ui.fragments.DisruptionsFragment;
+import io.github.turtle358.callingpoint.ui.fragments.JourneyPlannerFragment;
 import io.github.turtle358.callingpoint.ui.fragments.LiveBoardFragment;
 import io.github.turtle358.callingpoint.ui.fragments.SettingsFragment;
 import io.github.turtle358.callingpoint.utils.TOCBrandHelper;
@@ -35,6 +36,7 @@ import io.github.turtle358.callingpoint.workers.TrainTrackerWorker;
 public class MainActivity extends AppCompatActivity {
 
     private Fragment liveBoardFragment;
+    private Fragment journeyPlannerFragment;
     private Fragment disruptionsFragment;
     private Fragment settingsFragment;
     private Fragment activeFragment;
@@ -44,7 +46,6 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 
         TOCBrandHelper.init(this);
-
         DynamicColors.applyToActivityIfAvailable(this);
 
         int currentNightMode = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
@@ -69,8 +70,6 @@ public class MainActivity extends AppCompatActivity {
                 .setConstraints(constraints)
                 .build();
 
-
-
         WorkManager.getInstance(this).enqueueUniquePeriodicWork(
                 "TrainTracker",
                 ExistingPeriodicWorkPolicy.KEEP,
@@ -79,6 +78,7 @@ public class MainActivity extends AppCompatActivity {
 
         BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
         FragmentManager fm = getSupportFragmentManager();
+
         bottomNav.setOnItemSelectedListener(item -> {
             int itemId = item.getItemId();
             getSupportFragmentManager().popBackStack(null, FragmentManager.POP_BACK_STACK_INCLUSIVE);
@@ -86,6 +86,10 @@ public class MainActivity extends AppCompatActivity {
             if (itemId == R.id.nav_departures) {
                 fm.beginTransaction().hide(activeFragment).show(liveBoardFragment).commit();
                 activeFragment = liveBoardFragment;
+                return true;
+            } else if (itemId == R.id.nav_journey) {
+                fm.beginTransaction().hide(activeFragment).show(journeyPlannerFragment).commit();
+                activeFragment = journeyPlannerFragment;
                 return true;
             } else if (itemId == R.id.nav_disruptions) {
                 fm.beginTransaction().hide(activeFragment).show(disruptionsFragment).commit();
@@ -101,11 +105,13 @@ public class MainActivity extends AppCompatActivity {
 
         if (savedInstanceState == null) {
             liveBoardFragment = new LiveBoardFragment();
+            journeyPlannerFragment = new JourneyPlannerFragment();
             disruptionsFragment = new DisruptionsFragment();
             settingsFragment = new SettingsFragment();
 
-            fm.beginTransaction().add(R.id.fragment_container, settingsFragment, "3").hide(settingsFragment).commit();
-            fm.beginTransaction().add(R.id.fragment_container, disruptionsFragment, "2").hide(disruptionsFragment).commit();
+            fm.beginTransaction().add(R.id.fragment_container, settingsFragment, "4").hide(settingsFragment).commit();
+            fm.beginTransaction().add(R.id.fragment_container, disruptionsFragment, "3").hide(disruptionsFragment).commit();
+            fm.beginTransaction().add(R.id.fragment_container, journeyPlannerFragment, "2").hide(journeyPlannerFragment).commit();
             fm.beginTransaction().add(R.id.fragment_container, liveBoardFragment, "1").commit();
 
             activeFragment = liveBoardFragment;
@@ -119,8 +125,9 @@ public class MainActivity extends AppCompatActivity {
             }
         } else {
             liveBoardFragment = fm.findFragmentByTag("1");
-            disruptionsFragment = fm.findFragmentByTag("2");
-            settingsFragment = fm.findFragmentByTag("3");
+            journeyPlannerFragment = fm.findFragmentByTag("2");
+            disruptionsFragment = fm.findFragmentByTag("3");
+            settingsFragment = fm.findFragmentByTag("4");
             activeFragment = liveBoardFragment;
         }
     }
