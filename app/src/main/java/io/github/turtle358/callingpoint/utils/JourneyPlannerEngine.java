@@ -24,6 +24,7 @@ import retrofit2.Response;
 public class JourneyPlannerEngine {
 
     private static final String TAG = "JourneyPlanner";
+    private static Map<String, String> crsToNameMap = null;
 
     public interface JourneyCallback {
         void onJourneysFound(List<JourneyOption> journeys);
@@ -56,9 +57,6 @@ public class JourneyPlannerEngine {
             detailCache = new HashMap<>();
             List<JourneyOption> foundJourneys = new ArrayList<>();
 
-            Log.d(TAG, "===================================================");
-            Log.d(TAG, "STARTING DEEP SEARCH: " + originCrs + " -> " + destCrs);
-            Log.d(TAG, "===================================================");
 
             try {
                 mainHandler.post(() -> callback.onStatusUpdate("Checking for direct trains..."));
@@ -79,7 +77,6 @@ public class JourneyPlannerEngine {
                     findTwoChange(originCrs, destCrs, foundJourneys);
                 }
 
-                Log.d(TAG, "SEARCH COMPLETE. Found " + foundJourneys.size() + " total routes.");
                 mainHandler.post(() -> callback.onJourneysFound(foundJourneys));
 
             } catch (Exception e) {
@@ -98,11 +95,10 @@ public class JourneyPlannerEngine {
 
                 String destName = (service.destination != null && !service.destination.isEmpty()) ? service.destination.get(0).locationName : destCrs;
 
-                // EXTRACT REAL STOPS
                 List<JourneyLeg.Stop> intermediateStops = extractIntermediateStops(service.serviceID, originCrs, destCrs);
 
                 List<JourneyLeg> legs = new ArrayList<>();
-                legs.add(new JourneyLeg(originCrs, originCrs, destCrs, destName, destName, service.std, arrTime, service.operatorName, service.serviceID, "TRAIN", intermediateStops));
+                legs.add(new JourneyLeg(originCrs, getStationName(originCrs), destCrs, getStationName(destCrs), destName, service.std, arrTime, service.operatorName, service.serviceID, "TRAIN", intermediateStops));
                 results.add(new JourneyOption(legs));
 
                 graphManager.addConnection(originCrs, destCrs);
@@ -139,13 +135,12 @@ public class JourneyPlannerEngine {
                             String t1Dest = (t1.destination != null && !t1.destination.isEmpty()) ? t1.destination.get(0).locationName : hubCrs;
                             String t2Dest = (t2.destination != null && !t2.destination.isEmpty()) ? t2.destination.get(0).locationName : destCrs;
 
-                            // EXTRACT REAL STOPS
                             List<JourneyLeg.Stop> stops1 = extractIntermediateStops(t1.serviceID, originCrs, hubCrs);
                             List<JourneyLeg.Stop> stops2 = extractIntermediateStops(t2.serviceID, hubCrs, destCrs);
 
                             List<JourneyLeg> legs = new ArrayList<>();
-                            legs.add(new JourneyLeg(originCrs, originCrs, hubCrs, hubCrs, t1Dest, t1.std, t1ArrTime, t1.operatorName, t1.serviceID, "TRAIN", stops1));
-                            legs.add(new JourneyLeg(hubCrs, hubCrs, destCrs, destCrs, t2Dest, t2.std, t2ArrTime, t2.operatorName, t2.serviceID, "TRAIN", stops2));
+                            legs.add(new JourneyLeg(originCrs, getStationName(originCrs), hubCrs, getStationName(hubCrs), t1Dest, t1.std, t1ArrTime, t1.operatorName, t1.serviceID, "TRAIN", stops1));
+                            legs.add(new JourneyLeg(hubCrs, getStationName(hubCrs), destCrs, getStationName(destCrs), t2Dest, t2.std, t2ArrTime, t2.operatorName, t2.serviceID, "TRAIN", stops2));
                             results.add(new JourneyOption(legs));
 
                             graphManager.addConnection(originCrs, hubCrs);
@@ -202,15 +197,14 @@ public class JourneyPlannerEngine {
                                     String t2Dest = (t2.destination != null && !t2.destination.isEmpty()) ? t2.destination.get(0).locationName : hub2;
                                     String t3Dest = (t3.destination != null && !t3.destination.isEmpty()) ? t3.destination.get(0).locationName : destCrs;
 
-                                    // EXTRACT REAL STOPS
                                     List<JourneyLeg.Stop> stops1 = extractIntermediateStops(t1.serviceID, originCrs, hub1);
                                     List<JourneyLeg.Stop> stops2 = extractIntermediateStops(t2.serviceID, hub1, hub2);
                                     List<JourneyLeg.Stop> stops3 = extractIntermediateStops(t3.serviceID, hub2, destCrs);
 
                                     List<JourneyLeg> legs = new ArrayList<>();
-                                    legs.add(new JourneyLeg(originCrs, originCrs, hub1, hub1, t1Dest, t1.std, t1ArrTime, t1.operatorName, t1.serviceID, "TRAIN", stops1));
-                                    legs.add(new JourneyLeg(hub1, hub1, hub2, hub2, t2Dest, t2.std, t2ArrTime, t2.operatorName, t2.serviceID, "TRAIN", stops2));
-                                    legs.add(new JourneyLeg(hub2, hub2, destCrs, destCrs, t3Dest, t3.std, t3ArrTime, t3.operatorName, t3.serviceID, "TRAIN", stops3));
+                                    legs.add(new JourneyLeg(originCrs, getStationName(originCrs), hub1, getStationName(hub1), t1Dest, t1.std, t1ArrTime, t1.operatorName, t1.serviceID, "TRAIN", stops1));
+                                    legs.add(new JourneyLeg(hub1, getStationName(hub1), hub2, getStationName(hub2), t2Dest, t2.std, t2ArrTime, t2.operatorName, t2.serviceID, "TRAIN", stops2));
+                                    legs.add(new JourneyLeg(hub2, getStationName(hub2), destCrs, getStationName(destCrs), t3Dest, t3.std, t3ArrTime, t3.operatorName, t3.serviceID, "TRAIN", stops3));
 
                                     results.add(new JourneyOption(legs));
 
@@ -266,14 +260,13 @@ public class JourneyPlannerEngine {
                             String t1TrainDest = (t1.destination != null && !t1.destination.isEmpty()) ? t1.destination.get(0).locationName : terminal1;
                             String t2TrainDest = (t2.destination != null && !t2.destination.isEmpty()) ? t2.destination.get(0).locationName : destCrs;
 
-                            // EXTRACT REAL STOPS
                             List<JourneyLeg.Stop> stops1 = extractIntermediateStops(t1.serviceID, originCrs, terminal1);
                             List<JourneyLeg.Stop> stops2 = extractIntermediateStops(t2.serviceID, terminal2, destCrs);
 
                             List<JourneyLeg> legs = new ArrayList<>();
-                            legs.add(new JourneyLeg(originCrs, originCrs, terminal1, terminal1, t1TrainDest, t1.std, t1ArrTime, t1.operatorName, t1.serviceID, "TRAIN", stops1));
-                            legs.add(new JourneyLeg(terminal1, terminal1, terminal2, terminal2, terminal2, t1ArrTime, arrivedAtTerm2Time, "London Underground", "TUBE", "TUBE/WALK", new ArrayList<>()));
-                            legs.add(new JourneyLeg(terminal2, terminal2, destCrs, destCrs, t2TrainDest, t2.std, t2ArrTime, t2.operatorName, t2.serviceID, "TRAIN", stops2));
+                            legs.add(new JourneyLeg(originCrs, getStationName(originCrs), terminal1, getStationName(terminal1), t1TrainDest, t1.std, t1ArrTime, t1.operatorName, t1.serviceID, "TRAIN", stops1));
+                            legs.add(new JourneyLeg(terminal1, getStationName(terminal1), terminal2, getStationName(terminal2), getStationName(terminal2), t1ArrTime, arrivedAtTerm2Time, "London Underground", "TUBE", "TUBE/WALK", new ArrayList<>()));
+                            legs.add(new JourneyLeg(terminal2, getStationName(terminal2), destCrs, getStationName(destCrs), t2TrainDest, t2.std, t2ArrTime, t2.operatorName, t2.serviceID, "TRAIN", stops2));
 
                             results.add(new JourneyOption(legs));
                             if (results.size() >= 10) return;
@@ -284,10 +277,6 @@ public class JourneyPlannerEngine {
             }
         }
     }
-
-    // =================================================================================
-    // SMART CACHED API CALLS & DATA EXTRACTION
-    // =================================================================================
 
     private StationDepartureResponse getBoard(String crs, int rows, String filter) {
         String cacheKey = crs + "_" + rows + "_" + (filter != null ? filter : "ALL");
@@ -333,16 +322,11 @@ public class JourneyPlannerEngine {
         return null;
     }
 
-    /**
-     * Reconstructs the full timeline from cache and plucks out only the stations
-     * physically located between the 'fromCrs' and 'toCrs'.
-     */
     private List<JourneyLeg.Stop> extractIntermediateStops(String serviceId, String fromCrs, String toCrs) {
         List<JourneyLeg.Stop> stops = new ArrayList<>();
         ServiceDetailsResponse details = detailCache.get(serviceId);
         if (details == null) return stops;
 
-        // Flatten the whole train route into one list
         List<ServiceDetailsResponse.TimelinePoint> allPoints = new ArrayList<>();
 
         if (details.previousCallingPoints != null && !details.previousCallingPoints.isEmpty()) {
@@ -359,14 +343,13 @@ public class JourneyPlannerEngine {
             allPoints.addAll(details.subsequentCallingPoints.get(0).callingPoint);
         }
 
-        // Iterate and pluck out what we need
         boolean isRecording = false;
         for (ServiceDetailsResponse.TimelinePoint cp : allPoints) {
             String cpCrs = cp.crs != null ? cp.crs : StationHelper.getCrsFromName(cp.locationName);
             if (cpCrs == null) continue;
 
             if (cpCrs.equalsIgnoreCase(toCrs)) {
-                break; // We've reached the destination, stop recording.
+                break;
             }
 
             if (isRecording) {
@@ -376,16 +359,12 @@ public class JourneyPlannerEngine {
             }
 
             if (cpCrs.equalsIgnoreCase(fromCrs)) {
-                isRecording = true; // Start recording on the NEXT station after departure
+                isRecording = true;
             }
         }
 
         return stops;
     }
-
-    // =================================================================================
-    // HELPERS
-    // =================================================================================
 
     private List<String> getPrioritizedHubs(List<StationDepartureResponse.TrainService> services, String origin) {
         List<String> prioritizedHubs = new ArrayList<>();
@@ -439,5 +418,26 @@ public class JourneyPlannerEngine {
 
     public void shutdown() {
         executor.shutdown();
+    }
+
+    private String getStationName(String crs) {
+        if (crs == null) return "";
+        String upperCrs = crs.toUpperCase();
+
+        if (crsToNameMap == null) {
+            crsToNameMap = new HashMap<>();
+
+
+            List<String> allNames = StationHelper.getStationNames();
+            if (allNames != null) {
+                for (String name : allNames) {
+                    String code = StationHelper.getCrsFromName(name);
+                    if (code != null) {
+                        crsToNameMap.putIfAbsent(code.toUpperCase(), name);
+                    }
+                }
+            }
+        }
+        return crsToNameMap.getOrDefault(upperCrs, upperCrs);
     }
 }
