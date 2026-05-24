@@ -93,11 +93,11 @@ public class JourneyPlannerEngine {
                 if (arrTime == null) arrTime = "00:00";
 
                 String destName = (service.destination != null && !service.destination.isEmpty()) ? service.destination.get(0).locationName : destCrs;
-
                 List<JourneyLeg.Stop> intermediateStops = extractIntermediateStops(service.serviceID, originCrs, destCrs);
 
                 List<JourneyLeg> legs = new ArrayList<>();
-                legs.add(new JourneyLeg(originCrs, getStationName(originCrs), destCrs, getStationName(destCrs), destName, service.std, arrTime, service.operatorName, service.serviceID, "TRAIN", intermediateStops));
+                // UPDATED CONSTRUCTOR
+                legs.add(new JourneyLeg(originCrs, getStationName(originCrs), destCrs, getStationName(destCrs), destName, service.std, arrTime, service.operatorName, service.serviceID, "TRAIN", intermediateStops, getLiveLocationStatus(service.serviceID)));
                 results.add(new JourneyOption(legs));
 
                 graphManager.addConnection(originCrs, destCrs);
@@ -138,8 +138,9 @@ public class JourneyPlannerEngine {
                             List<JourneyLeg.Stop> stops2 = extractIntermediateStops(t2.serviceID, hubCrs, destCrs);
 
                             List<JourneyLeg> legs = new ArrayList<>();
-                            legs.add(new JourneyLeg(originCrs, getStationName(originCrs), hubCrs, getStationName(hubCrs), t1Dest, t1.std, t1ArrTime, t1.operatorName, t1.serviceID, "TRAIN", stops1));
-                            legs.add(new JourneyLeg(hubCrs, getStationName(hubCrs), destCrs, getStationName(destCrs), t2Dest, t2.std, t2ArrTime, t2.operatorName, t2.serviceID, "TRAIN", stops2));
+                            // UPDATED CONSTRUCTORS
+                            legs.add(new JourneyLeg(originCrs, getStationName(originCrs), hubCrs, getStationName(hubCrs), t1Dest, t1.std, t1ArrTime, t1.operatorName, t1.serviceID, "TRAIN", stops1, getLiveLocationStatus(t1.serviceID)));
+                            legs.add(new JourneyLeg(hubCrs, getStationName(hubCrs), destCrs, getStationName(destCrs), t2Dest, t2.std, t2ArrTime, t2.operatorName, t2.serviceID, "TRAIN", stops2, getLiveLocationStatus(t2.serviceID)));
                             results.add(new JourneyOption(legs));
 
                             graphManager.addConnection(originCrs, hubCrs);
@@ -201,9 +202,10 @@ public class JourneyPlannerEngine {
                                     List<JourneyLeg.Stop> stops3 = extractIntermediateStops(t3.serviceID, hub2, destCrs);
 
                                     List<JourneyLeg> legs = new ArrayList<>();
-                                    legs.add(new JourneyLeg(originCrs, getStationName(originCrs), hub1, getStationName(hub1), t1Dest, t1.std, t1ArrTime, t1.operatorName, t1.serviceID, "TRAIN", stops1));
-                                    legs.add(new JourneyLeg(hub1, getStationName(hub1), hub2, getStationName(hub2), t2Dest, t2.std, t2ArrTime, t2.operatorName, t2.serviceID, "TRAIN", stops2));
-                                    legs.add(new JourneyLeg(hub2, getStationName(hub2), destCrs, getStationName(destCrs), t3Dest, t3.std, t3ArrTime, t3.operatorName, t3.serviceID, "TRAIN", stops3));
+                                    // UPDATED CONSTRUCTORS
+                                    legs.add(new JourneyLeg(originCrs, getStationName(originCrs), hub1, getStationName(hub1), t1Dest, t1.std, t1ArrTime, t1.operatorName, t1.serviceID, "TRAIN", stops1, getLiveLocationStatus(t1.serviceID)));
+                                    legs.add(new JourneyLeg(hub1, getStationName(hub1), hub2, getStationName(hub2), t2Dest, t2.std, t2ArrTime, t2.operatorName, t2.serviceID, "TRAIN", stops2, getLiveLocationStatus(t2.serviceID)));
+                                    legs.add(new JourneyLeg(hub2, getStationName(hub2), destCrs, getStationName(destCrs), t3Dest, t3.std, t3ArrTime, t3.operatorName, t3.serviceID, "TRAIN", stops3, getLiveLocationStatus(t3.serviceID)));
 
                                     results.add(new JourneyOption(legs));
 
@@ -263,9 +265,10 @@ public class JourneyPlannerEngine {
                             List<JourneyLeg.Stop> stops2 = extractIntermediateStops(t2.serviceID, terminal2, destCrs);
 
                             List<JourneyLeg> legs = new ArrayList<>();
-                            legs.add(new JourneyLeg(originCrs, getStationName(originCrs), terminal1, getStationName(terminal1), t1TrainDest, t1.std, t1ArrTime, t1.operatorName, t1.serviceID, "TRAIN", stops1));
-                            legs.add(new JourneyLeg(terminal1, getStationName(terminal1), terminal2, getStationName(terminal2), getStationName(terminal2), t1ArrTime, arrivedAtTerm2Time, "London Underground", "TUBE", "TUBE/WALK", new ArrayList<>()));
-                            legs.add(new JourneyLeg(terminal2, getStationName(terminal2), destCrs, getStationName(destCrs), t2TrainDest, t2.std, t2ArrTime, t2.operatorName, t2.serviceID, "TRAIN", stops2));
+                            // UPDATED CONSTRUCTORS (Passes null for the Tube link!)
+                            legs.add(new JourneyLeg(originCrs, getStationName(originCrs), terminal1, getStationName(terminal1), t1TrainDest, t1.std, t1ArrTime, t1.operatorName, t1.serviceID, "TRAIN", stops1, getLiveLocationStatus(t1.serviceID)));
+                            legs.add(new JourneyLeg(terminal1, getStationName(terminal1), terminal2, getStationName(terminal2), getStationName(terminal2), t1ArrTime, arrivedAtTerm2Time, "London Underground", "TUBE", "TUBE/WALK", new ArrayList<>(), null));
+                            legs.add(new JourneyLeg(terminal2, getStationName(terminal2), destCrs, getStationName(destCrs), t2TrainDest, t2.std, t2ArrTime, t2.operatorName, t2.serviceID, "TRAIN", stops2, getLiveLocationStatus(t2.serviceID)));
 
                             results.add(new JourneyOption(legs));
                             if (results.size() >= 10) return;
@@ -359,7 +362,6 @@ public class JourneyPlannerEngine {
                 String time = cp.scheduledTime;
                 if (time == null || time.isEmpty()) time = cp.estimatedTime;
                 if (time == null || time.equalsIgnoreCase("On time")) time = "00:00";
-
                 stops.add(new JourneyLeg.Stop(cp.locationName, time));
             }
 
@@ -367,8 +369,19 @@ public class JourneyPlannerEngine {
                 isRecording = true;
             }
         }
-
         return stops;
+    }
+
+    // =================================================================================
+    // NEW: LIVE LOCATION HELPER
+    // =================================================================================
+    private String getLiveLocationStatus(String serviceId) {
+        // Because getPreciseArrivalTime runs first, the data is guaranteed to be in the cache
+        ServiceDetailsResponse details = detailCache.get(serviceId);
+        if (details != null) {
+            return LiveLocationEngine.getLiveLocation(details);
+        }
+        return null;
     }
 
     private List<String> getPrioritizedHubs(List<StationDepartureResponse.TrainService> services, String origin) {
@@ -376,9 +389,7 @@ public class JourneyPlannerEngine {
         Set<String> seen = new HashSet<>();
 
         for (String knownHub : graphManager.getConnections(origin)) {
-            if (seen.add(knownHub)) {
-                prioritizedHubs.add(knownHub);
-            }
+            if (seen.add(knownHub)) prioritizedHubs.add(knownHub);
         }
 
         if (services != null) {
@@ -396,10 +407,10 @@ public class JourneyPlannerEngine {
 
     private boolean hasValidTransferTime(String arrival, String departure, int minMins, int maxMins) {
         if (arrival == null || departure == null || !arrival.contains(":") || !departure.contains(":")) return false;
-
         try {
             String[] arrParts = arrival.split(":");
             String[] depParts = departure.split(":");
+
             int arrMins = Integer.parseInt(arrParts[0].trim()) * 60 + Integer.parseInt(arrParts[1].trim());
             int depMins = Integer.parseInt(depParts[0].trim()) * 60 + Integer.parseInt(depParts[1].trim());
 
@@ -433,8 +444,6 @@ public class JourneyPlannerEngine {
 
         if (crsToNameMap == null) {
             crsToNameMap = new HashMap<>();
-
-
             List<String> allNames = StationHelper.getStationNames();
             if (allNames != null) {
                 for (String name : allNames) {

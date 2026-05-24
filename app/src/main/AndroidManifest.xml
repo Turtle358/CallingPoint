@@ -27,6 +27,9 @@
         <activity android:name="io.github.turtle358.callingpoint.ui.activities.ServiceDetailsActivity"
             android:screenOrientation="portrait" />
 
+        <activity android:name="io.github.turtle358.callingpoint.ui.activities.JourneySearchActivity"
+            android:screenOrientation="portrait" />
+
         <activity
             android:name="io.github.turtle358.callingpoint.ui.activities.TOCDetailActivity"
             android:screenOrientation="portrait" />

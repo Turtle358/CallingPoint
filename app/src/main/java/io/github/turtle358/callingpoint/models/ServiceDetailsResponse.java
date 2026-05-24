@@ -7,6 +7,9 @@ public class ServiceDetailsResponse {
 
     public String customServiceID;
 
+    @SerializedName("isCancelled")
+    public boolean isCancelled;
+
     @SerializedName("locationName")
     public String locationName;
 
@@ -69,6 +72,12 @@ public class ServiceDetailsResponse {
 
         @SerializedName("isCancelled")
         public boolean isCancelled;
+
+        @SerializedName("ata")
+        public String ata;
+
+        @SerializedName("atd")
+        public String atd;
     }
 
     public static class Formation {

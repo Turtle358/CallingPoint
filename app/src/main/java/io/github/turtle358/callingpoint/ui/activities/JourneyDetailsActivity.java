@@ -2,7 +2,9 @@ package io.github.turtle358.callingpoint.ui.activities;
 
 import android.os.Bundle;
 import android.view.View;
+import android.widget.ImageButton;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.WindowCompat;
@@ -12,6 +14,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import io.github.turtle358.callingpoint.R;
 import io.github.turtle358.callingpoint.models.JourneyOption;
 import io.github.turtle358.callingpoint.ui.adapters.JourneyLegAdapter;
+import io.github.turtle358.callingpoint.utils.PinnedJourneyManager;
 import io.github.turtle358.callingpoint.utils.TOCBrandHelper;
 
 public class JourneyDetailsActivity extends AppCompatActivity {
@@ -45,6 +48,21 @@ public class JourneyDetailsActivity extends AppCompatActivity {
 
         String summary = journey.departTime + " — " + journey.arriveTime + "  •  " + journey.duration;
         tvSummary.setText(summary);
+
+        ImageButton btnPinJourney = findViewById(R.id.btnPinJourney);
+        PinnedJourneyManager pinnedManager = new PinnedJourneyManager(this);
+
+        boolean isPinned = pinnedManager.isJourneyPinned(journey);
+        btnPinJourney.setImageResource(isPinned ? R.drawable.ic_bookmark : R.drawable.ic_bookmark_outline);
+
+        btnPinJourney.setOnClickListener(v -> {
+            pinnedManager.toggleJourneyPin(journey);
+
+            boolean isNowPinned = pinnedManager.isJourneyPinned(journey);
+            btnPinJourney.setImageResource(isNowPinned ? R.drawable.ic_bookmark : R.drawable.ic_bookmark_outline);
+
+            Toast.makeText(this, isNowPinned ? "Journey Saved!" : "Journey Removed", Toast.LENGTH_SHORT).show();
+        });
 
         recyclerJourneyLegs.setLayoutManager(new LinearLayoutManager(this));
         JourneyLegAdapter adapter = new JourneyLegAdapter(journey.legs);
