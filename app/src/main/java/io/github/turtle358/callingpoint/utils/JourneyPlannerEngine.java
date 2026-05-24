@@ -57,7 +57,6 @@ public class JourneyPlannerEngine {
             detailCache = new HashMap<>();
             List<JourneyOption> foundJourneys = new ArrayList<>();
 
-
             try {
                 mainHandler.post(() -> callback.onStatusUpdate("Checking for direct trains..."));
                 findDirect(originCrs, destCrs, foundJourneys);
@@ -313,11 +312,15 @@ public class JourneyPlannerEngine {
             if (details.subsequentCallingPoints != null && !details.subsequentCallingPoints.isEmpty()) {
                 for (ServiceDetailsResponse.TimelinePoint cp : details.subsequentCallingPoints.get(0).callingPoint) {
                     String cpCrs = cp.crs != null ? cp.crs : StationHelper.getCrsFromName(cp.locationName);
-                    if (targetCrs.equalsIgnoreCase(cpCrs)) return cp.scheduledTime != null ? cp.scheduledTime : cp.estimatedTime;
+                    if (targetCrs.equalsIgnoreCase(cpCrs)) {
+                        return (cp.scheduledTime != null && !cp.scheduledTime.isEmpty()) ? cp.scheduledTime : cp.estimatedTime;
+                    }
                 }
             }
             String destCrs = details.crs != null ? details.crs : StationHelper.getCrsFromName(details.locationName);
-            if (targetCrs.equalsIgnoreCase(destCrs)) return details.sta != null ? details.sta : details.eta;
+            if (targetCrs.equalsIgnoreCase(destCrs)) {
+                return (details.sta != null && !details.sta.isEmpty()) ? details.sta : details.eta;
+            }
         }
         return null;
     }
@@ -353,8 +356,10 @@ public class JourneyPlannerEngine {
             }
 
             if (isRecording) {
-                String time = cp.scheduledTime != null ? cp.scheduledTime : cp.estimatedTime;
-                if (time == null) time = "00:00";
+                String time = cp.scheduledTime;
+                if (time == null || time.isEmpty()) time = cp.estimatedTime;
+                if (time == null || time.equalsIgnoreCase("On time")) time = "00:00";
+
                 stops.add(new JourneyLeg.Stop(cp.locationName, time));
             }
 
@@ -390,12 +395,13 @@ public class JourneyPlannerEngine {
     }
 
     private boolean hasValidTransferTime(String arrival, String departure, int minMins, int maxMins) {
-        if (arrival == null || departure == null || arrival.equals("00:00") || departure.equals("00:00")) return false;
+        if (arrival == null || departure == null || !arrival.contains(":") || !departure.contains(":")) return false;
+
         try {
             String[] arrParts = arrival.split(":");
             String[] depParts = departure.split(":");
-            int arrMins = Integer.parseInt(arrParts[0]) * 60 + Integer.parseInt(arrParts[1]);
-            int depMins = Integer.parseInt(depParts[0]) * 60 + Integer.parseInt(depParts[1]);
+            int arrMins = Integer.parseInt(arrParts[0].trim()) * 60 + Integer.parseInt(arrParts[1].trim());
+            int depMins = Integer.parseInt(depParts[0].trim()) * 60 + Integer.parseInt(depParts[1].trim());
 
             int diff = depMins - arrMins;
             if (diff < 0) diff += 24 * 60;
@@ -407,9 +413,10 @@ public class JourneyPlannerEngine {
     }
 
     private String addMinutesToTime(String time, int minsToAdd) {
+        if (time == null || !time.contains(":")) return "00:00";
         try {
             String[] parts = time.split(":");
-            int mins = Integer.parseInt(parts[0]) * 60 + Integer.parseInt(parts[1]) + minsToAdd;
+            int mins = Integer.parseInt(parts[0].trim()) * 60 + Integer.parseInt(parts[1].trim()) + minsToAdd;
             int h = (mins / 60) % 24;
             int m = mins % 60;
             return String.format("%02d:%02d", h, m);
