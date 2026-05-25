@@ -59,6 +59,7 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
             holder.cardTransfer.setVisibility(View.VISIBLE);
             holder.tvTransferTitle.setText("Underground / Walk to " + currentLeg.toStationName);
             holder.tvTransferDuration.setText(currentLeg.durationMinutes + " min transfer");
+            holder.ivTransferIcon.setImageResource(R.drawable.ic_tfl);
             return;
         }
 
@@ -139,6 +140,7 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
             if (!"TUBE/WALK".equals(nextLeg.transportMode)) {
                 holder.cardTransfer.setVisibility(View.VISIBLE);
                 holder.tvTransferTitle.setText("Change at " + currentLeg.toStationName);
+                holder.ivTransferIcon.setImageResource(R.drawable.ic_transfer);
                 holder.tvTransferDuration.setText("Transfer time " + calculateTransferTime(currentLeg.arrivalTime, nextLeg.departureTime) + "m");
             }
         }
@@ -334,6 +336,7 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
         CardView cardTransfer;
         TextView tvTransferTitle, tvTransferDuration;
         ImageView ivManagerLogo;
+        ImageView ivTransferIcon;
 
         public LegViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -346,6 +349,7 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
             cardTransfer = itemView.findViewById(R.id.cardTransfer);
             tvTransferTitle = itemView.findViewById(R.id.tvTransferTitle);
             tvTransferDuration = itemView.findViewById(R.id.tvTransferDuration);
+            ivTransferIcon = itemView.findViewById(R.id.ivTransferIcon);
         }
     }
 }

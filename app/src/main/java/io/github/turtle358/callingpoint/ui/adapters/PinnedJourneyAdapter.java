@@ -18,6 +18,7 @@ import io.github.turtle358.callingpoint.R;
 import io.github.turtle358.callingpoint.models.JourneyOption;
 import io.github.turtle358.callingpoint.ui.activities.JourneyDetailsActivity;
 import io.github.turtle358.callingpoint.utils.PinnedJourneyManager;
+import io.github.turtle358.callingpoint.utils.TOCBrandHelper;
 
 public class PinnedJourneyAdapter extends RecyclerView.Adapter<PinnedJourneyAdapter.PinnedViewHolder> {
 
@@ -42,6 +43,11 @@ public class PinnedJourneyAdapter extends RecyclerView.Adapter<PinnedJourneyAdap
     public void onBindViewHolder(@NonNull PinnedViewHolder holder, int position) {
         JourneyOption journey = pinnedJourneys.get(position);
 
+        if (journey.legs != null && !journey.legs.isEmpty()) {
+            String firstOperator = journey.legs.get(0).operatorName;
+            holder.tocColourBar.setBackgroundColor(TOCBrandHelper.getColourForToc(firstOperator));
+        }
+
         holder.tvJourneyTimes.setText((journey.departTime != null ? journey.departTime : "--:--") + " → " + (journey.arriveTime != null ? journey.arriveTime : "--:--"));
 
         if (journey.liveDepartTime != null && !journey.liveDepartTime.equalsIgnoreCase("On time") && !journey.liveDepartTime.equals(journey.departTime)) {
@@ -52,7 +58,6 @@ public class PinnedJourneyAdapter extends RecyclerView.Adapter<PinnedJourneyAdap
             holder.tvJourneyTimes.setTextColor(android.graphics.Color.parseColor("#888888"));
         } else {
             holder.tvLiveDepart.setVisibility(View.GONE);
-
             holder.tvJourneyTimes.setPaintFlags(holder.tvJourneyTimes.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
             holder.tvJourneyTimes.setTextColor(holder.defaultTimeColor);
         }
@@ -88,11 +93,13 @@ public class PinnedJourneyAdapter extends RecyclerView.Adapter<PinnedJourneyAdap
     }
 
     static class PinnedViewHolder extends RecyclerView.ViewHolder {
+        View tocColourBar;
         TextView tvJourneyTimes, tvLiveDepart, tvJourneyDuration, tvJourneyChanges;
         int defaultTimeColor;
 
         public PinnedViewHolder(@NonNull View itemView) {
             super(itemView);
+            tocColourBar = itemView.findViewById(R.id.tocColourBar);
             tvJourneyTimes = itemView.findViewById(R.id.tvJourneyTimes);
             tvLiveDepart = itemView.findViewById(R.id.tvLiveDepart);
             tvJourneyDuration = itemView.findViewById(R.id.tvJourneyDuration);

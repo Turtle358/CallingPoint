@@ -86,9 +86,10 @@
             android:padding="16dp">
 
             <ImageView
+                android:id="@+id/ivTransferIcon"
                 android:layout_width="20dp"
                 android:layout_height="20dp"
-                android:src="@drawable/ic_tfl"
+                android:src="@drawable/ic_transfer"
                 app:tint="?android:attr/textColorSecondary" />
 
             <LinearLayout

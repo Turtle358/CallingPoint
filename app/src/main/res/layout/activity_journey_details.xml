@@ -33,7 +33,7 @@
                 android:layout_marginBottom="4dp"
                 app:cardBackgroundColor="@color/bg_card"
                 app:cardCornerRadius="28dp"
-                app:cardElevation="0dp"
+                app:cardElevation="2dp"
                 app:cardUseCompatPadding="true">
 
                 <LinearLayout
@@ -85,7 +85,7 @@
                 android:layout_marginBottom="24dp"
                 app:cardBackgroundColor="@color/bg_card"
                 app:cardCornerRadius="28dp"
-                app:cardElevation="0dp"
+                app:cardElevation="2dp"
                 app:cardUseCompatPadding="true">
 
                 <LinearLayout

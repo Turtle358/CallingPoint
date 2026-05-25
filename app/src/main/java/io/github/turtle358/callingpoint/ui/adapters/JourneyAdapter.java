@@ -11,6 +11,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import java.util.List;
 import io.github.turtle358.callingpoint.R;
 import io.github.turtle358.callingpoint.models.JourneyOption;
+import io.github.turtle358.callingpoint.utils.TOCBrandHelper;
 
 public class JourneyAdapter extends RecyclerView.Adapter<JourneyAdapter.ViewHolder> {
 
@@ -42,6 +43,11 @@ public class JourneyAdapter extends RecyclerView.Adapter<JourneyAdapter.ViewHold
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         JourneyOption route = routes.get(position);
 
+        if (route.legs != null && !route.legs.isEmpty()) {
+            String firstOperator = route.legs.get(0).operatorName;
+            holder.tocColourBar.setBackgroundColor(TOCBrandHelper.getColourForToc(firstOperator));
+        }
+
         holder.tvJourneyTimes.setText((route.departTime != null ? route.departTime : "--:--") + " → " + (route.arriveTime != null ? route.arriveTime : "--:--"));
 
         if (route.liveDepartTime != null && !route.liveDepartTime.equalsIgnoreCase("On time") && !route.liveDepartTime.equals(route.departTime)) {
@@ -52,7 +58,6 @@ public class JourneyAdapter extends RecyclerView.Adapter<JourneyAdapter.ViewHold
             holder.tvJourneyTimes.setTextColor(android.graphics.Color.parseColor("#888888"));
         } else {
             holder.tvLiveDepart.setVisibility(View.GONE);
-
             holder.tvJourneyTimes.setPaintFlags(holder.tvJourneyTimes.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
             holder.tvJourneyTimes.setTextColor(holder.defaultTimeColor);
         }
@@ -69,11 +74,13 @@ public class JourneyAdapter extends RecyclerView.Adapter<JourneyAdapter.ViewHold
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
+        View tocColourBar;
         TextView tvJourneyTimes, tvLiveDepart, tvJourneyDuration, tvJourneyChanges;
         int defaultTimeColor;
 
         public ViewHolder(View itemView) {
             super(itemView);
+            tocColourBar = itemView.findViewById(R.id.tocColourBar);
             tvJourneyTimes = itemView.findViewById(R.id.tvJourneyTimes);
             tvLiveDepart = itemView.findViewById(R.id.tvLiveDepart);
             tvJourneyDuration = itemView.findViewById(R.id.tvJourneyDuration);
