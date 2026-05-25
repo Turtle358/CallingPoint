@@ -100,7 +100,7 @@ public class ServiceDetailsActivity extends AppCompatActivity {
                     System.out.println(response.body());
 
                     String operatorName = data.operator != null ? data.operator : "Unknown";
-                    int brandColour = TOCBrandHelper.getColorForToc(operatorName);
+                    int brandColour = TOCBrandHelper.getColourForToc(operatorName);
                     if (topHeaderBar != null) {
                         topHeaderBar.setBackgroundColor(brandColour);
                     }

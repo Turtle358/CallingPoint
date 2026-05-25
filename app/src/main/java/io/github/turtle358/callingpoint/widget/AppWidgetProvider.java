@@ -141,7 +141,7 @@ public class AppWidgetProvider extends android.appwidget.AppWidgetProvider {
 
                 int maxBars = Math.min(disruptedTocs.size(), 5);
                 for (int i = 0; i < maxBars; i++) {
-                    int color = TOCBrandHelper.getColorForToc(disruptedTocs.get(i).tocName);
+                    int color = TOCBrandHelper.getColourForToc(disruptedTocs.get(i).tocName);
                     views.setInt(barIds[i], "setColorFilter", color);
                     views.setViewVisibility(barIds[i], View.VISIBLE);
                 }
@@ -150,7 +150,7 @@ public class AppWidgetProvider extends android.appwidget.AppWidgetProvider {
     }
 
     private void updatePill(RemoteViews views, int containerId, int bgId, int textId, DisruptionResponce.ServiceIndicator toc) {
-        int color = TOCBrandHelper.getColorForToc(toc.tocName);
+        int color = TOCBrandHelper.getColourForToc(toc.tocName);
         views.setInt(bgId, "setColorFilter", color);
         views.setTextViewText(textId, toc.tocCode);
         views.setViewVisibility(containerId, View.VISIBLE);

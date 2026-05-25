@@ -1,5 +1,6 @@
 package io.github.turtle358.callingpoint.ui.adapters;
 
+import android.graphics.Paint;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -42,6 +43,20 @@ public class JourneyAdapter extends RecyclerView.Adapter<JourneyAdapter.ViewHold
         JourneyOption route = routes.get(position);
 
         holder.tvJourneyTimes.setText((route.departTime != null ? route.departTime : "--:--") + " → " + (route.arriveTime != null ? route.arriveTime : "--:--"));
+
+        if (route.liveDepartTime != null && !route.liveDepartTime.equalsIgnoreCase("On time") && !route.liveDepartTime.equals(route.departTime)) {
+            holder.tvLiveDepart.setVisibility(View.VISIBLE);
+            holder.tvLiveDepart.setText(route.liveDepartTime.equalsIgnoreCase("Cancelled") ? "Cancelled" : "Exp " + route.liveDepartTime);
+
+            holder.tvJourneyTimes.setPaintFlags(holder.tvJourneyTimes.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+            holder.tvJourneyTimes.setTextColor(android.graphics.Color.parseColor("#888888"));
+        } else {
+            holder.tvLiveDepart.setVisibility(View.GONE);
+
+            holder.tvJourneyTimes.setPaintFlags(holder.tvJourneyTimes.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
+            holder.tvJourneyTimes.setTextColor(holder.defaultTimeColor);
+        }
+
         holder.tvJourneyDuration.setText(route.duration != null ? route.duration : "");
         holder.tvJourneyChanges.setText(route.changesSummary != null ? route.changesSummary : "Direct");
 
@@ -54,13 +69,17 @@ public class JourneyAdapter extends RecyclerView.Adapter<JourneyAdapter.ViewHold
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
-        TextView tvJourneyTimes, tvJourneyDuration, tvJourneyChanges;
+        TextView tvJourneyTimes, tvLiveDepart, tvJourneyDuration, tvJourneyChanges;
+        int defaultTimeColor;
 
         public ViewHolder(View itemView) {
             super(itemView);
             tvJourneyTimes = itemView.findViewById(R.id.tvJourneyTimes);
+            tvLiveDepart = itemView.findViewById(R.id.tvLiveDepart);
             tvJourneyDuration = itemView.findViewById(R.id.tvJourneyDuration);
             tvJourneyChanges = itemView.findViewById(R.id.tvJourneyChanges);
+
+            defaultTimeColor = tvJourneyTimes.getCurrentTextColor();
         }
     }
 }

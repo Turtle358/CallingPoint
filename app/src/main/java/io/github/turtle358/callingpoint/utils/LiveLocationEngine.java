@@ -10,7 +10,6 @@ public class LiveLocationEngine {
     public static String getLiveLocation(ServiceDetailsResponse details) {
         if (details == null || details.isCancelled) return "Service Cancelled";
 
-        // 1. Flatten the entire route into a single chronological list
         List<ServiceDetailsResponse.TimelinePoint> allStops = new ArrayList<>();
 
         if (details.previousCallingPoints != null && !details.previousCallingPoints.isEmpty()) {
@@ -42,10 +41,7 @@ public class LiveLocationEngine {
                 return "At " + stop.locationName;
             }
         }
-        if (!allStops.isEmpty()) {
-            return "Awaiting departure from " + allStops.get(0).locationName;
-        }
 
-        return "Location unknown";
+        return null;
     }
 }

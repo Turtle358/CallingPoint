@@ -42,7 +42,7 @@ public class DeparturesAdapter extends RecyclerView.Adapter<DeparturesAdapter.Vi
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         StationDepartureResponse.TrainService service = services.get(position);
 
-        int brandColour = TOCBrandHelper.getColorForToc(service.operatorName);
+        int brandColour = TOCBrandHelper.getColourForToc(service.operatorName);
         holder.tocColourBar.setBackgroundColor(brandColour);
         holder.ivManagerLogo.setImageResource(TOCBrandHelper.getIconForToc(service.operatorName));
 

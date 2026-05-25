@@ -71,7 +71,7 @@ public class TOCBrandHelper {
         return code;
     }
 
-    public static int getColorForToc(String tocName) {
+    public static int getColourForToc(String tocName) {
         try {
             if (userColoursJson != null && userColoursJson.has(tocName)) {
                 return Color.parseColor(userColoursJson.getString(tocName));

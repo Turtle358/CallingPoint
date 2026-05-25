@@ -52,7 +52,7 @@ public class TOCDetailActivity extends AppCompatActivity {
         tvStatus.setText(tocStatus != null ? tocStatus : "Status Unavailable");
 
         if (tocName != null) {
-            int brandColor = TOCBrandHelper.getColorForToc(tocName);
+            int brandColor = TOCBrandHelper.getColourForToc(tocName);
             headerColorBar.setBackgroundColor(brandColor);
             tvCode.setBackgroundTintList(ColorStateList.valueOf(brandColor));
             tocIcon.setImageResource(TOCBrandHelper.getIconForToc(tocName));

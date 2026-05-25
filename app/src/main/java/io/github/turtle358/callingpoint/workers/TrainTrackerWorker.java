@@ -96,7 +96,7 @@ public class TrainTrackerWorker extends Worker {
         customView.setTextViewText(R.id.notifOperator, operator);
         customView.setTextViewText(R.id.notifPlatform, (platform != null && !platform.isEmpty()) ? "Plat " + platform : "");
 
-        int brandColour = TOCBrandHelper.getColorForToc(operator);
+        int brandColour = TOCBrandHelper.getColourForToc(operator);
 
         customView.setInt(R.id.notifTocBar, "setBackgroundColor", brandColour);
 

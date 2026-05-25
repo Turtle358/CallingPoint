@@ -3,13 +3,39 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:paddingVertical="4dp">
+    android:minHeight="54dp">
+
+    <TextView
+        android:id="@+id/tvSchTime"
+        android:layout_width="54dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:text="11:30"
+        android:textColor="@color/text_primary"
+        android:textSize="15sp"
+        android:textAlignment="viewEnd"
+        app:layout_constraintTop_toTopOf="@id/dotStation"
+        app:layout_constraintBottom_toBottomOf="@id/dotStation"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <TextView
+        android:id="@+id/tvLiveTime"
+        android:layout_width="54dp"
+        android:layout_height="wrap_content"
+        android:text="On time"
+        android:textColor="#00875A"
+        android:textSize="12sp"
+        android:textAlignment="viewEnd"
+        android:visibility="gone"
+        app:layout_constraintTop_toBottomOf="@id/tvSchTime"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="@id/tvSchTime"/>
 
     <View
         android:id="@+id/lineTop"
-        android:layout_width="4dp"
+        android:layout_width="2dp"
         android:layout_height="0dp"
-        android:background="#9E9E9E"
+        android:background="#444444"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toTopOf="@id/dotStation"
         app:layout_constraintStart_toStartOf="@id/dotStation"
@@ -19,74 +45,44 @@
         android:id="@+id/dotStation"
         android:layout_width="12dp"
         android:layout_height="12dp"
-        android:layout_marginStart="24dp"
-        android:layout_marginTop="16dp"
-        android:background="@drawable/ic_circle"
-        android:backgroundTint="#9E9E9E"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="20dp"
+        android:layout_marginBottom="20dp"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toEndOf="@id/tvSchTime" />
 
     <View
         android:id="@+id/lineBottom"
-        android:layout_width="4dp"
+        android:layout_width="2dp"
         android:layout_height="0dp"
-        android:background="#9E9E9E"
+        android:background="#444444"
         app:layout_constraintTop_toBottomOf="@id/dotStation"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="@id/dotStation"
         app:layout_constraintEnd_toEndOf="@id/dotStation" />
 
     <TextView
-        android:id="@+id/tvSchTime"
-        android:layout_width="50dp"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="24dp"
-        android:text="11:30"
-        android:textColor="@color/text_primary"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        app:layout_constraintTop_toTopOf="@id/dotStation"
-        app:layout_constraintBottom_toBottomOf="@id/dotStation"
-        app:layout_constraintStart_toEndOf="@id/dotStation" />
-
-    <TextView
-        android:id="@+id/tvLiveTime"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
-        android:text="Exp. 11:33"
-        android:textColor="#DE350B"
-        android:textSize="12sp"
-        android:textStyle="bold"
-        app:layout_constraintTop_toBottomOf="@id/tvSchTime"
-        app:layout_constraintStart_toStartOf="@id/tvSchTime" />
-
-    <TextView
         android:id="@+id/tvStationName"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
-        android:text="Wadhurst"
+        android:text="Station Name"
         android:textColor="@color/text_primary"
         android:textSize="16sp"
-        android:textStyle="bold"
-        app:layout_constraintTop_toTopOf="@id/tvSchTime"
-        app:layout_constraintStart_toEndOf="@id/tvSchTime"
+        app:layout_constraintTop_toTopOf="@id/dotStation"
+        app:layout_constraintBottom_toBottomOf="@id/dotStation"
+        app:layout_constraintStart_toEndOf="@id/dotStation"
         app:layout_constraintEnd_toEndOf="parent" />
 
     <TextView
         android:id="@+id/tvPlatform"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:background="@drawable/bg_pill_base"
-        android:backgroundTint="#E3F2FD"
-        android:paddingHorizontal="6dp"
-        android:paddingVertical="2dp"
+        android:layout_marginTop="2dp"
         android:text="Platform 1"
-        android:textColor="#1565C0"
+        android:textColor="@color/text_secondary"
         android:textSize="12sp"
-        android:textStyle="bold"
         android:visibility="gone"
         app:layout_constraintTop_toBottomOf="@id/tvStationName"
         app:layout_constraintStart_toStartOf="@id/tvStationName" />

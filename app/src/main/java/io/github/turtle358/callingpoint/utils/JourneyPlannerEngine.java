@@ -76,6 +76,11 @@ public class JourneyPlannerEngine {
                     findTwoChange(originCrs, destCrs, foundJourneys);
                 }
 
+                foundJourneys.sort((j1, j2) -> {
+                    String arr1 = j1.arriveTime != null ? j1.arriveTime : "23:59";
+                    String arr2 = j2.arriveTime != null ? j2.arriveTime : "23:59";
+                    return arr1.compareTo(arr2);
+                });
                 mainHandler.post(() -> callback.onJourneysFound(foundJourneys));
 
             } catch (Exception e) {
@@ -96,8 +101,7 @@ public class JourneyPlannerEngine {
                 List<JourneyLeg.Stop> intermediateStops = extractIntermediateStops(service.serviceID, originCrs, destCrs);
 
                 List<JourneyLeg> legs = new ArrayList<>();
-                // UPDATED CONSTRUCTOR
-                legs.add(new JourneyLeg(originCrs, getStationName(originCrs), destCrs, getStationName(destCrs), destName, service.std, arrTime, service.operatorName, service.serviceID, "TRAIN", intermediateStops, getLiveLocationStatus(service.serviceID)));
+                legs.add(new JourneyLeg(originCrs, getStationName(originCrs), destCrs, getStationName(destCrs), destName, service.std, arrTime, service.operatorName, service.serviceID, "TRAIN", intermediateStops, getLiveLocationStatus(service.serviceID), service.etd));
                 results.add(new JourneyOption(legs));
 
                 graphManager.addConnection(originCrs, destCrs);
@@ -138,9 +142,8 @@ public class JourneyPlannerEngine {
                             List<JourneyLeg.Stop> stops2 = extractIntermediateStops(t2.serviceID, hubCrs, destCrs);
 
                             List<JourneyLeg> legs = new ArrayList<>();
-                            // UPDATED CONSTRUCTORS
-                            legs.add(new JourneyLeg(originCrs, getStationName(originCrs), hubCrs, getStationName(hubCrs), t1Dest, t1.std, t1ArrTime, t1.operatorName, t1.serviceID, "TRAIN", stops1, getLiveLocationStatus(t1.serviceID)));
-                            legs.add(new JourneyLeg(hubCrs, getStationName(hubCrs), destCrs, getStationName(destCrs), t2Dest, t2.std, t2ArrTime, t2.operatorName, t2.serviceID, "TRAIN", stops2, getLiveLocationStatus(t2.serviceID)));
+                            legs.add(new JourneyLeg(originCrs, getStationName(originCrs), hubCrs, getStationName(hubCrs), t1Dest, t1.std, t1ArrTime, t1.operatorName, t1.serviceID, "TRAIN", stops1, getLiveLocationStatus(t1.serviceID), t1.etd));
+                            legs.add(new JourneyLeg(hubCrs, getStationName(hubCrs), destCrs, getStationName(destCrs), t2Dest, t2.std, t2ArrTime, t2.operatorName, t2.serviceID, "TRAIN", stops2, getLiveLocationStatus(t2.serviceID), t2.etd));
                             results.add(new JourneyOption(legs));
 
                             graphManager.addConnection(originCrs, hubCrs);
@@ -202,10 +205,9 @@ public class JourneyPlannerEngine {
                                     List<JourneyLeg.Stop> stops3 = extractIntermediateStops(t3.serviceID, hub2, destCrs);
 
                                     List<JourneyLeg> legs = new ArrayList<>();
-                                    // UPDATED CONSTRUCTORS
-                                    legs.add(new JourneyLeg(originCrs, getStationName(originCrs), hub1, getStationName(hub1), t1Dest, t1.std, t1ArrTime, t1.operatorName, t1.serviceID, "TRAIN", stops1, getLiveLocationStatus(t1.serviceID)));
-                                    legs.add(new JourneyLeg(hub1, getStationName(hub1), hub2, getStationName(hub2), t2Dest, t2.std, t2ArrTime, t2.operatorName, t2.serviceID, "TRAIN", stops2, getLiveLocationStatus(t2.serviceID)));
-                                    legs.add(new JourneyLeg(hub2, getStationName(hub2), destCrs, getStationName(destCrs), t3Dest, t3.std, t3ArrTime, t3.operatorName, t3.serviceID, "TRAIN", stops3, getLiveLocationStatus(t3.serviceID)));
+                                    legs.add(new JourneyLeg(originCrs, getStationName(originCrs), hub1, getStationName(hub1), t1Dest, t1.std, t1ArrTime, t1.operatorName, t1.serviceID, "TRAIN", stops1, getLiveLocationStatus(t1.serviceID), t1.etd));
+                                    legs.add(new JourneyLeg(hub1, getStationName(hub1), hub2, getStationName(hub2), t2Dest, t2.std, t2ArrTime, t2.operatorName, t2.serviceID, "TRAIN", stops2, getLiveLocationStatus(t2.serviceID), t2.etd));
+                                    legs.add(new JourneyLeg(hub2, getStationName(hub2), destCrs, getStationName(destCrs), t3Dest, t3.std, t3ArrTime, t3.operatorName, t3.serviceID, "TRAIN", stops3, getLiveLocationStatus(t3.serviceID), t3.etd));
 
                                     results.add(new JourneyOption(legs));
 
@@ -265,10 +267,9 @@ public class JourneyPlannerEngine {
                             List<JourneyLeg.Stop> stops2 = extractIntermediateStops(t2.serviceID, terminal2, destCrs);
 
                             List<JourneyLeg> legs = new ArrayList<>();
-                            // UPDATED CONSTRUCTORS (Passes null for the Tube link!)
-                            legs.add(new JourneyLeg(originCrs, getStationName(originCrs), terminal1, getStationName(terminal1), t1TrainDest, t1.std, t1ArrTime, t1.operatorName, t1.serviceID, "TRAIN", stops1, getLiveLocationStatus(t1.serviceID)));
-                            legs.add(new JourneyLeg(terminal1, getStationName(terminal1), terminal2, getStationName(terminal2), getStationName(terminal2), t1ArrTime, arrivedAtTerm2Time, "London Underground", "TUBE", "TUBE/WALK", new ArrayList<>(), null));
-                            legs.add(new JourneyLeg(terminal2, getStationName(terminal2), destCrs, getStationName(destCrs), t2TrainDest, t2.std, t2ArrTime, t2.operatorName, t2.serviceID, "TRAIN", stops2, getLiveLocationStatus(t2.serviceID)));
+                            legs.add(new JourneyLeg(originCrs, getStationName(originCrs), terminal1, getStationName(terminal1), t1TrainDest, t1.std, t1ArrTime, t1.operatorName, t1.serviceID, "TRAIN", stops1, getLiveLocationStatus(t1.serviceID), t1.etd));
+                            legs.add(new JourneyLeg(terminal1, getStationName(terminal1), terminal2, getStationName(terminal2), getStationName(terminal2), t1ArrTime, arrivedAtTerm2Time, "London Underground", "TUBE", "TUBE/WALK", new ArrayList<>(), null, null));
+                            legs.add(new JourneyLeg(terminal2, getStationName(terminal2), destCrs, getStationName(destCrs), t2TrainDest, t2.std, t2ArrTime, t2.operatorName, t2.serviceID, "TRAIN", stops2, getLiveLocationStatus(t2.serviceID), t2.etd));
 
                             results.add(new JourneyOption(legs));
                             if (results.size() >= 10) return;

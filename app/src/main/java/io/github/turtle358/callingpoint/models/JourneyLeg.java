@@ -23,6 +23,8 @@ public class JourneyLeg implements Serializable {
 
     public String liveLocation;
 
+    public String liveDepartureTime;
+
     public boolean isExpanded = false;
     public List<Stop> intermediateStops = new ArrayList<>();
 
@@ -36,7 +38,7 @@ public class JourneyLeg implements Serializable {
         }
     }
 
-    public JourneyLeg(String fromCrs, String fromName, String toCrs, String toName, String trainDest, String depTime, String arrTime, String operator, String serviceId, String mode, List<Stop> intermediateStops, String liveLocation) {
+    public JourneyLeg(String fromCrs, String fromName, String toCrs, String toName, String trainDest, String depTime, String arrTime, String operator, String serviceId, String mode, List<Stop> intermediateStops, String liveLocation, String liveDepTime) {
         this.fromStationCrs = fromCrs;
         this.fromStationName = fromName;
         this.toStationCrs = toCrs;
@@ -49,6 +51,7 @@ public class JourneyLeg implements Serializable {
         this.serviceId = serviceId;
         this.durationMinutes = calculateDuration(depTime, arrTime);
         this.liveLocation = liveLocation;
+        this.liveDepartureTime = liveDepTime;
 
         if (intermediateStops != null) {
             this.intermediateStops.addAll(intermediateStops);

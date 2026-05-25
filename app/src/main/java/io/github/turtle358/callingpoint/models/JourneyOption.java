@@ -2,14 +2,13 @@ package io.github.turtle358.callingpoint.models;
 
 import java.io.Serializable;
 import java.util.List;
-
-// THIS IS THE CRITICAL PART: implements Serializable
 public class JourneyOption implements Serializable {
     public List<JourneyLeg> legs;
     public String departTime;
     public String arriveTime;
     public String duration;
     public String changesSummary;
+    public String liveDepartTime;
 
     public JourneyOption(List<JourneyLeg> legs) {
         this.legs = legs;
@@ -21,6 +20,7 @@ public class JourneyOption implements Serializable {
 
         this.departTime = legs.get(0).departureTime;
         this.arriveTime = legs.get(legs.size() - 1).arrivalTime;
+        this.liveDepartTime = legs.get(0).liveDepartureTime;
 
         int totalMinutes = 0;
         for (JourneyLeg leg : legs) {

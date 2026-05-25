@@ -41,7 +41,7 @@ public class PinnedServiceAdapter extends RecyclerView.Adapter<PinnedServiceAdap
         ServiceDetailsResponse service = liveServices.get(position);
 
         holder.tvOperator.setText(service.operator);
-        holder.tocColourBar.setBackgroundColor(TOCBrandHelper.getColorForToc(service.operator));
+        holder.tocColourBar.setBackgroundColor(TOCBrandHelper.getColourForToc(service.operator));
         holder.ivManagerLogo.setImageResource(TOCBrandHelper.getIconForToc(service.operator));
 
         String origin = service.locationName;
