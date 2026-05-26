@@ -102,8 +102,8 @@ public class JourneyPlannerEngine {
 
                 List<JourneyLeg> legs = new ArrayList<>();
                 legs.add(new JourneyLeg(originCrs, getStationName(originCrs), destCrs, getStationName(destCrs), destName, service.std, arrTime, service.operatorName, service.serviceID, "TRAIN", intermediateStops, getLiveLocationStatus(service.serviceID), service.etd));
-                results.add(new JourneyOption(legs));
 
+                results.add(new JourneyOption(legs));
                 graphManager.addConnection(originCrs, destCrs);
             }
         }
@@ -127,6 +127,9 @@ public class JourneyPlannerEngine {
                 for (StationDepartureResponse.TrainService t1 : allDepRes.trainServices) {
                     if (leg1Count++ >= 6) break;
 
+                    // FILTER: If t1 already goes to the final destination, don't force a change!
+                    if (getPreciseArrivalTime(t1.serviceID, destCrs) != null) continue;
+
                     String t1ArrTime = getPreciseArrivalTime(t1.serviceID, hubCrs);
                     if (t1ArrTime == null) continue;
 
@@ -144,11 +147,14 @@ public class JourneyPlannerEngine {
                             List<JourneyLeg> legs = new ArrayList<>();
                             legs.add(new JourneyLeg(originCrs, getStationName(originCrs), hubCrs, getStationName(hubCrs), t1Dest, t1.std, t1ArrTime, t1.operatorName, t1.serviceID, "TRAIN", stops1, getLiveLocationStatus(t1.serviceID), t1.etd));
                             legs.add(new JourneyLeg(hubCrs, getStationName(hubCrs), destCrs, getStationName(destCrs), t2Dest, t2.std, t2ArrTime, t2.operatorName, t2.serviceID, "TRAIN", stops2, getLiveLocationStatus(t2.serviceID), t2.etd));
-                            results.add(new JourneyOption(legs));
 
-                            graphManager.addConnection(originCrs, hubCrs);
-                            graphManager.addConnection(hubCrs, destCrs);
-                            break;
+                            // FILTER: Only add if the route doesn't double back on itself
+                            if (isLogicalJourney(legs)) {
+                                results.add(new JourneyOption(legs));
+                                graphManager.addConnection(originCrs, hubCrs);
+                                graphManager.addConnection(hubCrs, destCrs);
+                                break;
+                            }
                         }
                     }
                     if (results.size() >= 10) return;
@@ -182,10 +188,17 @@ public class JourneyPlannerEngine {
                 if (hub2ToDest == null || hub2ToDest.trainServices == null || hub2ToDest.trainServices.isEmpty()) continue;
 
                 for (StationDepartureResponse.TrainService t1 : allOrigin.trainServices) {
+                    // FILTER: Skip if t1 goes directly to the destination or hub2
+                    if (getPreciseArrivalTime(t1.serviceID, destCrs) != null) continue;
+                    if (getPreciseArrivalTime(t1.serviceID, hub2) != null) continue;
+
                     String t1ArrTime = getPreciseArrivalTime(t1.serviceID, hub1);
                     if (t1ArrTime == null) continue;
 
                     for (StationDepartureResponse.TrainService t2 : allHub1.trainServices) {
+                        // FILTER: Skip if t2 goes directly to destination
+                        if (getPreciseArrivalTime(t2.serviceID, destCrs) != null) continue;
+
                         if (hasValidTransferTime(t1ArrTime, t2.std, 5, 120)) {
                             String t2ArrTime = getPreciseArrivalTime(t2.serviceID, hub2);
                             if (t2ArrTime == null) continue;
@@ -209,13 +222,15 @@ public class JourneyPlannerEngine {
                                     legs.add(new JourneyLeg(hub1, getStationName(hub1), hub2, getStationName(hub2), t2Dest, t2.std, t2ArrTime, t2.operatorName, t2.serviceID, "TRAIN", stops2, getLiveLocationStatus(t2.serviceID), t2.etd));
                                     legs.add(new JourneyLeg(hub2, getStationName(hub2), destCrs, getStationName(destCrs), t3Dest, t3.std, t3ArrTime, t3.operatorName, t3.serviceID, "TRAIN", stops3, getLiveLocationStatus(t3.serviceID), t3.etd));
 
-                                    results.add(new JourneyOption(legs));
-
-                                    graphManager.addConnection(originCrs, hub1);
-                                    graphManager.addConnection(hub1, hub2);
-                                    graphManager.addConnection(hub2, destCrs);
-                                    if (results.size() >= 10) return;
-                                    break;
+                                    // FILTER: Check for backtracking
+                                    if (isLogicalJourney(legs)) {
+                                        results.add(new JourneyOption(legs));
+                                        graphManager.addConnection(originCrs, hub1);
+                                        graphManager.addConnection(hub1, hub2);
+                                        graphManager.addConnection(hub2, destCrs);
+                                        if (results.size() >= 10) return;
+                                        break;
+                                    }
                                 }
                             }
                         }
@@ -249,6 +264,9 @@ public class JourneyPlannerEngine {
                 if (term2Board == null || term2Board.trainServices == null) continue;
 
                 for (StationDepartureResponse.TrainService t1 : allOrigin.trainServices) {
+                    // FILTER: Skip if t1 goes directly to the final destination
+                    if (getPreciseArrivalTime(t1.serviceID, destCrs) != null) continue;
+
                     String t1ArrTime = getPreciseArrivalTime(t1.serviceID, terminal1);
                     if (t1ArrTime == null) continue;
 
@@ -271,14 +289,46 @@ public class JourneyPlannerEngine {
                             legs.add(new JourneyLeg(terminal1, getStationName(terminal1), terminal2, getStationName(terminal2), getStationName(terminal2), t1ArrTime, arrivedAtTerm2Time, "London Underground", "TUBE", "TUBE/WALK", new ArrayList<>(), null, null));
                             legs.add(new JourneyLeg(terminal2, getStationName(terminal2), destCrs, getStationName(destCrs), t2TrainDest, t2.std, t2ArrTime, t2.operatorName, t2.serviceID, "TRAIN", stops2, getLiveLocationStatus(t2.serviceID), t2.etd));
 
-                            results.add(new JourneyOption(legs));
-                            if (results.size() >= 10) return;
-                            break;
+                            if (isLogicalJourney(legs)) {
+                                results.add(new JourneyOption(legs));
+                                if (results.size() >= 10) return;
+                                break;
+                            }
                         }
                     }
                 }
             }
         }
+    }
+    private boolean isLogicalJourney(List<JourneyLeg> legs) {
+        Set<String> visitedStations = new HashSet<>();
+        Set<String> usedServices = new HashSet<>();
+        String lastStation = null;
+
+        for (JourneyLeg leg : legs) {
+            if ("TUBE/WALK".equals(leg.transportMode)) {
+                lastStation = leg.toStationName;
+                continue;
+            }
+
+            if (leg.serviceId != null) {
+                if (!usedServices.add(leg.serviceId)) return false;
+            }
+
+            if (lastStation == null || !lastStation.equalsIgnoreCase(leg.fromStationName)) {
+                if (!visitedStations.add(leg.fromStationName.toLowerCase())) return false;
+            }
+
+            for (JourneyLeg.Stop stop : leg.intermediateStops) {
+                if (!visitedStations.add(stop.stationName.toLowerCase())) return false;
+            }
+
+            // Check Destination
+            if (!visitedStations.add(leg.toStationName.toLowerCase())) return false;
+            lastStation = leg.toStationName;
+        }
+
+        return true;
     }
 
     private StationDepartureResponse getBoard(String crs, int rows, String filter) {
@@ -373,11 +423,7 @@ public class JourneyPlannerEngine {
         return stops;
     }
 
-    // =================================================================================
-    // NEW: LIVE LOCATION HELPER
-    // =================================================================================
     private String getLiveLocationStatus(String serviceId) {
-        // Because getPreciseArrivalTime runs first, the data is guaranteed to be in the cache
         ServiceDetailsResponse details = detailCache.get(serviceId);
         if (details != null) {
             return LiveLocationEngine.getLiveLocation(details);
