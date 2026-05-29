@@ -125,8 +125,8 @@
             android:text="Maps"
             android:textSize="15sp"
             android:textStyle="bold"
-            android:textColor="#FFFFFF"
-            android:backgroundTint="#000000"
+            android:textColor="@color/maps_btn_text"
+            android:backgroundTint="@color/maps_btn_bg"
             app:icon="@drawable/ic_google_g"
             app:iconGravity="end"
             app:iconTint="@null" />

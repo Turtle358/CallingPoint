@@ -9,4 +9,7 @@
 
     <color name="divider_color">#D1D1D6</color>
     <color name="brand_primary">#2E2A74</color>
+
+    <color name="maps_btn_bg">#000000</color>
+    <color name="maps_btn_text">#FFFFFF</color>
 </resources>

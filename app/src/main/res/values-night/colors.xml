@@ -4,4 +4,7 @@
 
     <color name="divider_color">#38383A</color>
     <color name="brand_primary">#3949AB</color>
+
+    <color name="maps_btn_bg">#FFFFFF</color>
+    <color name="maps_btn_text">#000000</color>
 </resources>
