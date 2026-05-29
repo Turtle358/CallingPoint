@@ -14,6 +14,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.RadioGroup;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
@@ -26,6 +27,9 @@ import androidx.work.NetworkType;
 import androidx.work.OneTimeWorkRequest;
 import androidx.work.WorkInfo;
 import androidx.work.WorkManager;
+import android.transition.AutoTransition;
+import android.transition.TransitionManager;
+import android.view.ViewGroup;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -94,6 +98,24 @@ public class SettingsFragment extends Fragment {
             if (isTracked) trackedTocs.add(tocCode);
             else trackedTocs.remove(tocCode);
             saveTrackedTocs();
+        });
+
+        View headerApiKeys = view.findViewById(R.id.headerApiKeys);
+        View contentApiKeys = view.findViewById(R.id.contentApiKeys);
+        ImageView iconApiKeysToggle = view.findViewById(R.id.iconApiKeysToggle);
+
+        headerApiKeys.setOnClickListener(v -> {
+            AutoTransition transition = new AutoTransition();
+            transition.setDuration(200);
+            TransitionManager.beginDelayedTransition((ViewGroup) requireView(), transition);
+
+            if (contentApiKeys.getVisibility() == View.VISIBLE) {
+                contentApiKeys.setVisibility(View.GONE);
+                iconApiKeysToggle.animate().rotation(0f).setDuration(200).start();
+            } else {
+                contentApiKeys.setVisibility(View.VISIBLE);
+                iconApiKeysToggle.animate().rotation(180f).setDuration(200).start();
+            }
         });
 
         recyclerTocs.setAdapter(adapter);
