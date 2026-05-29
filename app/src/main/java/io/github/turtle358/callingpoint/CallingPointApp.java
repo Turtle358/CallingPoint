@@ -5,12 +5,15 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.os.Build;
 
+import io.github.turtle358.callingpoint.utils.ThemeHelper;
+
 public class CallingPointApp extends Application {
     public static final String CHANNEL_ID = "train_delay_alerts";
 
     @Override
     public void onCreate() {
         super.onCreate();
+        ThemeHelper.applyTheme(this);
 
         createNotificationChannel();
     }
