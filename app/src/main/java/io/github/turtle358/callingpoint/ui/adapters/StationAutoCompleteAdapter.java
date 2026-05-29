@@ -31,6 +31,17 @@ public class StationAutoCompleteAdapter extends ArrayAdapter<String> {
         return filteredStations.get(position);
     }
 
+    public void updateStations(List<String> newStations) {
+        this.allStations.clear();
+        this.allStations.addAll(newStations);
+        this.filteredStations.clear();
+        this.filteredStations.addAll(newStations);
+        setNotifyOnChange(false);
+        clear();
+        addAll(newStations);
+        notifyDataSetChanged();
+    }
+
     @NonNull
     @Override
     public Filter getFilter() {

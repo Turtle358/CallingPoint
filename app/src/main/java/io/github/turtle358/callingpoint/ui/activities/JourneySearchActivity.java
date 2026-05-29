@@ -39,6 +39,8 @@ public class JourneySearchActivity extends AppCompatActivity {
     private JourneyAdapter adapter;
     private JourneyPlannerEngine plannerEngine;
 
+    private StationAutoCompleteAdapter autoCompleteAdapter;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -66,7 +68,7 @@ public class JourneySearchActivity extends AppCompatActivity {
         }
 
         List<String> stations = StationHelper.getStationNames();
-        StationAutoCompleteAdapter autoCompleteAdapter = new StationAutoCompleteAdapter(this, stations);
+        autoCompleteAdapter = new StationAutoCompleteAdapter(this, stations);
         etFromCrs.setAdapter(autoCompleteAdapter);
         etToCrs.setAdapter(autoCompleteAdapter);
 
@@ -90,6 +92,14 @@ public class JourneySearchActivity extends AppCompatActivity {
 
         btnSearch.setOnClickListener(v -> handleSearch(false));
         btnMaps.setOnClickListener(v -> handleSearch(true));
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (autoCompleteAdapter != null) {
+            autoCompleteAdapter.updateStations(StationHelper.getStationNames());
+        }
     }
 
     private void handleSearch(boolean useGoogleMaps) {

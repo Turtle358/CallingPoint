@@ -47,6 +47,8 @@ public class DeparturesFragment extends Fragment {
     private String currentFromCrs = "";
     private String currentToCrs = "";
 
+    private ArrayAdapter<String> autoCompleteAdapter;
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -66,7 +68,7 @@ public class DeparturesFragment extends Fragment {
         tvEmptyState = view.findViewById(R.id.tvEmptyState);
 
         List<String> stations = StationHelper.getStationNames();
-        ArrayAdapter<String> autoCompleteAdapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_dropdown_item_1line, stations);
+        autoCompleteAdapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_dropdown_item_1line, stations);
         etFromCrs.setAdapter(autoCompleteAdapter);
         etToCrs.setAdapter(autoCompleteAdapter);
 
@@ -110,6 +112,17 @@ public class DeparturesFragment extends Fragment {
                 swipeRefreshLayout.setRefreshing(false);
             }
         });
+    }
+
+    @Override
+    public void onHiddenChanged(boolean hidden) {
+        super.onHiddenChanged(hidden);
+        if (!hidden && autoCompleteAdapter != null) {
+            autoCompleteAdapter.setNotifyOnChange(false);
+            autoCompleteAdapter.clear();
+            autoCompleteAdapter.addAll(StationHelper.getStationNames());
+            autoCompleteAdapter.notifyDataSetChanged();
+        }
     }
 
     private void fetchDepartures(String fromCrs, String toCrs) {

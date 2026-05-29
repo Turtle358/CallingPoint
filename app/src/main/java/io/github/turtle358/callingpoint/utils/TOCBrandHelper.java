@@ -5,6 +5,9 @@ import android.content.SharedPreferences;
 import android.graphics.Color;
 import org.json.JSONArray;
 import org.json.JSONObject;
+
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -18,13 +21,24 @@ public class TOCBrandHelper {
     private static JSONObject userColoursJson;
 
     public static void init(Context context) {
+        String json = null;
         try {
-            InputStream is = context.getAssets().open("tocs.json");
-            int size = is.available();
-            byte[] buffer = new byte[size];
-            is.read(buffer);
-            is.close();
-            String json = new String(buffer, StandardCharsets.UTF_8);
+            File file = new File(context.getFilesDir(), "tocs_remote.json");
+            if (file.exists()) {
+                FileInputStream fis = context.openFileInput("tocs_remote.json");
+                int size = fis.available();
+                byte[] buffer = new byte[size];
+                fis.read(buffer);
+                fis.close();
+                json = new String(buffer, StandardCharsets.UTF_8);
+            } else {
+                InputStream is = context.getAssets().open("tocs.json");
+                int size = is.available();
+                byte[] buffer = new byte[size];
+                is.read(buffer);
+                is.close();
+                json = new String(buffer, StandardCharsets.UTF_8);
+            }
 
             JSONArray array = new JSONArray(json);
             allTocs.clear();
@@ -43,6 +57,7 @@ public class TOCBrandHelper {
         } catch (Exception e) {
             e.printStackTrace();
         }
+
         SharedPreferences prefs = context.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
         String jsonString = prefs.getString("TOC_COLORS_USER", "{}");
         try {

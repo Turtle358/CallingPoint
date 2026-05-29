@@ -21,17 +21,25 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.work.Constraints;
+import androidx.work.NetworkType;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.WorkInfo;
+import androidx.work.WorkManager;
+
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import io.github.turtle358.callingpoint.utils.StationHelper;
 import io.github.turtle358.callingpoint.widget.AppWidgetProvider;
 import io.github.turtle358.callingpoint.R;
 import io.github.turtle358.callingpoint.utils.TOCBrandHelper;
 import io.github.turtle358.callingpoint.utils.ThemeHelper;
 import io.github.turtle358.callingpoint.ui.adapters.TocSettingAdapter;
 import io.github.turtle358.callingpoint.models.Toc;
+import io.github.turtle358.callingpoint.workers.DataSyncWorker;
 
 public class SettingsFragment extends Fragment {
     private EditText etCustomerKey, etLdbwsKey, etServiceDetailsKey;
@@ -97,6 +105,39 @@ public class SettingsFragment extends Fragment {
                     .putString("SERVICE_DETAILS_KEY", etServiceDetailsKey.getText().toString().trim())
                     .apply();
             Toast.makeText(requireContext(), "API Keys Saved", Toast.LENGTH_SHORT).show();
+        });
+
+        Button btnManualSync = view.findViewById(R.id.btnManualSync);
+        btnManualSync.setOnClickListener(v -> {
+            btnManualSync.setEnabled(false);
+            btnManualSync.setText("Updating reference data...");
+
+            OneTimeWorkRequest syncRequest = new OneTimeWorkRequest.Builder(DataSyncWorker.class)
+                    .setConstraints(new Constraints.Builder()
+                            .setRequiredNetworkType(NetworkType.CONNECTED)
+                            .build())
+                    .build();
+
+            WorkManager workManager = WorkManager.getInstance(requireContext());
+            workManager.enqueue(syncRequest);
+
+            workManager.getWorkInfoByIdLiveData(syncRequest.getId())
+                    .observe(getViewLifecycleOwner(), workInfo -> {
+                        if (workInfo != null) {
+                            if (workInfo.getState() == WorkInfo.State.SUCCEEDED) {
+                                TOCBrandHelper.init(requireContext());
+                                StationHelper.init(requireContext());
+
+                                Toast.makeText(requireContext(), "Reference data updated successfully!", Toast.LENGTH_SHORT).show();
+                                btnManualSync.setEnabled(true);
+                                btnManualSync.setText("Check for Reference Data Updates");
+                            } else if (workInfo.getState() == WorkInfo.State.FAILED) {
+                                Toast.makeText(requireContext(), "Update failed. Please try again later.", Toast.LENGTH_SHORT).show();
+                                btnManualSync.setEnabled(true);
+                                btnManualSync.setText("Check for Reference Data Updates");
+                            }
+                        }
+                    });
         });
     }
 

@@ -13,6 +13,8 @@ import retrofit2.http.POST;
 import retrofit2.http.GET;
 import retrofit2.http.Path;
 import retrofit2.http.Query;
+import okhttp3.ResponseBody;
+import retrofit2.http.Url;
 
 public interface NationalRailAPI {
 
@@ -36,4 +38,7 @@ public interface NationalRailAPI {
             @Header("x-apikey") String serviceDetailsKey,
             @Path("serviceID") String serviceID
     );
+
+    @GET
+    Call<ResponseBody> downloadRemoteData(@Url String url);
 }
