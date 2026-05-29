@@ -9,6 +9,7 @@ import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ProgressBar;
+import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -48,6 +49,7 @@ public class JourneySearchActivity extends AppCompatActivity {
         etToCrs = findViewById(R.id.etToCrs);
         ImageButton btnSwap = findViewById(R.id.btnSwapStations);
         Button btnSearch = findViewById(R.id.btnSearchJourney);
+        Button btnMaps = findViewById(R.id.btnSearchMaps);
         recyclerSearchResults = findViewById(R.id.recyclerSearchResults);
         progressSearch = findViewById(R.id.progressSearch);
         tvStatusUpdate = findViewById(R.id.tvStatusUpdate);
@@ -86,10 +88,11 @@ public class JourneySearchActivity extends AppCompatActivity {
             etToCrs.dismissDropDown();
         });
 
-        btnSearch.setOnClickListener(v -> handleSearch());
+        btnSearch.setOnClickListener(v -> handleSearch(false));
+        btnMaps.setOnClickListener(v -> handleSearch(true));
     }
 
-    private void handleSearch() {
+    private void handleSearch(boolean useGoogleMaps) {
         String fromName = etFromCrs.getText().toString().trim();
         String toName = etToCrs.getText().toString().trim();
 
@@ -111,13 +114,51 @@ public class JourneySearchActivity extends AppCompatActivity {
 
         hideKeyboard();
 
+        if (useGoogleMaps) {
+            launchMapsRouting(fromName, toName, fromCrs, toCrs);
+        } else {
+            startInternalRouting(fromCrs, toCrs);
+        }
+    }
+
+    private void launchMapsRouting(String originName, String destName, String originCrs, String destCrs) {
+        try {
+            String originSearch = java.net.URLEncoder.encode(originName + " Station, UK", "UTF-8");
+            String destSearch = java.net.URLEncoder.encode(destName + " Station, UK", "UTF-8");
+
+            String uriString = "https://www.google.com/maps/dir/?api=1" +
+                    "&origin=" + originSearch +
+                    "&destination=" + destSearch +
+                    "&travelmode=transit";
+
+            android.content.Intent intent = new android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(uriString));
+            intent.setPackage("com.google.android.apps.maps");
+
+            startActivity(intent);
+
+        } catch (android.content.ActivityNotFoundException e) {
+            triggerMapsFallback(originCrs, destCrs);
+        } catch (Exception e) {
+            triggerMapsFallback(originCrs, destCrs);
+        }
+    }
+
+    private void triggerMapsFallback(String originCrs, String destCrs) {
+        Toast.makeText(this, "Maps app unavailable. Using in-app routing...", Toast.LENGTH_LONG).show();
+        startInternalRouting(originCrs, destCrs);
+    }
+
+    private void startInternalRouting(String fromCrs, String toCrs) {
         recyclerSearchResults.setVisibility(View.GONE);
         progressSearch.setVisibility(View.VISIBLE);
         tvStatusUpdate.setVisibility(View.VISIBLE);
-        tvStatusUpdate.setText("Initializing search...");
+        tvStatusUpdate.setText("Initialising search...");
 
         if (plannerEngine != null) {
             findRoutes(fromCrs, toCrs);
+        } else {
+            tvStatusUpdate.setText("Routing engine unavailable. Check API keys.");
+            progressSearch.setVisibility(View.GONE);
         }
     }
 

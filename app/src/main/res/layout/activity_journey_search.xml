@@ -95,17 +95,42 @@
         </androidx.constraintlayout.widget.ConstraintLayout>
     </androidx.cardview.widget.CardView>
 
-    <Button
-        android:id="@+id/btnSearchJourney"
+
+
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="50dp"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
         android:layout_marginHorizontal="24dp"
-        android:layout_marginBottom="8dp"
-        android:text="Find Journeys"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        android:backgroundTint="@color/brand_primary"
-        android:textColor="#FFFFFF"/>
+        android:layout_marginBottom="8dp">
+
+        <Button
+            android:id="@+id/btnSearchJourney"
+            android:layout_width="0dp"
+            android:layout_height="50dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="8dp"
+            android:text="Find Journeys"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:backgroundTint="@color/brand_primary"
+            android:textColor="#FFFFFF"/>
+
+        <Button
+            android:id="@+id/btnSearchMaps"
+            android:layout_width="0dp"
+            android:layout_height="50dp"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:text="Maps"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:textColor="#FFFFFF"
+            android:backgroundTint="#000000"
+            app:icon="@drawable/ic_google_g"
+            app:iconGravity="end"
+            app:iconTint="@null" />
+    </LinearLayout>
 
     <TextView
         android:id="@+id/tvStatusUpdate"
