@@ -12,4 +12,8 @@
 
     <color name="maps_btn_bg">#000000</color>
     <color name="maps_btn_text">#FFFFFF</color>
+
+    <color name="gbr_logo_text">#012169</color>
+
+    <color name="train_logo">#000000</color>
 </resources>

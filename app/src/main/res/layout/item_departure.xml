@@ -70,9 +70,8 @@
 
                 <ImageView
                     android:id="@+id/ivManagerLogo"
-                    android:layout_width="16dp"
-                    android:layout_height="16dp"
-                    android:src="@drawable/ic_train" />
+                    android:layout_width="wrap_content"   android:layout_height="16dp"
+                    android:adjustViewBounds="true"       android:src="@drawable/ic_train" />
 
                 <TextView
                     android:id="@+id/tvPlatform"

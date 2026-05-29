@@ -114,7 +114,9 @@ public class TOCBrandHelper {
     public static int getIconForToc(String operatorName) {
         if (getManagerForToc(operatorName).equalsIgnoreCase("tfl")) {
             return R.drawable.ic_tfl;
-        } else if (getManagerForToc(operatorName).equalsIgnoreCase("national")){
+        } else if (getManagerForToc(operatorName).equalsIgnoreCase("gbr")){
+            return R.drawable.ic_gbr;
+        } else if (getManagerForToc(operatorName).equalsIgnoreCase("national")) {
             return R.drawable.ic_national_rail;
         } else if (getManagerForToc(operatorName).equalsIgnoreCase("eurostar")) {
             return R.drawable.ic_eurostar;

@@ -67,9 +67,8 @@
 
                         <ImageView
                             android:id="@+id/detailTocIcon"
-                            android:layout_width="24dp"
-                            android:layout_height="24dp"
-                            android:contentDescription="Operator Logo" />
+                            android:layout_width="wrap_content"  android:layout_height="24dp"
+                            android:adjustViewBounds="true"      android:contentDescription="Operator Logo" />
 
                     </LinearLayout>
 
