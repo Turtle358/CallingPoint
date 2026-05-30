@@ -119,7 +119,6 @@ public class StationFragment extends Fragment {
 
     private void updatePinIcon() {
         boolean isPinned = pinnedDataManager.isStationPinned(pinKey);
-        // Swap between a filled star and an outlined star
         btnPinStation.setImageResource(isPinned ? R.drawable.ic_bookmark : R.drawable.ic_bookmark_outline);
     }
 

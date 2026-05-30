@@ -58,5 +58,19 @@ public class CallingPointApp extends Application {
                 ExistingPeriodicWorkPolicy.KEEP,
                 dataSyncRequest
         );
+
+        PeriodicWorkRequest widgetSyncRequest = new PeriodicWorkRequest.Builder(
+                io.github.turtle358.callingpoint.workers.WidgetSyncWorker.class,
+                30, TimeUnit.MINUTES)
+                .setConstraints(new Constraints.Builder()
+                        .setRequiredNetworkType(NetworkType.CONNECTED)
+                        .build())
+                .build();
+
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+                "WidgetDisruptionSync",
+                ExistingPeriodicWorkPolicy.KEEP,
+                widgetSyncRequest
+        );
     }
 }

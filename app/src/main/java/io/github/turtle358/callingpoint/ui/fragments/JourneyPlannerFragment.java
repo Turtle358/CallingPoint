@@ -44,7 +44,6 @@ public class JourneyPlannerFragment extends Fragment {
 
         recyclerPinnedJourneys.setLayoutManager(new LinearLayoutManager(requireContext()));
 
-        // Launch the actual search activity when tapped
         cardMockSearch.setOnClickListener(v -> {
             startActivity(new Intent(requireContext(), JourneySearchActivity.class));
         });

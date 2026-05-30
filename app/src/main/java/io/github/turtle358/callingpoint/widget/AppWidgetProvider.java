@@ -161,11 +161,11 @@ public class AppWidgetProvider extends android.appwidget.AppWidgetProvider {
         super.onReceive(context, intent);
 
         if ("com.example.callingpoint.ACTION_REFRESH_WIDGET".equals(intent.getAction())) {
-            TOCBrandHelper.init(context);
             boolean isGoodService = intent.getBooleanExtra("IS_GOOD_SERVICE", false);
             AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
             ComponentName thisWidget = new ComponentName(context, AppWidgetProvider.class);
             RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.widget_disruption);
+
             views.setViewVisibility(R.id.widgetRefresh, View.GONE);
             if (isGoodService) {
                 views.setViewVisibility(R.id.widgetProgressLight, View.VISIBLE);
@@ -173,146 +173,13 @@ public class AppWidgetProvider extends android.appwidget.AppWidgetProvider {
                 views.setViewVisibility(R.id.widgetProgressDark, View.VISIBLE);
             }
             appWidgetManager.updateAppWidget(thisWidget, views);
+
             final PendingResult pendingResult = goAsync();
             new Thread(() -> {
-                performBackgroundSync(context);
+                io.github.turtle358.callingpoint.utils.DisruptionSyncManager.syncSync(context, null);
                 pendingResult.finish();
             }).start();
         }
     }
 
-    private void performBackgroundSync(Context context) {
-        SharedPreferences prefs = context.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
-        String key = prefs.getString("CUSTOMER_KEY", "");
-        if (key.isEmpty()) return;
-        TOCBrandHelper.init(context);
-        String selectedTocs = prefs.getString("WIDGET_TRACKED_TOCS", "");
-        Set<String> trackedSet = new HashSet<>();
-        if (!selectedTocs.trim().isEmpty()) {
-            for (String s : selectedTocs.split(",")) {
-                if (!s.trim().isEmpty()) trackedSet.add(s.trim());
-            }
-        }
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-        String today = sdf.format(new Date());
-        IncidentSearchRequest request = new IncidentSearchRequest(today, today, new ArrayList<>());
-
-        NationalRailAPI api = APIClient.getClient().create(NationalRailAPI.class);
-
-        try {
-            retrofit2.Response<List<IncidentResponse>> response = api.searchIncidents(key, request).execute();
-
-            if (response.isSuccessful() && response.body() != null) {
-                Map<String, DisruptionResponce.ServiceIndicator> trackedMap = new LinkedHashMap<>();
-                Map<String, DisruptionResponce.ServiceIndicator> othersMap = new LinkedHashMap<>();
-                for (IncidentResponse incident : response.body()) {
-                    if (incident.affectedOperators == null || "Cleared".equalsIgnoreCase(incident.status)) continue;
-                    for (IncidentResponse.AffectedOperator op : incident.affectedOperators) {
-                        String currentSummary = incident.summary != null ? incident.summary.toLowerCase() : "";
-                        String currentDesc = incident.description != null ? incident.description.toLowerCase() : "";
-                        String simplifiedStatus = "Minor Disruption";
-
-                        boolean isEngineering = (currentSummary.contains("engineering") || currentDesc.contains("engineering"))
-                                && !currentSummary.contains("overrun") && !currentDesc.contains("overrun");
-
-                        if (currentSummary.contains("strike") || currentDesc.contains("strike") || currentSummary.contains("industrial action") || currentDesc.contains("industrial action")) {
-                            simplifiedStatus = "Planned Industrial Action";
-                        } else if (isEngineering) {
-                            simplifiedStatus = "Planned Engineering Works";
-                        } else if (currentSummary.contains("major") || currentSummary.contains("suspended") || currentSummary.contains("closed") || currentSummary.contains("blocked")) {
-                            simplifiedStatus = "Major Disruption";
-                        } else if (currentSummary.contains("bus") || currentSummary.contains("amended")) {
-                            simplifiedStatus = "Planned Engineering Works";
-                        }
-                        Map<String, DisruptionResponce.ServiceIndicator> targetMap;
-                        if (trackedSet.isEmpty() || trackedSet.contains(op.tocCode)) {
-                            targetMap = trackedMap;
-                        } else {
-                            targetMap = othersMap;
-                        }
-
-                        if (!targetMap.containsKey(op.tocCode)) {
-                            DisruptionResponce.ServiceIndicator si = new DisruptionResponce.ServiceIndicator();
-                            si.tocCode = op.tocCode;
-                            si.tocName = TOCBrandHelper.getNameForCode(op.tocCode);
-                            si.status = simplifiedStatus;
-                            if (simplifiedStatus.equals("Planned Engineering Works")) {
-                                si.plannedDescription = incident.description;
-                            } else {
-                                si.description = incident.description;
-                            }
-                            targetMap.put(op.tocCode, si);
-                        } else {
-                            DisruptionResponce.ServiceIndicator existing = targetMap.get(op.tocCode);
-                            if (simplifiedStatus.equals("Major Disruption")) {
-                                existing.status = "Major Disruption";
-                            } else if (simplifiedStatus.equals("Minor Disruption") && existing.status.equals("Planned Engineering Works")) {
-                                existing.status = "Minor Disruption";
-                            }
-                            if (simplifiedStatus.equals("Planned Engineering Works")) {
-                                if (existing.plannedDescription.isEmpty()) {
-                                    existing.plannedDescription = incident.description;
-                                } else {
-                                    existing.plannedDescription += "<br><br><hr><br>" + incident.description;
-                                }
-                            } else {
-                                if (existing.description.isEmpty()) {
-                                    existing.description = incident.description;
-                                } else {
-                                    existing.description += "<br><br><hr><br>" + incident.description;
-                                }
-                            }
-                        }
-                    }
-                }
-                List<DisruptionResponce.ServiceIndicator> trackedLive = new ArrayList<>();
-                List<DisruptionResponce.ServiceIndicator> othersLive = new ArrayList<>();
-                List<DisruptionResponce.ServiceIndicator> plannedWorks = new ArrayList<>();
-                for (DisruptionResponce.ServiceIndicator si : trackedMap.values()) {
-                    if (si.status.equals("Planned Engineering Works")) plannedWorks.add(si);
-                    else trackedLive.add(si);
-                }
-                for (DisruptionResponce.ServiceIndicator si : othersMap.values()) {
-                    if (si.status.equals("Planned Engineering Works")) plannedWorks.add(si);
-                    else othersLive.add(si);
-                }
-                trackedLive.sort((a, b) -> a.tocName.compareToIgnoreCase(b.tocName));
-                othersLive.sort((a, b) -> a.tocName.compareToIgnoreCase(b.tocName));
-                plannedWorks.sort((a, b) -> a.tocName.compareToIgnoreCase(b.tocName));
-                List<DisruptionResponce.ServiceIndicator> fullAppData = new ArrayList<>(trackedLive);
-                if (!trackedLive.isEmpty() && !othersLive.isEmpty()) {
-                    DisruptionResponce.ServiceIndicator sep = new DisruptionResponce.ServiceIndicator();
-                    sep.tocCode = "SEPARATOR";
-                    sep.tocName = "OTHER OPERATORS";
-                    fullAppData.add(sep);
-                }
-                fullAppData.addAll(othersLive);
-                if (!plannedWorks.isEmpty()) {
-                    DisruptionResponce.ServiceIndicator sep = new DisruptionResponce.ServiceIndicator();
-                    sep.tocCode = "SEPARATOR";
-                    sep.tocName = "ENGINEERING WORKS";
-                    fullAppData.add(sep);
-                    fullAppData.addAll(plannedWorks);
-                }
-                String widgetJson = new com.google.gson.Gson().toJson(trackedLive);
-                String appJson = new com.google.gson.Gson().toJson(fullAppData);
-
-                prefs.edit()
-                        .putString("CACHED_TOC_DATA", widgetJson)
-                        .putString("CACHED_TOC_DATA_ALL", appJson)
-                        .putLong("LAST_SYNC_TIME", System.currentTimeMillis())
-                        .apply();
-                AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
-                ComponentName thisWidget = new ComponentName(context, AppWidgetProvider.class);
-                int[] appWidgetIds = appWidgetManager.getAppWidgetIds(thisWidget);
-
-                Intent updateIntent = new Intent(context, AppWidgetProvider.class);
-                updateIntent.setAction(AppWidgetManager.ACTION_APPWIDGET_UPDATE);
-                updateIntent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, appWidgetIds);
-                context.sendBroadcast(updateIntent);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
 }
