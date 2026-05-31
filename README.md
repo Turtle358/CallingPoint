@@ -40,11 +40,11 @@ Never get caught off-guard by delays or cancellations. The Disruptions tab clear
 
 <div align="center">
   <img src="./readmeimg/DisruptionFragment-Mixed.png" width="400" alt="Disruptions Dashboard"/>
-  <img src="./readmeimg/DisruptionDetails-Mixed.jpg" width="400" alt="Disruption Incident Details"/>
+  <img src="./readmeimg/DisruptionDetails-Mixed.png" width="400" alt="Disruption Incident Details"/>
 </div>
 <br>
 <div align="center">
-  <img src="./readmeimg/Widget.png" width="400" alt="Home Screen Widget"/>
+  <img src="./readmeimg/Widget_new.png" width="400" alt="Home Screen Widget"/>
 </div>
 
 ### ⚙️ Personalisation & Settings
