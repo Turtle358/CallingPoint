@@ -70,8 +70,10 @@
 
                 <ImageView
                     android:id="@+id/ivManagerLogo"
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="18dp"
+                    android:adjustViewBounds="true"
+                    android:scaleType="fitCenter"
                     android:contentDescription="Operator Logo" />
 
                 <TextView
