@@ -95,7 +95,17 @@ If you prefer to build the app yourself:
 
 ## 📄 License
 
-This project is open-source and available under standard open-source licensing.
+This project is licensed under the **Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International (CC BY-NC-ND 4.0)**.
+
+You are free to:
+* **Share** — copy and redistribute the material in any medium or format.
+
+Under the following terms:
+* **Attribution** — You must give appropriate credit, provide a link to the license, and indicate if changes were made. 
+* **NonCommercial** — You may not use the material for commercial purposes.
+* **NoDerivatives** — If you remix, transform, or build upon the material, you may not distribute the modified material.
+
+See the `LICENSE` file for the full legal text.
 
 ## Acknowledgements & Credits
 
