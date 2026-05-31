@@ -44,7 +44,7 @@ Never get caught off-guard by delays or cancellations. The Disruptions tab clear
 </div>
 <br>
 <div align="center">
-  <img src="./readmeimg/Widget_new.png" width="400" alt="Home Screen Widget"/>
+  <img src="./readmeimg/Widget.png" width="400" alt="Home Screen Widget"/>
 </div>
 
 ### ⚙️ Personalisation & Settings
