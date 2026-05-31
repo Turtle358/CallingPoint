@@ -50,6 +50,8 @@ public class TOCBrandHelper {
                 t.name = obj.getString("name");
                 t.colour = obj.getString("colour");
                 t.manager = obj.getString("manager");
+                t.shown = obj.optInt("shown", 1);
+
                 allTocs.add(t);
             }
             allTocs.sort((t1, t2) -> t1.name.compareToIgnoreCase(t2.name));
@@ -67,11 +69,10 @@ public class TOCBrandHelper {
         }
     }
 
-
     public static List<Toc> getVisibleTocs() {
         List<Toc> visibleTocs = new ArrayList<>();
         for (Toc t : allTocs) {
-            if (!t.name.equalsIgnoreCase("London North Eastern Railway") && !t.name.equalsIgnoreCase("LNR & WMR")) {
+            if (t.shown != 0) {
                 visibleTocs.add(t);
             }
         }

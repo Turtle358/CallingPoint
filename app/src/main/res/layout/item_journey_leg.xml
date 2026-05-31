@@ -13,7 +13,8 @@
         android:paddingHorizontal="24dp"
         android:paddingTop="20dp"
         android:paddingBottom="8dp"
-        android:gravity="center_vertical">
+        android:gravity="center_vertical"
+        android:baselineAligned="false"> <!-- Keeps baseline alignment off -->
 
         <ImageView
             android:layout_width="24dp"
@@ -26,37 +27,47 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:layout_marginStart="16dp"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:gravity="center_vertical">
 
+            <!-- includeFontPadding="false" removes invisible top/bottom text spacing -->
             <TextView
                 android:id="@+id/tvOperatorName"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:includeFontPadding="false"
                 android:textColor="?android:attr/textColorPrimary"
                 android:textStyle="bold"
                 android:textSize="16sp" />
 
+            <!-- Added 2dp top margin to replace the stripped font padding -->
             <TextView
                 android:id="@+id/tvTrainDestination"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:includeFontPadding="false"
                 android:textColor="?android:attr/textColorSecondary"
                 android:textSize="14sp" />
 
+            <!-- CRITICAL: Set visibility="gone" by default so it doesn't skew the center height when empty -->
             <TextView
                 android:id="@+id/tvLiveLocation"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
+                android:includeFontPadding="false"
                 android:textColor="#00875A"
                 android:textSize="12sp"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                android:visibility="gone" />
         </LinearLayout>
 
         <ImageView
             android:id="@+id/ivManagerLogo"
             android:layout_width="wrap_content"
-            android:layout_height="20dp"
+            android:layout_height="32dp"
+            android:layout_gravity="center_vertical"
             android:adjustViewBounds="true"
             android:layout_marginStart="16dp" />
     </LinearLayout>

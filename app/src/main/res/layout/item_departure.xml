@@ -19,7 +19,7 @@
             android:id="@+id/tocColourBar"
             android:layout_width="8dp"
             android:layout_height="match_parent"
-            android:background="#D32F2F" />
+            android:background="#000000" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -37,7 +37,7 @@
                     android:layout_width="0dp"
                     android:layout_weight="1"
                     android:layout_height="wrap_content"
-                    android:text="Brighton"
+                    android:text=""
                     android:textColor="@color/text_primary"
                     android:textSize="16sp"
                     android:textStyle="bold" />
@@ -46,7 +46,7 @@
                     android:id="@+id/tvSchTime"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="17:33"
+                    android:text=""
                     android:textColor="@color/text_primary"
                     android:textSize="16sp"
                     android:textStyle="bold" />
@@ -57,7 +57,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
-                android:text="Thameslink"
+                android:text=""
                 android:textColor="@color/text_secondary"
                 android:textSize="13sp" />
 
@@ -66,12 +66,16 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
                 android:orientation="horizontal"
-                android:gravity="center_vertical">
+                android:gravity="center_vertical"
+                android:baselineAligned="false">
 
                 <ImageView
                     android:id="@+id/ivManagerLogo"
-                    android:layout_width="wrap_content"   android:layout_height="16dp"
-                    android:adjustViewBounds="true"       android:src="@drawable/ic_train" />
+                    android:layout_width="wrap_content"
+                    android:layout_height="16dp"
+                    android:layout_gravity="center_vertical"
+                    android:adjustViewBounds="true"
+                    android:src="@drawable/ic_train" />
 
                 <TextView
                     android:id="@+id/tvPlatform"
@@ -79,7 +83,9 @@
                     android:layout_weight="1"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="6dp"
-                    android:text="Platform 2"
+                    android:layout_gravity="center_vertical"
+                    android:includeFontPadding="false"
+                    android:text=""
                     android:textColor="@color/text_secondary"
                     android:textSize="14sp"
                     android:textStyle="bold" />
@@ -88,7 +94,9 @@
                     android:id="@+id/tvLiveStatus"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="On time"
+                    android:layout_gravity="center_vertical"
+                    android:includeFontPadding="false"
+                    android:text=""
                     android:textColor="#00875A"
                     android:textSize="14sp"
                     android:textStyle="bold" />

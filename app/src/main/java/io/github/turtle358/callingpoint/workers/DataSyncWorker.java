@@ -14,7 +14,7 @@ import io.github.turtle358.callingpoint.api.NationalRailAPI;
 
 public class DataSyncWorker extends Worker {
 
-    private static final String TOCS_URL = "https://raw.githubusercontent.com/Turtle358/callingpoint-data/refs/heads/main/tocs.json";
+    private static final String TOCS_URL = "https://raw.githubusercontent.com/Turtle358/callingpoint-data/refs/heads/main/tocs_2.json";
     private static final String STATIONS_URL = "https://raw.githubusercontent.com/Turtle358/callingpoint-data/refs/heads/main/stations.json";
 
     public DataSyncWorker(@NonNull Context context, @NonNull WorkerParameters workerParams) {

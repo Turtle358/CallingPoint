@@ -28,7 +28,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="17:22 to Brighton"
+                android:text=""
                 android:textStyle="bold" />
 
             <TextView
@@ -36,7 +36,7 @@
                 style="@style/TextAppearance.Compat.Notification.Info"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Plat 2"
+                android:text=""
                 android:textStyle="bold" />
         </LinearLayout>
 
@@ -60,13 +60,13 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Thameslink" />
+                android:text="" />
 
             <TextView
                 android:id="@+id/notifStatus"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="On time"
+                android:text=""
                 android:textSize="14sp"
                 android:textStyle="bold" />
         </LinearLayout>

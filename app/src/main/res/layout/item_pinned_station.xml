@@ -44,7 +44,7 @@
                 android:id="@+id/tvStationName"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Wadhurst"
+                android:text=""
                 android:textColor="@color/text_primary"
                 android:textSize="18sp"
                 android:textStyle="bold" />
@@ -54,7 +54,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
-                android:text="to London Bridge"
+                android:text=""
                 android:textColor="@color/text_secondary"
                 android:textSize="14sp" />
         </LinearLayout>

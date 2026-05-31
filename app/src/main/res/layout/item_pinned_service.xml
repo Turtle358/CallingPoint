@@ -37,7 +37,7 @@
                     android:layout_width="0dp"
                     android:layout_weight="1"
                     android:layout_height="wrap_content"
-                    android:text="Brighton to London Bridge"
+                    android:text=""
                     android:textColor="@color/text_primary"
                     android:textSize="16sp"
                     android:textStyle="bold" />
@@ -46,7 +46,7 @@
                     android:id="@+id/tvSchTime"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="17:33"
+                    android:text=""
                     android:textColor="@color/text_primary"
                     android:textSize="16sp"
                     android:textStyle="bold" />
@@ -57,7 +57,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
-                android:text="Thameslink"
+                android:text=""
                 android:textColor="@color/text_secondary"
                 android:textSize="13sp" />
 
@@ -80,7 +80,7 @@
                     android:layout_weight="1"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="6dp"
-                    android:text="Next: Hassocks"
+                    android:text=""
                     android:textColor="@color/text_primary"
                     android:textSize="14sp"
                     android:textStyle="bold" />
@@ -89,7 +89,7 @@
                     android:id="@+id/tvLiveStatus"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="On time"
+                    android:text=""
                     android:textColor="#00875A"
                     android:textSize="14sp"
                     android:textStyle="bold" />

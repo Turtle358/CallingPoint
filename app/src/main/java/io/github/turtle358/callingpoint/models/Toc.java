@@ -5,4 +5,5 @@ public class Toc {
     public String name;
     public String colour;
     public String manager;
+    public int shown;
 }
