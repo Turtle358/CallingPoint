@@ -77,7 +77,7 @@ public class DeparturesAdapter extends RecyclerView.Adapter<DeparturesAdapter.Vi
         if (!isArrivals && service.subsequentCallingPoints != null && !service.subsequentCallingPoints.isEmpty()) {
             List<StationDepartureResponse.CallingPoint> pts = service.subsequentCallingPoints.get(0).callingPoint;
             stopsCount = pts.size();
-            holder.tvCallingAt.setText("Calling at " + pts.get(0).locationName);
+            holder.tvCallingAt.setText("Next: " + pts.get(0).locationName);
             holder.tvCallingAt.setVisibility(View.VISIBLE);
 
             durationStr = calculateDuration(schTime, pts.get(pts.size() - 1).st);
@@ -85,7 +85,7 @@ public class DeparturesAdapter extends RecyclerView.Adapter<DeparturesAdapter.Vi
         } else if (isArrivals && service.previousCallingPoints != null && !service.previousCallingPoints.isEmpty()) {
             List<StationDepartureResponse.CallingPoint> pts = service.previousCallingPoints.get(0).callingPoint;
             stopsCount = pts.size();
-            holder.tvCallingAt.setText("Arriving from " + pts.get(pts.size() - 1).locationName);
+            holder.tvCallingAt.setText("Via " + pts.get(pts.size() - 1).locationName);
             holder.tvCallingAt.setVisibility(View.VISIBLE);
 
             durationStr = calculateDuration(pts.get(0).st, schTime);
