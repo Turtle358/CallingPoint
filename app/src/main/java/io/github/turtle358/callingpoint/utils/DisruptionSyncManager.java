@@ -86,11 +86,28 @@ public class DisruptionSyncManager {
                         boolean isEngineering = (currentSummary.contains("engineering") || currentDesc.contains("engineering"))
                                 && !currentSummary.contains("overrun") && !currentDesc.contains("overrun");
 
+                        boolean hasSevereDelay = false;
+                        java.util.regex.Pattern delayPattern = java.util.regex.Pattern.compile("(\\d+)\\s*(?:min|minute)");
+                        java.util.regex.Matcher matcher = delayPattern.matcher(currentSummary + " " + currentDesc);
+                        while (matcher.find()) {
+                            try {
+                                int minutes = Integer.parseInt(matcher.group(1));
+                                if (minutes >= 45) {
+                                    hasSevereDelay = true;
+                                    break;
+                                }
+                            } catch (NumberFormatException ignored) {}
+                        }
+
                         if (currentSummary.contains("strike") || currentDesc.contains("strike") || currentSummary.contains("industrial action") || currentDesc.contains("industrial action")) {
                             simplifiedStatus = "Planned Industrial Action";
                         } else if (isEngineering) {
                             simplifiedStatus = "Planned Engineering Works";
-                        } else if (currentSummary.contains("major") || currentSummary.contains("suspended") || currentSummary.contains("closed") || currentSummary.contains("blocked")) {
+                        } else if (hasSevereDelay ||
+                                currentSummary.contains("major") ||
+                                currentSummary.contains("severe") ||
+                                currentSummary.contains("suspended") ||
+                                currentSummary.contains("do not travel")) {
                             simplifiedStatus = "Major Disruption";
                         } else if (currentSummary.contains("bus") || currentSummary.contains("amended")) {
                             simplifiedStatus = "Planned Engineering Works";
