@@ -1,13 +1,12 @@
 package io.github.turtle358.callingpoint.ui.adapters;
 
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
 import android.widget.TextView;
-import android.content.Intent;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import java.util.List;
@@ -20,14 +19,16 @@ import io.github.turtle358.callingpoint.ui.activities.ServiceDetailsActivity;
 public class DeparturesAdapter extends RecyclerView.Adapter<DeparturesAdapter.ViewHolder> {
     private final Context context;
     private List<StationDepartureResponse.TrainService> services;
+    private boolean isArrivals = false;
 
     public DeparturesAdapter(Context context, List<StationDepartureResponse.TrainService> services) {
         this.context = context;
         this.services = services;
     }
 
-    public void updateData(List<StationDepartureResponse.TrainService> newServices) {
+    public void updateData(List<StationDepartureResponse.TrainService> newServices, boolean isArrivals) {
         this.services = newServices;
+        this.isArrivals = isArrivals;
         notifyDataSetChanged();
     }
 
@@ -42,34 +43,62 @@ public class DeparturesAdapter extends RecyclerView.Adapter<DeparturesAdapter.Vi
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         StationDepartureResponse.TrainService service = services.get(position);
 
-        int brandColour = TOCBrandHelper.getColourForToc(service.operatorName);
-        holder.tocColourBar.setBackgroundColor(brandColour);
-        holder.ivManagerLogo.setImageResource(TOCBrandHelper.getIconForToc(service.operatorName));
+        holder.tocColourBar.setBackgroundColor(TOCBrandHelper.getColourForToc(service.operatorName));
 
-        holder.tvSchTime.setText(service.std);
-        holder.tvOperator.setText(service.operatorName);
+        String schTime = service.std != null ? service.std : (service.sta != null ? service.sta : "--:--");
+        String estTime = service.etd != null ? service.etd : (service.eta != null ? service.eta : "Unknown");
 
-        if (service.destination != null && !service.destination.isEmpty()) {
-            holder.tvDestination.setText(service.destination.get(0).locationName);
-        } else {
-            holder.tvDestination.setText("Unknown");
-        }
+        holder.tvSchTime.setText(schTime);
+        holder.tvLiveStatus.setText(estTime);
 
-
-        if (service.platform != null && !service.platform.isEmpty()) {
-            holder.tvPlatform.setText("Platform " + service.platform);
-        } else {
-            holder.tvPlatform.setText("Platform TBC");
-        }
-
-        holder.tvLiveStatus.setText(service.etd);
-        if ("On time".equalsIgnoreCase(service.etd)) {
+        if ("On time".equalsIgnoreCase(estTime)) {
             holder.tvLiveStatus.setTextColor(Color.parseColor("#00875A"));
-        } else if ("Cancelled".equalsIgnoreCase(service.etd)) {
+        } else if ("Cancelled".equalsIgnoreCase(estTime)) {
             holder.tvLiveStatus.setTextColor(Color.parseColor("#DE350B"));
         } else {
             holder.tvLiveStatus.setTextColor(Color.parseColor("#FF8C00"));
         }
+
+        holder.tvPlatform.setText(service.platform != null ? "Platform " + service.platform : "Platform -");
+
+        String originName = (service.origin != null && !service.origin.isEmpty()) ? service.origin.get(0).locationName : "Unknown";
+        String originCrs = (service.origin != null && !service.origin.isEmpty()) ? service.origin.get(0).crs : "";
+        String destName = (service.destination != null && !service.destination.isEmpty()) ? service.destination.get(0).locationName : "Unknown";
+        String destCrs = (service.destination != null && !service.destination.isEmpty()) ? service.destination.get(0).crs : "";
+
+        String routeHtml = "<b>" + originName + "</b>" + (!originCrs.isEmpty() ? " <small>(" + originCrs + ")</small>" : "") +
+                " to <b>" + destName + "</b>" + (!destCrs.isEmpty() ? " <small>(" + destCrs + ")</small>" : "");
+        holder.tvRoute.setText(android.text.Html.fromHtml(routeHtml, android.text.Html.FROM_HTML_MODE_COMPACT));
+
+        String durationStr = "";
+        int stopsCount = 0;
+
+        if (!isArrivals && service.subsequentCallingPoints != null && !service.subsequentCallingPoints.isEmpty()) {
+            List<StationDepartureResponse.CallingPoint> pts = service.subsequentCallingPoints.get(0).callingPoint;
+            stopsCount = pts.size();
+            holder.tvCallingAt.setText("Calling at " + pts.get(0).locationName);
+            holder.tvCallingAt.setVisibility(View.VISIBLE);
+
+            durationStr = calculateDuration(schTime, pts.get(pts.size() - 1).st);
+
+        } else if (isArrivals && service.previousCallingPoints != null && !service.previousCallingPoints.isEmpty()) {
+            List<StationDepartureResponse.CallingPoint> pts = service.previousCallingPoints.get(0).callingPoint;
+            stopsCount = pts.size();
+            holder.tvCallingAt.setText("Arriving from " + pts.get(pts.size() - 1).locationName);
+            holder.tvCallingAt.setVisibility(View.VISIBLE);
+
+            durationStr = calculateDuration(pts.get(0).st, schTime);
+
+        } else {
+            holder.tvCallingAt.setVisibility(View.GONE);
+        }
+
+        String detailsText = "";
+        if (!durationStr.isEmpty()) detailsText += durationStr + " • ";
+        detailsText += stopsCount + (stopsCount == 1 ? " stop • " : " stops • ");
+        detailsText += service.operatorName;
+
+        holder.tvServiceDetails.setText(detailsText);
 
         holder.itemView.setOnClickListener(v -> {
             Intent intent = new Intent(context, ServiceDetailsActivity.class);
@@ -78,25 +107,43 @@ public class DeparturesAdapter extends RecyclerView.Adapter<DeparturesAdapter.Vi
         });
     }
 
-    @Override
-    public int getItemCount() {
-        return services != null ? services.size() : 0;
+    private String calculateDuration(String start, String end) {
+        if (start == null || end == null || !start.contains(":") || !end.contains(":")) return "";
+        try {
+            String[] sParts = start.split(":");
+            String[] eParts = end.split(":");
+            int sMins = Integer.parseInt(sParts[0]) * 60 + Integer.parseInt(sParts[1]);
+            int eMins = Integer.parseInt(eParts[0]) * 60 + Integer.parseInt(eParts[1]);
+
+            int diff = eMins - sMins;
+            if (diff < 0) diff += 1440;
+
+            int h = diff / 60;
+            int m = diff % 60;
+
+            if (h > 0) return h + "h " + m + "m";
+            return m + "m";
+        } catch (Exception e) {
+            return "";
+        }
     }
 
+    @Override
+    public int getItemCount() { return services != null ? services.size() : 0; }
+
     public static class ViewHolder extends RecyclerView.ViewHolder {
-        TextView tvSchTime, tvDestination, tvOperator, tvLiveStatus, tvPlatform;
         View tocColourBar;
-        ImageView ivManagerLogo;
+        TextView tvSchTime, tvLiveStatus, tvPlatform, tvRoute, tvCallingAt, tvServiceDetails;
 
         public ViewHolder(View v) {
             super(v);
+            tocColourBar = v.findViewById(R.id.tocColourBar);
             tvSchTime = v.findViewById(R.id.tvSchTime);
-            tvDestination = v.findViewById(R.id.tvDestination);
-            tvOperator = v.findViewById(R.id.tvOperator);
             tvLiveStatus = v.findViewById(R.id.tvLiveStatus);
             tvPlatform = v.findViewById(R.id.tvPlatform);
-            tocColourBar = v.findViewById(R.id.tocColourBar);
-            ivManagerLogo = v.findViewById(R.id.ivManagerLogo);
+            tvRoute = v.findViewById(R.id.tvRoute);
+            tvCallingAt = v.findViewById(R.id.tvCallingAt);
+            tvServiceDetails = v.findViewById(R.id.tvServiceDetails);
         }
     }
 }

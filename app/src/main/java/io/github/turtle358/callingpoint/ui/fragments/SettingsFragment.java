@@ -46,7 +46,7 @@ import io.github.turtle358.callingpoint.models.Toc;
 import io.github.turtle358.callingpoint.workers.DataSyncWorker;
 
 public class SettingsFragment extends Fragment {
-    private EditText etCustomerKey, etLdbwsKey, etServiceDetailsKey;
+    private EditText etCustomerKey, etLdbwsKey, etArrivalsKey, etServiceDetailsKey;
     private RadioGroup themeRadioGroup;
     private Set<String> trackedTocs;
     private SharedPreferences prefs;
@@ -70,11 +70,13 @@ public class SettingsFragment extends Fragment {
 
         etCustomerKey = view.findViewById(R.id.etCustomerKey);
         etLdbwsKey = view.findViewById(R.id.etLdbwsKey);
+        etArrivalsKey = view.findViewById(R.id.etArrivalsKey);
         etServiceDetailsKey = view.findViewById(R.id.etServiceDetailsKey);
         Button btnSaveSettings = view.findViewById(R.id.btnSaveSettings);
 
         etCustomerKey.setText(prefs.getString("CUSTOMER_KEY", ""));
         etLdbwsKey.setText(prefs.getString("LDBWS_KEY", ""));
+        etArrivalsKey.setText(prefs.getString("ARRIVALS_KEY", ""));
         etServiceDetailsKey.setText(prefs.getString("SERVICE_DETAILS_KEY", ""));
 
         ImageButton btnTogglePassword = view.findViewById(R.id.btnTogglePassword);
@@ -82,6 +84,9 @@ public class SettingsFragment extends Fragment {
 
         ImageButton btnToggleLdbwsPassword = view.findViewById(R.id.btnToggleLdbwsPassword);
         btnToggleLdbwsPassword.setOnClickListener(v -> togglePasswordVisibility(etLdbwsKey, btnToggleLdbwsPassword));
+
+        ImageButton btnToggleArrivalPassword = view.findViewById(R.id.btnToggleArrivalsPassword);
+        btnToggleArrivalPassword.setOnClickListener(v -> togglePasswordVisibility(etArrivalsKey, btnToggleArrivalPassword));
 
         ImageButton btnToggleService = view.findViewById(R.id.btnToggleServiceDetailsPassword);
         btnToggleService.setOnClickListener(v -> togglePasswordVisibility(etServiceDetailsKey, btnToggleService));
@@ -124,6 +129,7 @@ public class SettingsFragment extends Fragment {
             prefs.edit()
                     .putString("CUSTOMER_KEY", etCustomerKey.getText().toString().trim())
                     .putString("LDBWS_KEY", etLdbwsKey.getText().toString().trim())
+                    .putString("ARRIVALS_KEY", etArrivalsKey.getText().toString().trim())
                     .putString("SERVICE_DETAILS_KEY", etServiceDetailsKey.getText().toString().trim())
                     .apply();
             Toast.makeText(requireContext(), "API Keys Saved", Toast.LENGTH_SHORT).show();

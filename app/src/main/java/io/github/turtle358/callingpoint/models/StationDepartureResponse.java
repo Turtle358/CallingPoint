@@ -14,6 +14,15 @@ public class StationDepartureResponse {
         @SerializedName("etd")
         public String etd;
 
+        @SerializedName("sta")
+        public String sta;
+
+        @SerializedName("eta")
+        public String eta;
+
+        @SerializedName("origin")
+        public List<Location> origin;
+
         @SerializedName("platform")
         public String platform;
 

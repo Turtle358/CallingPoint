@@ -6,6 +6,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
+import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -35,9 +36,11 @@ public class StationFragment extends Fragment {
     private String fromCrs = "";
     private String toCrs = "";
     private String pinKey = "";
+    private boolean isArrivals = false;
 
     private TextView tvStationTitle, tvStationSubtitle, tvEmptyState;
     private ImageButton btnPinStation;
+    private RadioGroup toggleBoardType;
     private SwipeRefreshLayout swipeRefreshLayout;
     private RecyclerView recyclerDepartures;
 
@@ -58,6 +61,7 @@ public class StationFragment extends Fragment {
         if (getArguments() != null) {
             fromCrs = getArguments().getString("FROM_CRS", "");
             toCrs = getArguments().getString("TO_CRS", "");
+            isArrivals = getArguments().getBoolean("IS_ARRIVALS", false);
         }
 
         pinKey = fromCrs + (toCrs.isEmpty() ? "" : ":" + toCrs);
@@ -65,6 +69,7 @@ public class StationFragment extends Fragment {
         tvStationTitle = view.findViewById(R.id.tvStationTitle);
         tvStationSubtitle = view.findViewById(R.id.tvStationSubtitle);
         btnPinStation = view.findViewById(R.id.btnPinStation);
+        toggleBoardType = view.findViewById(R.id.toggleBoardType);
         swipeRefreshLayout = view.findViewById(R.id.swipeRefreshStation);
         recyclerDepartures = view.findViewById(R.id.recyclerDepartures);
         tvEmptyState = view.findViewById(R.id.tvEmptyState);
@@ -75,12 +80,18 @@ public class StationFragment extends Fragment {
         setupHeader();
         setupPinButton();
 
+        toggleBoardType.check(isArrivals ? R.id.radioArrivals : R.id.radioDepartures);
+        toggleBoardType.setOnCheckedChangeListener((group, checkedId) -> {
+            isArrivals = (checkedId == R.id.radioArrivals);
+            fetchTrains();
+        });
+
         recyclerDepartures.setLayoutManager(new LinearLayoutManager(requireContext()));
         adapter = new DeparturesAdapter(requireContext(), new ArrayList<>());
         recyclerDepartures.setAdapter(adapter);
 
-        swipeRefreshLayout.setOnRefreshListener(this::fetchDepartures);
-        fetchDepartures();
+        swipeRefreshLayout.setOnRefreshListener(this::fetchTrains);
+        fetchTrains();
     }
 
     private void setupHeader() {
@@ -122,8 +133,13 @@ public class StationFragment extends Fragment {
         btnPinStation.setImageResource(isPinned ? R.drawable.ic_bookmark : R.drawable.ic_bookmark_outline);
     }
 
-    private void fetchDepartures() {
-        String key = requireContext().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE).getString("LDBWS_KEY", "");
+    private void fetchTrains() {
+        String key;
+        if (isArrivals) {
+            key = requireContext().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE).getString("ARRIVALS_KEY", "");
+        } else {
+            key = requireContext().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE).getString("LDBWS_KEY", "");
+        }
 
         if (key.isEmpty()) {
             Toast.makeText(requireContext(), "Please enter your API Key in Settings", Toast.LENGTH_LONG).show();
@@ -136,7 +152,14 @@ public class StationFragment extends Fragment {
 
         String apiFilterCrs = toCrs.isEmpty() ? null : toCrs;
 
-        api.getStationDepartures(key, fromCrs, 150, 120, apiFilterCrs).enqueue(new Callback<>() {
+        Call<StationDepartureResponse> networkCall;
+        if (isArrivals) {
+            networkCall = api.getStationArrivals(key, fromCrs, 150, 120, apiFilterCrs);
+        } else {
+            networkCall = api.getStationDepartures(key, fromCrs, 150, 120, apiFilterCrs);
+        }
+
+        networkCall.enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<StationDepartureResponse> call, @NonNull Response<StationDepartureResponse> response) {
                 if (!isAdded()) return;
@@ -146,10 +169,10 @@ public class StationFragment extends Fragment {
                     List<StationDepartureResponse.TrainService> allServices = response.body().trainServices;
 
                     if (allServices != null && !allServices.isEmpty()) {
-                        adapter.updateData(allServices);
+                        adapter.updateData(allServices, isArrivals);
                         recyclerDepartures.setVisibility(View.VISIBLE);
                     } else {
-                        showEmptyState("No direct trains found right now.");
+                        showEmptyState(isArrivals ? "No direct arrivals found right now." : "No direct trains found right now.");
                     }
                 } else {
                     showEmptyState("API Error: Please check your CRS codes.");
@@ -166,7 +189,7 @@ public class StationFragment extends Fragment {
     }
 
     private void showEmptyState(String message) {
-        adapter.updateData(new ArrayList<>());
+        adapter.updateData(new ArrayList<>(), isArrivals);
         recyclerDepartures.setVisibility(View.GONE);
         tvEmptyState.setText(message);
         tvEmptyState.setVisibility(View.VISIBLE);

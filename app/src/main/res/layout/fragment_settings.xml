@@ -162,6 +162,44 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:text="Live Arrivals API Key"
+                            android:textColor="@color/text_primary"
+                            android:textStyle="bold"
+                            android:layout_marginBottom="8dp"/>
+
+                        <RelativeLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="24dp">
+
+                            <EditText
+                                android:id="@+id/etArrivalsKey"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:hint="Paste Arrivals Key here..."
+                                android:textColor="@color/text_primary"
+                                android:textColorHint="@color/text_secondary"
+                                android:inputType="textPassword"
+                                android:padding="16dp"
+                                android:paddingEnd="48dp"
+                                android:background="@drawable/bg_edit_text" />
+
+                            <ImageButton
+                                android:id="@+id/btnToggleArrivalsPassword"
+                                android:layout_width="48dp"
+                                android:layout_height="match_parent"
+                                android:layout_alignTop="@id/etArrivalsKey"
+                                android:layout_alignBottom="@id/etArrivalsKey"
+                                android:layout_alignParentEnd="true"
+                                android:background="?attr/selectableItemBackgroundBorderless"
+                                android:src="@drawable/ic_visibility_off"
+                                app:tint="@color/text_secondary"
+                                android:contentDescription="Toggle Visibility" />
+                        </RelativeLayout>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
                             android:text="Service Details API Key"
                             android:textColor="@color/text_primary"
                             android:textStyle="bold"

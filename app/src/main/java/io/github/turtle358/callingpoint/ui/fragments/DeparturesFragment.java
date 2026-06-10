@@ -149,7 +149,7 @@ public class DeparturesFragment extends Fragment {
                     List<StationDepartureResponse.TrainService> allServices = response.body().trainServices;
 
                     if (allServices != null && !allServices.isEmpty()) {
-                        adapter.updateData(allServices);
+                        adapter.updateData(allServices, false);
                         recyclerDepartures.setVisibility(View.VISIBLE);
                     } else {
                         if (apiFilterCrs != null) {
@@ -173,11 +173,12 @@ public class DeparturesFragment extends Fragment {
     }
 
     private void showEmptyState(String message) {
-        adapter.updateData(new ArrayList<>());
+        adapter.updateData(new ArrayList<>(), false);
         recyclerDepartures.setVisibility(View.GONE);
         tvEmptyState.setText(message);
         tvEmptyState.setVisibility(View.VISIBLE);
     }
+
     private void hideKeyboard() {
         View view = requireActivity().getCurrentFocus();
         if (view != null) {

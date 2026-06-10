@@ -51,8 +51,47 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:tint="@color/text_primary" />
-
     </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <RadioGroup
+        android:id="@+id/toggleBoardType"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="12dp"
+        android:layout_marginBottom="8dp"
+        android:background="@drawable/bg_theme_track"
+        android:orientation="horizontal"
+        android:padding="4dp">
+
+        <RadioButton
+            android:id="@+id/radioDepartures"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@drawable/selector_theme_tab"
+            android:button="@null"
+            android:checked="true"
+            android:gravity="center"
+            android:paddingVertical="10dp"
+            android:text="Departures"
+            android:textColor="@color/selector_theme_text"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <RadioButton
+            android:id="@+id/radioArrivals"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@drawable/selector_theme_tab"
+            android:button="@null"
+            android:gravity="center"
+            android:paddingVertical="10dp"
+            android:text="Arrivals"
+            android:textColor="@color/selector_theme_text"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+    </RadioGroup>
 
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
         android:id="@+id/swipeRefreshStation"

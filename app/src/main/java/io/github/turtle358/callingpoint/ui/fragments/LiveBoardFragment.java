@@ -11,6 +11,7 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.ImageButton;
+import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -40,6 +41,7 @@ public class LiveBoardFragment extends Fragment {
 
     private AutoCompleteTextView etFromCrs;
     private AutoCompleteTextView etToCrs;
+    private RadioGroup toggleBoardType;
 
     private RecyclerView recyclerPinnedStations;
     private RecyclerView recyclerPinnedServices;
@@ -68,6 +70,7 @@ public class LiveBoardFragment extends Fragment {
 
         etFromCrs = view.findViewById(R.id.etFromCrs);
         etToCrs = view.findViewById(R.id.etToCrs);
+        toggleBoardType = view.findViewById(R.id.toggleBoardType);
         ImageButton btnSwap = view.findViewById(R.id.btnSwapStations);
         Button btnSearch = view.findViewById(R.id.btnSearchDepartures);
 
@@ -85,7 +88,7 @@ public class LiveBoardFragment extends Fragment {
 
         recyclerPinnedStations.setLayoutManager(new LinearLayoutManager(requireContext()));
         recyclerPinnedStations.setNestedScrollingEnabled(false);
-        stationAdapter = new PinnedStationAdapter(requireContext(), currentPinnedStations, this::launchStationFragment);
+        stationAdapter = new PinnedStationAdapter(requireContext(), currentPinnedStations, (from, to) -> launchStationFragment(from, to, false));
         recyclerPinnedStations.setAdapter(stationAdapter);
 
         recyclerPinnedServices.setLayoutManager(new LinearLayoutManager(requireContext()));
@@ -112,7 +115,8 @@ public class LiveBoardFragment extends Fragment {
 
             if (fromCrs != null && fromCrs.length() == 3) {
                 hideKeyboard();
-                launchStationFragment(fromCrs, toCrs);
+                boolean isArrivals = toggleBoardType.getCheckedRadioButtonId() == R.id.radioArrivals;
+                launchStationFragment(fromCrs, toCrs, isArrivals);
             } else {
                 Toast.makeText(requireContext(), "Please select a valid departing station", Toast.LENGTH_SHORT).show();
             }
@@ -141,11 +145,12 @@ public class LiveBoardFragment extends Fragment {
         autoRefreshHandler.removeCallbacks(autoRefreshRunnable);
     }
 
-    private void launchStationFragment(String fromCrs, String toCrs) {
+    private void launchStationFragment(String fromCrs, String toCrs, boolean isArrivals) {
         StationFragment fragment = new StationFragment();
         Bundle args = new Bundle();
         args.putString("FROM_CRS", fromCrs);
         args.putString("TO_CRS", toCrs);
+        args.putBoolean("IS_ARRIVALS", isArrivals);
         fragment.setArguments(args);
 
         getParentFragmentManager().beginTransaction()

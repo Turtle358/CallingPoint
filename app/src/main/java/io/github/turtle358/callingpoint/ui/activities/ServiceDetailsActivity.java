@@ -115,15 +115,18 @@ public class ServiceDetailsActivity extends AppCompatActivity {
                         destination = "Terminates at " + data.locationName;
                     }
 
+                    String schTime = data.std != null ? data.std : (data.sta != null ? data.sta : "");
+                    String estTime = data.etd != null ? data.etd : (data.eta != null ? data.eta : "");
+
                     tvHeaderDestination.setText(destination);
-                    tvHeaderTime.setText(data.std);
-                    tvHeaderStatus.setText(data.etd);
+                    tvHeaderTime.setText(schTime);
+                    tvHeaderStatus.setText(estTime);
                     tvHeaderOperator.setText(operatorName);
                     tvHeaderPlatform.setText(data.platform != null ? "Platform " + data.platform : "");
 
-                    if ("On time".equalsIgnoreCase(data.etd)) {
+                    if ("On time".equalsIgnoreCase(estTime)) {
                         tvHeaderStatus.setTextColor(Color.parseColor("#00875A"));
-                    } else if ("Cancelled".equalsIgnoreCase(data.etd)) {
+                    } else if ("Cancelled".equalsIgnoreCase(estTime)) {
                         tvHeaderStatus.setTextColor(Color.parseColor("#DE350B"));
                     } else {
                         tvHeaderStatus.setTextColor(Color.parseColor("#FF8C00"));
@@ -147,9 +150,9 @@ public class ServiceDetailsActivity extends AppCompatActivity {
 
                     ServiceDetailsResponse.TimelinePoint currentStation = new ServiceDetailsResponse.TimelinePoint();
                     currentStation.locationName = data.locationName != null ? data.locationName : "Current Station";
-                    currentStation.scheduledTime = data.std != null ? data.std : "";
-                    currentStation.estimatedTime = data.etd;
-                    currentStation.isCancelled = "Cancelled".equalsIgnoreCase(data.etd);
+                    currentStation.scheduledTime = schTime;
+                    currentStation.estimatedTime = estTime;
+                    currentStation.isCancelled = "Cancelled".equalsIgnoreCase(estTime);
 
                     if (data.atd != null) {
                         currentStation.actualTime = data.atd;

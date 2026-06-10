@@ -24,8 +24,17 @@ public interface NationalRailAPI {
             @Body IncidentSearchRequest requestBody
     );
 
-    @GET("1010-live-departure-board-dep1_2/LDBWS/api/20220120/GetDepartureBoard/{crs}")
+    @GET("1010-live-departure-board-dep1_2/LDBWS/api/20220120/GetDepBoardWithDetails/{crs}")
     Call<StationDepartureResponse> getStationDepartures(
+            @Header("x-apikey") String customerKey,
+            @Path("crs") String crsCode,
+            @Query("numRows") int numRows,
+            @Query("timeWindow") int timeWindow,
+            @Query("filterCrs") String filterCrs
+    );
+
+    @GET("1010-live-arrival-board-arr/LDBWS/api/20220120/GetArrBoardWithDetails/{crs}")
+    Call<StationDepartureResponse> getStationArrivals(
             @Header("x-apikey") String customerKey,
             @Path("crs") String crsCode,
             @Query("numRows") int numRows,
