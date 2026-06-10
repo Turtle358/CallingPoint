@@ -1,6 +1,10 @@
 package io.github.turtle358.callingpoint.ui.adapters;
 
 import android.content.Context;
+import android.graphics.Typeface;
+import android.text.Spannable;
+import android.text.SpannableString;
+import android.text.style.StyleSpan;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -21,6 +25,7 @@ public class StationAutoCompleteAdapter extends ArrayAdapter<String> {
     private final List<String> allStations;
     private final List<String> filteredStations;
     private final LayoutInflater inflater;
+    private String currentConstraint = "";
 
     public StationAutoCompleteAdapter(Context context, List<String> stations) {
         super(context, R.layout.item_station_suggestion, stations);
@@ -51,7 +56,16 @@ public class StationAutoCompleteAdapter extends ArrayAdapter<String> {
         String stationName = getItem(position);
 
         if (stationName != null) {
-            tv.setText(stationName);
+            if (!currentConstraint.isEmpty() && stationName.toLowerCase().contains(currentConstraint)) {
+                int startPos = stationName.toLowerCase().indexOf(currentConstraint);
+                int endPos = startPos + currentConstraint.length();
+
+                SpannableString spannable = new SpannableString(stationName);
+                spannable.setSpan(new StyleSpan(Typeface.BOLD), startPos, endPos, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                tv.setText(spannable);
+            } else {
+                tv.setText(stationName);
+            }
         }
 
         return convertView;
@@ -78,10 +92,11 @@ public class StationAutoCompleteAdapter extends ArrayAdapter<String> {
                 List<String> suggestions = new ArrayList<>();
 
                 if (constraint == null || constraint.length() == 0) {
+                    currentConstraint = "";
                     suggestions.addAll(allStations);
                 } else {
-                    String filterPattern = constraint.toString().toLowerCase().trim();
-                    String[] keywords = filterPattern.split("\\s+");
+                    currentConstraint = constraint.toString().toLowerCase().trim();
+                    String[] keywords = currentConstraint.split("\\s+");
 
                     for (String station : allStations) {
                         String stationLower = station.toLowerCase();

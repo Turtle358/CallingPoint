@@ -139,6 +139,13 @@ public class TimelineAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
             h.tvStationName.setText(point.locationName);
             h.tvTime.setText(point.scheduledTime);
 
+            if (point.platform != null && !point.platform.trim().isEmpty()) {
+                h.tvPlatform.setText("Platform " + point.platform);
+                h.tvPlatform.setVisibility(View.VISIBLE);
+            } else {
+                h.tvPlatform.setVisibility(View.GONE);
+            }
+
             h.lineTop.setVisibility(position == 0 ? View.INVISIBLE : View.VISIBLE);
             h.lineBottom.setVisibility(position == displayList.size() - 1 ? View.INVISIBLE : View.VISIBLE);
 
@@ -176,13 +183,14 @@ public class TimelineAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
     public int getItemCount() { return displayList.size(); }
 
     public static class StopViewHolder extends RecyclerView.ViewHolder {
-        TextView tvTime, tvLiveStatus, tvStationName;
+        TextView tvTime, tvLiveStatus, tvStationName, tvPlatform;
         View lineTop, dot, lineBottom;
         public StopViewHolder(View v) {
             super(v);
             tvTime = v.findViewById(R.id.tvTime);
             tvLiveStatus = v.findViewById(R.id.tvLiveStatus);
             tvStationName = v.findViewById(R.id.tvStationName);
+            tvPlatform = v.findViewById(R.id.tvPlatform);
             lineTop = v.findViewById(R.id.lineTop);
             dot = v.findViewById(R.id.dot);
             lineBottom = v.findViewById(R.id.lineBottom);

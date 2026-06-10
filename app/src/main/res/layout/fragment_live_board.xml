@@ -81,22 +81,36 @@
                 android:layout_height="wrap_content"
                 android:padding="8dp">
 
-                <AutoCompleteTextView
-                    android:id="@+id/etFromCrs"
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilFromCrs"
                     android:layout_width="0dp"
                     android:layout_height="64dp"
-                    android:background="@android:color/transparent"
-                    android:completionThreshold="1"
-                    android:hint="Departing from"
-                    android:paddingHorizontal="16dp"
-                    android:textColor="@color/text_primary"
-                    android:textColorHint="@color/text_secondary"
-                    android:textSize="16sp"
-                    android:textStyle="bold"
+                    app:boxBackgroundMode="none"
+                    app:hintEnabled="false"
+                    app:endIconMode="clear_text"
+                    app:endIconTint="@color/text_secondary"
                     app:layout_constraintEnd_toStartOf="@id/btnSwapStations"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent"
-                    android:popupBackground="@drawable/bg_dropdown"/>
+                    app:layout_constraintTop_toTopOf="parent">
+
+                    <AutoCompleteTextView
+                        android:id="@+id/etFromCrs"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="@android:color/transparent"
+                        android:completionThreshold="1"
+                        android:hint="Departing from"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="0dp"
+                        android:textColor="@color/text_primary"
+                        android:textColorHint="@color/text_secondary"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:inputType="text"
+                        android:maxLines="1"
+                        android:imeOptions="actionNext"
+                        android:popupBackground="@drawable/bg_dropdown"/>
+                </com.google.android.material.textfield.TextInputLayout>
 
                 <View
                     android:id="@+id/divider"
@@ -106,24 +120,38 @@
                     android:background="#33999999"
                     app:layout_constraintEnd_toStartOf="@id/btnSwapStations"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/etFromCrs" />
+                    app:layout_constraintTop_toBottomOf="@id/tilFromCrs" />
 
-                <AutoCompleteTextView
-                    android:id="@+id/etToCrs"
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilToCrs"
                     android:layout_width="0dp"
                     android:layout_height="64dp"
-                    android:background="@android:color/transparent"
-                    android:completionThreshold="1"
-                    android:hint="Going to (optional)"
-                    android:paddingHorizontal="16dp"
-                    android:textColor="@color/text_primary"
-                    android:textColorHint="@color/text_secondary"
-                    android:textSize="16sp"
-                    android:textStyle="bold"
+                    app:boxBackgroundMode="none"
+                    app:hintEnabled="false"
+                    app:endIconMode="clear_text"
+                    app:endIconTint="@color/text_secondary"
                     app:layout_constraintEnd_toStartOf="@id/btnSwapStations"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/divider"
-                    android:popupBackground="@drawable/bg_dropdown"/>
+                    app:layout_constraintTop_toBottomOf="@id/divider">
+
+                    <AutoCompleteTextView
+                        android:id="@+id/etToCrs"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="@android:color/transparent"
+                        android:completionThreshold="1"
+                        android:hint="Going to (optional)"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="0dp"
+                        android:textColor="@color/text_primary"
+                        android:textColorHint="@color/text_secondary"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:inputType="text"
+                        android:maxLines="1"
+                        android:imeOptions="actionSearch"
+                        android:popupBackground="@drawable/bg_dropdown"/>
+                </com.google.android.material.textfield.TextInputLayout>
 
                 <ImageButton
                     android:id="@+id/btnSwapStations"

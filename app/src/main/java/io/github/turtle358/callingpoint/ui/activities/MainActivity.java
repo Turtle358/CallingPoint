@@ -84,19 +84,27 @@ public class MainActivity extends AppCompatActivity {
             getSupportFragmentManager().popBackStack(null, FragmentManager.POP_BACK_STACK_INCLUSIVE);
 
             if (itemId == R.id.nav_departures) {
-                fm.beginTransaction().hide(activeFragment).show(liveBoardFragment).commit();
+                fm.beginTransaction()
+                        .setCustomAnimations(R.anim.fade_in_fast, R.anim.fade_out_fast)
+                        .hide(activeFragment).show(liveBoardFragment).commit();
                 activeFragment = liveBoardFragment;
                 return true;
             } else if (itemId == R.id.nav_journey) {
-                fm.beginTransaction().hide(activeFragment).show(journeyPlannerFragment).commit();
+                fm.beginTransaction()
+                        .setCustomAnimations(R.anim.fade_in_fast, R.anim.fade_out_fast)
+                        .hide(activeFragment).show(journeyPlannerFragment).commit();
                 activeFragment = journeyPlannerFragment;
                 return true;
             } else if (itemId == R.id.nav_disruptions) {
-                fm.beginTransaction().hide(activeFragment).show(disruptionsFragment).commit();
+                fm.beginTransaction()
+                        .setCustomAnimations(R.anim.fade_in_fast, R.anim.fade_out_fast)
+                        .hide(activeFragment).show(disruptionsFragment).commit();
                 activeFragment = disruptionsFragment;
                 return true;
             } else if (itemId == R.id.nav_settings) {
-                fm.beginTransaction().hide(activeFragment).show(settingsFragment).commit();
+                fm.beginTransaction()
+                        .setCustomAnimations(R.anim.fade_in_fast, R.anim.fade_out_fast)
+                        .hide(activeFragment).show(settingsFragment).commit();
                 activeFragment = settingsFragment;
                 return true;
             }

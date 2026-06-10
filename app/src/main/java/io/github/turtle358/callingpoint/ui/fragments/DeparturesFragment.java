@@ -12,6 +12,10 @@ import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.view.KeyEvent;
+import android.view.inputmethod.EditorInfo;
+import android.text.Editable;
+import android.text.TextWatcher;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -71,6 +75,10 @@ public class DeparturesFragment extends Fragment {
         autoCompleteAdapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_dropdown_item_1line, stations);
         etFromCrs.setAdapter(autoCompleteAdapter);
         etToCrs.setAdapter(autoCompleteAdapter);
+        applyInlineAutocomplete(etFromCrs);
+        applyInlineAutocomplete(etToCrs);
+        setupAutoCompleteEnterBehavior(etFromCrs, autoCompleteAdapter, etToCrs, null);
+        setupAutoCompleteEnterBehavior(etToCrs, autoCompleteAdapter, null, () -> btnSearch.performClick());
 
         recyclerDepartures.setLayoutManager(new LinearLayoutManager(requireContext()));
         adapter = new DeparturesAdapter(requireContext(), new ArrayList<>());
@@ -185,5 +193,63 @@ public class DeparturesFragment extends Fragment {
             InputMethodManager imm = (InputMethodManager) requireActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
             imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
         }
+    }
+
+    private void setupAutoCompleteEnterBehavior(AutoCompleteTextView autoCompleteTextView, ArrayAdapter<String> adapter, View nextFocus, Runnable onDone) {
+        autoCompleteTextView.setOnEditorActionListener((v, actionId, event) -> {
+            boolean isEnterPressed = event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER && event.getAction() == KeyEvent.ACTION_DOWN;
+
+            if (actionId == EditorInfo.IME_ACTION_NEXT || actionId == EditorInfo.IME_ACTION_DONE || actionId == EditorInfo.IME_ACTION_SEARCH || isEnterPressed) {
+                if (adapter.getCount() > 0) {
+                    String firstMatch = adapter.getItem(0);
+                    if (firstMatch != null) {
+                        autoCompleteTextView.setText(firstMatch);
+                        autoCompleteTextView.dismissDropDown();
+                        autoCompleteTextView.setSelection(firstMatch.length());
+                    }
+                }
+                if (nextFocus != null) {
+                    nextFocus.requestFocus();
+                } else if (onDone != null) {
+                    onDone.run();
+                }
+                return true;
+            }
+            return false;
+        });
+    }
+
+    private void applyInlineAutocomplete(AutoCompleteTextView editText) {
+        editText.addTextChangedListener(new TextWatcher() {
+            boolean isTyping = false;
+
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                isTyping = before < count;
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                if (!isTyping || s.toString().isEmpty()) return;
+
+                String input = s.toString();
+                List<String> stations = StationHelper.getStationNames();
+
+                for (String station : stations) {
+                    if (station.toLowerCase().startsWith(input.toLowerCase()) && !station.equalsIgnoreCase(input)) {
+                        editText.removeTextChangedListener(this);
+
+                        editText.setText(station);
+                        editText.setSelection(input.length(), station.length());
+
+                        editText.addTextChangedListener(this);
+                        break;
+                    }
+                }
+            }
+        });
     }
 }

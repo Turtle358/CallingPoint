@@ -187,6 +187,7 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
         TextView tvName = node.findViewById(R.id.tvStationName);
         TextView tvSchTime = node.findViewById(R.id.tvSchTime);
         TextView tvLiveTime = node.findViewById(R.id.tvLiveTime);
+        TextView tvPlatform = node.findViewById(R.id.tvPlatform);
         View lineTop = node.findViewById(R.id.lineTop);
         View lineBottom = node.findViewById(R.id.lineBottom);
         View dotStation = node.findViewById(R.id.dotStation);
@@ -207,6 +208,13 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
 
         if (livePoint != null) {
             String statusTime = livePoint.actualTime != null ? livePoint.actualTime : livePoint.estimatedTime;
+
+            if (livePoint.platform != null && !livePoint.platform.trim().isEmpty()) {
+                tvPlatform.setText("Platform " + livePoint.platform);
+                tvPlatform.setVisibility(View.VISIBLE);
+            } else {
+                tvPlatform.setVisibility(View.GONE);
+            }
 
             if (livePoint.actualTime != null || "Arrived".equalsIgnoreCase(livePoint.estimatedTime) || "Departed".equalsIgnoreCase(livePoint.estimatedTime)) {
                 isPassed = true;
@@ -229,14 +237,16 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
                 tvLiveTime.setTextColor(Color.parseColor("#00875A"));
                 tvLiveTime.setVisibility(View.VISIBLE);
             }
+        } else {
+            tvPlatform.setVisibility(View.GONE);
         }
 
         if (isPassed) {
             lineTop.setBackgroundColor(brandColour);
             lineBottom.setBackgroundColor(brandColour);
 
-            GradientDrawable pastDot = new GradientDrawable();
-            pastDot.setShape(GradientDrawable.OVAL);
+            android.graphics.drawable.GradientDrawable pastDot = new android.graphics.drawable.GradientDrawable();
+            pastDot.setShape(android.graphics.drawable.GradientDrawable.OVAL);
             pastDot.setColor(brandColour);
             dotStation.setBackground(pastDot);
 
@@ -244,8 +254,8 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
             lineTop.setBackgroundColor(brandColour);
             lineBottom.setBackgroundColor(COLOUR_FUTURE_LINE);
 
-            GradientDrawable currentDot = new GradientDrawable();
-            currentDot.setShape(GradientDrawable.OVAL);
+            android.graphics.drawable.GradientDrawable currentDot = new android.graphics.drawable.GradientDrawable();
+            currentDot.setShape(android.graphics.drawable.GradientDrawable.OVAL);
             currentDot.setColor(Color.parseColor("#121212"));
             currentDot.setStroke(6, brandColour);
             dotStation.setBackground(currentDot);
@@ -254,17 +264,16 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
             lineTop.setBackgroundColor(COLOUR_FUTURE_LINE);
             lineBottom.setBackgroundColor(COLOUR_FUTURE_LINE);
 
-            GradientDrawable futureDot = new GradientDrawable();
-            futureDot.setShape(GradientDrawable.OVAL);
+            android.graphics.drawable.GradientDrawable futureDot = new android.graphics.drawable.GradientDrawable();
+            futureDot.setShape(android.graphics.drawable.GradientDrawable.OVAL);
             futureDot.setColor(Color.parseColor("#121212"));
-            futureDot.setStroke(4, COLOUR_FUTURE_DOT); 
+            futureDot.setStroke(4, COLOUR_FUTURE_DOT);
             dotStation.setBackground(futureDot);
         }
 
         previousPassed[0] = isPassed;
         return node;
     }
-
     private List<ServiceDetailsResponse.TimelinePoint> getStopsBefore(ServiceDetailsResponse liveData, String targetStation) {
         List<ServiceDetailsResponse.TimelinePoint> results = new ArrayList<>();
         if (liveData == null || targetStation == null) return results;

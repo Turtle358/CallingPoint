@@ -23,6 +23,7 @@ public class PinnedServiceAdapter extends RecyclerView.Adapter<PinnedServiceAdap
 
     private final Context context;
     private final List<ServiceDetailsResponse> liveServices;
+    private int lastPosition = -1;
 
     public PinnedServiceAdapter(Context context, List<ServiceDetailsResponse> liveServices) {
         this.context = context;
@@ -110,11 +111,29 @@ public class PinnedServiceAdapter extends RecyclerView.Adapter<PinnedServiceAdap
             holder.tvLiveStatus.setTextColor(Color.parseColor("#666666"));
         }
 
+        setAnimation(holder.itemView, position);
+
         holder.itemView.setOnClickListener(v -> {
             android.content.Intent intent = new android.content.Intent(context, ServiceDetailsActivity.class);
             intent.putExtra("SERVICE_ID", service.customServiceID);
             context.startActivity(intent);
         });
+    }
+
+    private void setAnimation(View viewToAnimate, int position) {
+        if (position > lastPosition) {
+            viewToAnimate.setAlpha(0f);
+            viewToAnimate.setTranslationY(80f);
+            viewToAnimate.animate()
+                    .alpha(1f)
+                    .translationY(0f)
+                    .setDuration(350)
+                    .start();
+            lastPosition = position;
+        } else {
+            viewToAnimate.setAlpha(1f);
+            viewToAnimate.setTranslationY(0f);
+        }
     }
 
     @Override

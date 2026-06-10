@@ -6,6 +6,7 @@ import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -20,6 +21,7 @@ public class DeparturesAdapter extends RecyclerView.Adapter<DeparturesAdapter.Vi
     private final Context context;
     private List<StationDepartureResponse.TrainService> services;
     private boolean isArrivals = false;
+    private int lastPosition = -1;
 
     public DeparturesAdapter(Context context, List<StationDepartureResponse.TrainService> services) {
         this.context = context;
@@ -29,6 +31,7 @@ public class DeparturesAdapter extends RecyclerView.Adapter<DeparturesAdapter.Vi
     public void updateData(List<StationDepartureResponse.TrainService> newServices, boolean isArrivals) {
         this.services = newServices;
         this.isArrivals = isArrivals;
+        this.lastPosition = -1;
         notifyDataSetChanged();
     }
 
@@ -44,6 +47,7 @@ public class DeparturesAdapter extends RecyclerView.Adapter<DeparturesAdapter.Vi
         StationDepartureResponse.TrainService service = services.get(position);
 
         holder.tocColourBar.setBackgroundColor(TOCBrandHelper.getColourForToc(service.operatorName));
+        holder.ivManagerLogo.setImageResource(TOCBrandHelper.getIconForToc(service.operatorName));
 
         String schTime = service.std != null ? service.std : (service.sta != null ? service.sta : "--:--");
         String estTime = service.etd != null ? service.etd : (service.eta != null ? service.eta : "Unknown");
@@ -62,12 +66,9 @@ public class DeparturesAdapter extends RecyclerView.Adapter<DeparturesAdapter.Vi
         holder.tvPlatform.setText(service.platform != null ? "Platform " + service.platform : "Platform -");
 
         String originName = (service.origin != null && !service.origin.isEmpty()) ? service.origin.get(0).locationName : "Unknown";
-        String originCrs = (service.origin != null && !service.origin.isEmpty()) ? service.origin.get(0).crs : "";
         String destName = (service.destination != null && !service.destination.isEmpty()) ? service.destination.get(0).locationName : "Unknown";
-        String destCrs = (service.destination != null && !service.destination.isEmpty()) ? service.destination.get(0).crs : "";
 
-        String routeHtml = "<b>" + originName + "</b>" + (!originCrs.isEmpty() ? " <small>(" + originCrs + ")</small>" : "") +
-                " to <b>" + destName + "</b>" + (!destCrs.isEmpty() ? " <small>(" + destCrs + ")</small>" : "");
+        String routeHtml = "<b>" + originName + "</b> to <b>" + destName + "</b>";
         holder.tvRoute.setText(android.text.Html.fromHtml(routeHtml, android.text.Html.FROM_HTML_MODE_COMPACT));
 
         String durationStr = "";
@@ -100,11 +101,29 @@ public class DeparturesAdapter extends RecyclerView.Adapter<DeparturesAdapter.Vi
 
         holder.tvServiceDetails.setText(detailsText);
 
+        setAnimation(holder.itemView, position);
+
         holder.itemView.setOnClickListener(v -> {
             Intent intent = new Intent(context, ServiceDetailsActivity.class);
             intent.putExtra("SERVICE_ID", service.serviceID);
             context.startActivity(intent);
         });
+    }
+
+    private void setAnimation(View viewToAnimate, int position) {
+        if (position > lastPosition) {
+            viewToAnimate.setAlpha(0f);
+            viewToAnimate.setTranslationY(80f);
+            viewToAnimate.animate()
+                    .alpha(1f)
+                    .translationY(0f)
+                    .setDuration(350)
+                    .start();
+            lastPosition = position;
+        } else {
+            viewToAnimate.setAlpha(1f);
+            viewToAnimate.setTranslationY(0f);
+        }
     }
 
     private String calculateDuration(String start, String end) {
@@ -133,11 +152,13 @@ public class DeparturesAdapter extends RecyclerView.Adapter<DeparturesAdapter.Vi
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
         View tocColourBar;
+        ImageView ivManagerLogo;
         TextView tvSchTime, tvLiveStatus, tvPlatform, tvRoute, tvCallingAt, tvServiceDetails;
 
         public ViewHolder(View v) {
             super(v);
             tocColourBar = v.findViewById(R.id.tocColourBar);
+            ivManagerLogo = v.findViewById(R.id.ivManagerLogo);
             tvSchTime = v.findViewById(R.id.tvSchTime);
             tvLiveStatus = v.findViewById(R.id.tvLiveStatus);
             tvPlatform = v.findViewById(R.id.tvPlatform);

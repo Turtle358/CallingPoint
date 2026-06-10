@@ -78,6 +78,9 @@ public class ServiceDetailsResponse {
 
         @SerializedName("atd")
         public String atd;
+
+        @SerializedName("platform")
+        public String platform;
     }
 
     public static class Formation {
