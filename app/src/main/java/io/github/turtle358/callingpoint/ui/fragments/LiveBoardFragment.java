@@ -19,8 +19,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.view.KeyEvent;
 import android.view.inputmethod.EditorInfo;
-import android.text.Editable;
-import android.text.TextWatcher;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -36,7 +34,6 @@ import io.github.turtle358.callingpoint.ui.adapters.PinnedServiceAdapter;
 import io.github.turtle358.callingpoint.ui.adapters.PinnedStationAdapter;
 import io.github.turtle358.callingpoint.R;
 import io.github.turtle358.callingpoint.ui.adapters.StationAutoCompleteAdapter;
-import io.github.turtle358.callingpoint.utils.InlineAutocompleteManager;
 import io.github.turtle358.callingpoint.utils.StationHelper;
 import io.github.turtle358.callingpoint.api.APIClient;
 import io.github.turtle358.callingpoint.api.NationalRailAPI;
@@ -50,6 +47,7 @@ public class LiveBoardFragment extends Fragment {
     private AutoCompleteTextView etFromCrs;
     private AutoCompleteTextView etToCrs;
     private RadioGroup toggleBoardType;
+    private View slidingPill;
     private RecyclerView recyclerPinnedStations;
     private RecyclerView recyclerPinnedServices;
     private TextView tvEmptyPinnedStations;
@@ -75,6 +73,7 @@ public class LiveBoardFragment extends Fragment {
         etFromCrs = view.findViewById(R.id.etFromCrs);
         etToCrs = view.findViewById(R.id.etToCrs);
         toggleBoardType = view.findViewById(R.id.toggleBoardType);
+        slidingPill = view.findViewById(R.id.slidingPill);
         ImageButton btnSwap = view.findViewById(R.id.btnSwapStations);
         Button btnSearch = view.findViewById(R.id.btnSearchDepartures);
 
@@ -103,6 +102,8 @@ public class LiveBoardFragment extends Fragment {
         recyclerPinnedServices.setNestedScrollingEnabled(false);
         serviceAdapter = new PinnedServiceAdapter(requireContext(), liveServicesData);
         recyclerPinnedServices.setAdapter(serviceAdapter);
+
+        setupToggleAnimation();
 
         btnSwap.setOnClickListener(v -> {
             String tempText = etFromCrs.getText().toString();
@@ -138,6 +139,33 @@ public class LiveBoardFragment extends Fragment {
                 autoRefreshHandler.postDelayed(this, 30000);
             }
         };
+    }
+
+    private void setupToggleAnimation() {
+        toggleBoardType.post(() -> {
+            int childCount = toggleBoardType.getChildCount();
+            if (childCount > 0) {
+                int width = toggleBoardType.getWidth() / childCount;
+                slidingPill.getLayoutParams().width = width;
+                slidingPill.requestLayout();
+
+                View selectedButton = toggleBoardType.findViewById(toggleBoardType.getCheckedRadioButtonId());
+                if (selectedButton != null) {
+                    slidingPill.setTranslationX(selectedButton.getX());
+                }
+            }
+        });
+
+        toggleBoardType.setOnCheckedChangeListener((group, checkedId) -> {
+            View selectedButton = group.findViewById(checkedId);
+            if (selectedButton != null) {
+                slidingPill.animate()
+                        .translationX(selectedButton.getX())
+                        .setDuration(200)
+                        .setInterpolator(new androidx.interpolator.view.animation.FastOutSlowInInterpolator())
+                        .start();
+            }
+        });
     }
 
     @Override
@@ -271,5 +299,4 @@ public class LiveBoardFragment extends Fragment {
             return false;
         });
     }
-
 }

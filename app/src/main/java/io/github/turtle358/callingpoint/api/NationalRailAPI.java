@@ -30,6 +30,7 @@ public interface NationalRailAPI {
             @Path("crs") String crsCode,
             @Query("numRows") int numRows,
             @Query("timeWindow") int timeWindow,
+            @Query("timeOffset") int timeOffset,
             @Query("filterCrs") String filterCrs
     );
 
@@ -39,6 +40,7 @@ public interface NationalRailAPI {
             @Path("crs") String crsCode,
             @Query("numRows") int numRows,
             @Query("timeWindow") int timeWindow,
+            @Query("timeOffset") int timeOffset,
             @Query("filterCrs") String filterCrs
     );
 

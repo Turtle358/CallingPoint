@@ -5,8 +5,8 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ImageButton;
-import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -37,12 +37,13 @@ public class StationFragment extends Fragment {
     private String toCrs = "";
     private String pinKey = "";
     private boolean isArrivals = false;
+    private int currentOffset = 0;
 
     private TextView tvStationTitle, tvStationSubtitle, tvEmptyState;
     private ImageButton btnPinStation;
-    private RadioGroup toggleBoardType;
     private SwipeRefreshLayout swipeRefreshLayout;
     private RecyclerView recyclerDepartures;
+    private Button btnLaterServices;
 
     private DeparturesAdapter adapter;
     private NationalRailAPI api;
@@ -69,10 +70,10 @@ public class StationFragment extends Fragment {
         tvStationTitle = view.findViewById(R.id.tvStationTitle);
         tvStationSubtitle = view.findViewById(R.id.tvStationSubtitle);
         btnPinStation = view.findViewById(R.id.btnPinStation);
-        toggleBoardType = view.findViewById(R.id.toggleBoardType);
         swipeRefreshLayout = view.findViewById(R.id.swipeRefreshStation);
         recyclerDepartures = view.findViewById(R.id.recyclerDepartures);
         tvEmptyState = view.findViewById(R.id.tvEmptyState);
+        btnLaterServices = view.findViewById(R.id.btnLaterServices);
 
         pinnedDataManager = new PinnedDataManager(requireContext());
         api = APIClient.getClient().create(NationalRailAPI.class);
@@ -80,18 +81,20 @@ public class StationFragment extends Fragment {
         setupHeader();
         setupPinButton();
 
-        toggleBoardType.check(isArrivals ? R.id.radioArrivals : R.id.radioDepartures);
-        toggleBoardType.setOnCheckedChangeListener((group, checkedId) -> {
-            isArrivals = (checkedId == R.id.radioArrivals);
-            fetchTrains();
-        });
-
         recyclerDepartures.setLayoutManager(new LinearLayoutManager(requireContext()));
         adapter = new DeparturesAdapter(requireContext(), new ArrayList<>());
         recyclerDepartures.setAdapter(adapter);
 
-        swipeRefreshLayout.setOnRefreshListener(this::fetchTrains);
-        fetchTrains();
+        swipeRefreshLayout.setOnRefreshListener(() -> fetchTrains(false));
+
+        btnLaterServices.setOnClickListener(v -> {
+            currentOffset += 119;
+            btnLaterServices.setText("Loading...");
+            btnLaterServices.setEnabled(false);
+            fetchTrains(true);
+        });
+
+        fetchTrains(false);
     }
 
     private void setupHeader() {
@@ -133,7 +136,7 @@ public class StationFragment extends Fragment {
         btnPinStation.setImageResource(isPinned ? R.drawable.ic_bookmark : R.drawable.ic_bookmark_outline);
     }
 
-    private void fetchTrains() {
+    private void fetchTrains(boolean isAppending) {
         String key;
         if (isArrivals) {
             key = requireContext().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE).getString("ARRIVALS_KEY", "");
@@ -147,16 +150,19 @@ public class StationFragment extends Fragment {
             return;
         }
 
-        swipeRefreshLayout.setRefreshing(true);
-        tvEmptyState.setVisibility(View.GONE);
+        if (!isAppending) {
+            currentOffset = 0;
+            swipeRefreshLayout.setRefreshing(true);
+            tvEmptyState.setVisibility(View.GONE);
+        }
 
         String apiFilterCrs = toCrs.isEmpty() ? null : toCrs;
 
         Call<StationDepartureResponse> networkCall;
         if (isArrivals) {
-            networkCall = api.getStationArrivals(key, fromCrs, 150, 120, apiFilterCrs);
+            networkCall = api.getStationArrivals(key, fromCrs, 150, 120, currentOffset, apiFilterCrs);
         } else {
-            networkCall = api.getStationDepartures(key, fromCrs, 150, 120, apiFilterCrs);
+            networkCall = api.getStationDepartures(key, fromCrs, 150, 120, currentOffset, apiFilterCrs);
         }
 
         networkCall.enqueue(new Callback<>() {
@@ -168,14 +174,40 @@ public class StationFragment extends Fragment {
                 if (response.isSuccessful() && response.body() != null) {
                     List<StationDepartureResponse.TrainService> allServices = response.body().trainServices;
 
+
+
                     if (allServices != null && !allServices.isEmpty()) {
-                        adapter.updateData(allServices, isArrivals, fromCrs, toCrs);
-                        recyclerDepartures.setVisibility(View.VISIBLE);
+                        if (isAppending) {
+                            int newTrainsAdded = adapter.appendData(allServices);
+
+
+                            if (newTrainsAdded == 0) {
+                                Toast.makeText(requireContext(), "End of scheduled services.", Toast.LENGTH_SHORT).show();
+                                if (btnLaterServices != null) btnLaterServices.setVisibility(View.GONE);
+                            } else {
+                                if (btnLaterServices != null) btnLaterServices.setVisibility(View.VISIBLE);
+                            }
+                        } else {
+                            adapter.updateData(allServices, isArrivals, fromCrs, toCrs);
+                            recyclerDepartures.setVisibility(View.VISIBLE);
+                            if (btnLaterServices != null) btnLaterServices.setVisibility(View.VISIBLE);
+                        }
                     } else {
-                        showEmptyState(isArrivals ? "No direct arrivals found right now." : "No direct trains found right now.");
+                        if (btnLaterServices != null) btnLaterServices.setVisibility(View.GONE);
+                        if (!isAppending) {
+                            showEmptyState(isArrivals ? "No direct arrivals found right now." : "No direct trains found right now.");
+                        } else {
+                            Toast.makeText(requireContext(), "No later services found.", Toast.LENGTH_SHORT).show();
+                        }
                     }
                 } else {
-                    showEmptyState("API Error: Please check your CRS codes.");
+                    if (btnLaterServices != null) btnLaterServices.setVisibility(View.GONE);
+                    if (!isAppending) showEmptyState("API Error: Please check your API key and CRS codes.");
+                }
+
+                if (btnLaterServices != null && btnLaterServices.getVisibility() == View.VISIBLE) {
+                    btnLaterServices.setText("View later services");
+                    btnLaterServices.setEnabled(true);
                 }
             }
 
@@ -183,7 +215,15 @@ public class StationFragment extends Fragment {
             public void onFailure(@NonNull Call<StationDepartureResponse> call, @NonNull Throwable t) {
                 if (!isAdded()) return;
                 swipeRefreshLayout.setRefreshing(false);
-                showEmptyState("Network error. Please try again.");
+
+                android.util.Log.e("API_DEBUG", "Network Call Failed!", t);
+
+                if (btnLaterServices != null) {
+                    btnLaterServices.setText("View later services");
+                    btnLaterServices.setEnabled(true);
+                }
+
+                if (!isAppending) showEmptyState("Network error. Please try again.");
             }
         });
     }

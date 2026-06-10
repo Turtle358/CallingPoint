@@ -8,6 +8,8 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.InputType;
 import android.text.TextUtils;
+import android.transition.AutoTransition;
+import android.transition.TransitionManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,6 +19,7 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.RadioGroup;
 import android.widget.Toast;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
@@ -27,9 +30,6 @@ import androidx.work.NetworkType;
 import androidx.work.OneTimeWorkRequest;
 import androidx.work.WorkInfo;
 import androidx.work.WorkManager;
-import android.transition.AutoTransition;
-import android.transition.TransitionManager;
-import android.view.ViewGroup;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -48,6 +48,7 @@ import io.github.turtle358.callingpoint.workers.DataSyncWorker;
 public class SettingsFragment extends Fragment {
     private EditText etCustomerKey, etLdbwsKey, etArrivalsKey, etServiceDetailsKey;
     private RadioGroup themeRadioGroup;
+    private View slidingPillTheme;
     private Set<String> trackedTocs;
     private SharedPreferences prefs;
 
@@ -92,6 +93,7 @@ public class SettingsFragment extends Fragment {
         btnToggleService.setOnClickListener(v -> togglePasswordVisibility(etServiceDetailsKey, btnToggleService));
 
         themeRadioGroup = view.findViewById(R.id.themeRadioGroup);
+        slidingPillTheme = view.findViewById(R.id.slidingPillTheme);
         setupThemeControl();
 
         RecyclerView recyclerTocs = view.findViewById(R.id.recyclerTocsSettings);
@@ -179,14 +181,39 @@ public class SettingsFragment extends Fragment {
             themeRadioGroup.check(R.id.radioThemeAuto);
         }
 
-        themeRadioGroup.setOnCheckedChangeListener((group, checkedId) -> {
-            if (checkedId == R.id.radioThemeLight) {
-                ThemeHelper.saveTheme(requireContext(), ThemeHelper.THEME_LIGHT);
-            } else if (checkedId == R.id.radioThemeDark) {
-                ThemeHelper.saveTheme(requireContext(), ThemeHelper.THEME_DARK);
-            } else if (checkedId == R.id.radioThemeAuto) {
-                ThemeHelper.saveTheme(requireContext(), ThemeHelper.THEME_AUTO);
+        themeRadioGroup.post(() -> {
+            int childCount = themeRadioGroup.getChildCount();
+            if (childCount > 0) {
+                int width = themeRadioGroup.getWidth() / childCount;
+                slidingPillTheme.getLayoutParams().width = width;
+                slidingPillTheme.requestLayout();
+
+                View selectedButton = themeRadioGroup.findViewById(themeRadioGroup.getCheckedRadioButtonId());
+                if (selectedButton != null) {
+                    slidingPillTheme.setTranslationX(selectedButton.getX());
+                }
             }
+        });
+
+        themeRadioGroup.setOnCheckedChangeListener((group, checkedId) -> {
+            View selectedButton = group.findViewById(checkedId);
+            if (selectedButton != null) {
+                slidingPillTheme.animate()
+                        .translationX(selectedButton.getX())
+                        .setDuration(200)
+                        .setInterpolator(new androidx.interpolator.view.animation.FastOutSlowInInterpolator())
+                        .start();
+            }
+
+            new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                if (checkedId == R.id.radioThemeLight) {
+                    ThemeHelper.saveTheme(requireContext(), ThemeHelper.THEME_LIGHT);
+                } else if (checkedId == R.id.radioThemeDark) {
+                    ThemeHelper.saveTheme(requireContext(), ThemeHelper.THEME_DARK);
+                } else if (checkedId == R.id.radioThemeAuto) {
+                    ThemeHelper.saveTheme(requireContext(), ThemeHelper.THEME_AUTO);
+                }
+            }, 250);
         });
     }
 

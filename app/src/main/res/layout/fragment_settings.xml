@@ -318,57 +318,67 @@
                         android:textSize="18sp"
                         android:textStyle="bold" />
 
-                    <RadioGroup
-                        android:id="@+id/themeRadioGroup"
+                    <FrameLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:background="@drawable/bg_theme_track"
-                        android:orientation="horizontal"
                         android:padding="4dp">
 
-                        <RadioButton
-                            android:id="@+id/radioThemeAuto"
+                        <View
+                            android:id="@+id/slidingPillTheme"
                             android:layout_width="0dp"
                             android:layout_height="match_parent"
-                            android:layout_weight="1"
-                            android:background="@drawable/selector_theme_tab"
-                            android:button="@null"
-                            android:gravity="center"
-                            android:paddingVertical="10dp"
-                            android:text="Auto"
-                            android:textColor="@color/selector_theme_text"
-                            android:textSize="14sp"
-                            android:textStyle="bold" />
+                            android:background="@drawable/selector_theme_tab" />
 
-                        <RadioButton
-                            android:id="@+id/radioThemeLight"
-                            android:layout_width="0dp"
-                            android:layout_height="match_parent"
-                            android:layout_weight="1"
-                            android:background="@drawable/selector_theme_tab"
-                            android:button="@null"
-                            android:gravity="center"
-                            android:paddingVertical="10dp"
-                            android:text="Light"
-                            android:textColor="@color/selector_theme_text"
-                            android:textSize="14sp"
-                            android:textStyle="bold" />
+                        <RadioGroup
+                            android:id="@+id/themeRadioGroup"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal">
 
-                        <RadioButton
-                            android:id="@+id/radioThemeDark"
-                            android:layout_width="0dp"
-                            android:layout_height="match_parent"
-                            android:layout_weight="1"
-                            android:background="@drawable/selector_theme_tab"
-                            android:button="@null"
-                            android:gravity="center"
-                            android:paddingVertical="10dp"
-                            android:text="Dark"
-                            android:textColor="@color/selector_theme_text"
-                            android:textSize="14sp"
-                            android:textStyle="bold" />
+                            <RadioButton
+                                android:id="@+id/radioThemeAuto"
+                                android:layout_width="0dp"
+                                android:layout_height="match_parent"
+                                android:layout_weight="1"
+                                android:background="@android:color/transparent"
+                                android:button="@null"
+                                android:gravity="center"
+                                android:paddingVertical="10dp"
+                                android:text="Auto"
+                                android:textColor="@color/text_primary"
+                                android:textSize="14sp"
+                                android:textStyle="bold" />
 
-                    </RadioGroup>
+                            <RadioButton
+                                android:id="@+id/radioThemeLight"
+                                android:layout_width="0dp"
+                                android:layout_height="match_parent"
+                                android:layout_weight="1"
+                                android:background="@android:color/transparent"
+                                android:button="@null"
+                                android:gravity="center"
+                                android:paddingVertical="10dp"
+                                android:text="Light"
+                                android:textColor="@color/text_primary"
+                                android:textSize="14sp"
+                                android:textStyle="bold" />
+
+                            <RadioButton
+                                android:id="@+id/radioThemeDark"
+                                android:layout_width="0dp"
+                                android:layout_height="match_parent"
+                                android:layout_weight="1"
+                                android:background="@android:color/transparent"
+                                android:button="@null"
+                                android:gravity="center"
+                                android:paddingVertical="10dp"
+                                android:text="Dark"
+                                android:textColor="@color/selector_theme_text"
+                                android:textSize="14sp"
+                                android:textStyle="bold" />
+                        </RadioGroup>
+                    </FrameLayout>
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 

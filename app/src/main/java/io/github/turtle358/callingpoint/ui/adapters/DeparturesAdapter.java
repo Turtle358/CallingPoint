@@ -11,6 +11,8 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -185,5 +187,34 @@ public class DeparturesAdapter extends RecyclerView.Adapter<DeparturesAdapter.Vi
             tvCallingAt = v.findViewById(R.id.tvCallingAt);
             tvServiceDetails = v.findViewById(R.id.tvServiceDetails);
         }
+    }
+
+    public int appendData(List<StationDepartureResponse.TrainService> newServices) {
+        if (this.services == null) {
+            this.services = new ArrayList<>();
+        }
+
+        int addedCount = 0;
+
+        for (StationDepartureResponse.TrainService newService : newServices) {
+            boolean exists = false;
+            for (StationDepartureResponse.TrainService existingService : this.services) {
+                if (java.util.Objects.equals(existingService.serviceID, newService.serviceID)) {
+                    exists = true;
+                    break;
+                }
+            }
+            if (!exists) {
+                this.services.add(newService);
+                addedCount++;
+            }
+        }
+
+        if (addedCount > 0) {
+            this.lastPosition = this.services.size();
+            notifyDataSetChanged();
+        }
+
+        return addedCount;
     }
 }
