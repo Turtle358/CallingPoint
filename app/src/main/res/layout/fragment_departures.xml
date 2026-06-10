@@ -48,7 +48,8 @@
                 android:textStyle="bold"
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toStartOf="@id/btnSwapStations" />
+                app:layout_constraintEnd_toStartOf="@id/btnSwapStations"
+                android:popupBackground="@drawable/bg_dropdown"/>
 
             <View
                 android:id="@+id/divider"
@@ -74,7 +75,8 @@
                 android:textStyle="bold"
                 app:layout_constraintTop_toBottomOf="@id/divider"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toStartOf="@id/btnSwapStations" />
+                app:layout_constraintEnd_toStartOf="@id/btnSwapStations"
+                android:popupBackground="@drawable/bg_dropdown"/>
 
             <ImageButton
                 android:id="@+id/btnSwapStations"
