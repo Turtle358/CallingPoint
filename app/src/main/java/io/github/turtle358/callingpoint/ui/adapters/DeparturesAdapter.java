@@ -12,6 +12,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import java.util.List;
+import java.util.Objects;
 
 import io.github.turtle358.callingpoint.R;
 import io.github.turtle358.callingpoint.utils.StationHelper;
@@ -25,6 +26,7 @@ public class DeparturesAdapter extends RecyclerView.Adapter<DeparturesAdapter.Vi
     private boolean isArrivals = false;
 
     private String userOriginStation = "";
+    private String userArrivingStation = "";
     private int lastPosition = -1;
 
     public DeparturesAdapter(Context context, List<StationDepartureResponse.TrainService> services) {
@@ -32,10 +34,11 @@ public class DeparturesAdapter extends RecyclerView.Adapter<DeparturesAdapter.Vi
         this.services = services;
     }
 
-    public void updateData(List<StationDepartureResponse.TrainService> newServices, boolean isArrivals, String crs) {
+    public void updateData(List<StationDepartureResponse.TrainService> newServices, boolean isArrivals, String departingCrs, String arrivingCrs) {
         this.services = newServices;
         this.isArrivals = isArrivals;
-        this.userOriginStation = StationHelper.getNameFromCrs(crs);
+        this.userOriginStation = StationHelper.getNameFromCrs(departingCrs);
+        this.userArrivingStation = StationHelper.getNameFromCrs(arrivingCrs);
         this.lastPosition = -1;
         notifyDataSetChanged();
     }
@@ -83,7 +86,12 @@ public class DeparturesAdapter extends RecyclerView.Adapter<DeparturesAdapter.Vi
         if (!isArrivals && service.subsequentCallingPoints != null && !service.subsequentCallingPoints.isEmpty()) {
             List<StationDepartureResponse.CallingPoint> pts = service.subsequentCallingPoints.get(0).callingPoint;
             stopsCount = pts.size();
-            holder.tvCallingAt.setText("Calling at " + userOriginStation);
+            if (!Objects.equals(userArrivingStation, "Unknown")) {
+                holder.tvCallingAt.setText("Calling at " + userOriginStation + " and " + userArrivingStation);
+            } else {
+                holder.tvCallingAt.setText("Calling at " + userOriginStation);
+            }
+
             holder.tvCallingAt.setVisibility(View.VISIBLE);
 
             durationStr = calculateDuration(schTime, pts.get(pts.size() - 1).st);
@@ -91,7 +99,12 @@ public class DeparturesAdapter extends RecyclerView.Adapter<DeparturesAdapter.Vi
         } else if (isArrivals && service.previousCallingPoints != null && !service.previousCallingPoints.isEmpty()) {
             List<StationDepartureResponse.CallingPoint> pts = service.previousCallingPoints.get(0).callingPoint;
             stopsCount = pts.size();
-            holder.tvCallingAt.setText("Arriving at " + userOriginStation);
+            if(userArrivingStation != "Unknown") {
+                holder.tvCallingAt.setText("Arriving at " + userOriginStation + " from " + userArrivingStation);
+            } else {
+                holder.tvCallingAt.setText("Arriving at " + userOriginStation);
+            }
+
             holder.tvCallingAt.setVisibility(View.VISIBLE);
 
             durationStr = calculateDuration(pts.get(0).st, schTime);

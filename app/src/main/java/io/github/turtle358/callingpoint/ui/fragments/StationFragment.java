@@ -169,7 +169,7 @@ public class StationFragment extends Fragment {
                     List<StationDepartureResponse.TrainService> allServices = response.body().trainServices;
 
                     if (allServices != null && !allServices.isEmpty()) {
-                        adapter.updateData(allServices, isArrivals, fromCrs);
+                        adapter.updateData(allServices, isArrivals, fromCrs, toCrs);
                         recyclerDepartures.setVisibility(View.VISIBLE);
                     } else {
                         showEmptyState(isArrivals ? "No direct arrivals found right now." : "No direct trains found right now.");
@@ -189,7 +189,7 @@ public class StationFragment extends Fragment {
     }
 
     private void showEmptyState(String message) {
-        adapter.updateData(new ArrayList<>(), isArrivals, fromCrs);
+        adapter.updateData(new ArrayList<>(), isArrivals, fromCrs, toCrs);
         recyclerDepartures.setVisibility(View.GONE);
         tvEmptyState.setText(message);
         tvEmptyState.setVisibility(View.VISIBLE);
