@@ -15,6 +15,7 @@ import java.util.Map;
 
 public class StationHelper {
     private static final Map<String, String> stationMap = new HashMap<>();
+    private static final Map<String, String> crsMap = new HashMap<>();
 
     public static void init(Context context) {
         String json = null;
@@ -43,6 +44,7 @@ public class StationHelper {
                 String stationName = keys.next();
                 String crsCode = jsonObject.getString(stationName);
                 stationMap.put(stationName, crsCode);
+                crsMap.put(crsCode, stationName);
             }
 
         } catch (Exception e) {
@@ -57,4 +59,11 @@ public class StationHelper {
     public static String getCrsFromName(String name) {
         return stationMap.get(name);
     }
+
+    public static String getNameFromCrs(String crs) {
+        if(crs==null)
+            return "Unknown";
+        return crsMap.getOrDefault(crs.toUpperCase(), "Unknown");
+    }
+
 }

@@ -1,5 +1,6 @@
 package io.github.turtle358.callingpoint.ui.adapters;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
@@ -13,6 +14,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import java.util.List;
 
 import io.github.turtle358.callingpoint.R;
+import io.github.turtle358.callingpoint.utils.StationHelper;
 import io.github.turtle358.callingpoint.utils.TOCBrandHelper;
 import io.github.turtle358.callingpoint.models.StationDepartureResponse;
 import io.github.turtle358.callingpoint.ui.activities.ServiceDetailsActivity;
@@ -21,6 +23,8 @@ public class DeparturesAdapter extends RecyclerView.Adapter<DeparturesAdapter.Vi
     private final Context context;
     private List<StationDepartureResponse.TrainService> services;
     private boolean isArrivals = false;
+
+    private String userOriginStation = "";
     private int lastPosition = -1;
 
     public DeparturesAdapter(Context context, List<StationDepartureResponse.TrainService> services) {
@@ -28,9 +32,10 @@ public class DeparturesAdapter extends RecyclerView.Adapter<DeparturesAdapter.Vi
         this.services = services;
     }
 
-    public void updateData(List<StationDepartureResponse.TrainService> newServices, boolean isArrivals) {
+    public void updateData(List<StationDepartureResponse.TrainService> newServices, boolean isArrivals, String crs) {
         this.services = newServices;
         this.isArrivals = isArrivals;
+        this.userOriginStation = StationHelper.getNameFromCrs(crs);
         this.lastPosition = -1;
         notifyDataSetChanged();
     }
@@ -42,6 +47,7 @@ public class DeparturesAdapter extends RecyclerView.Adapter<DeparturesAdapter.Vi
         return new ViewHolder(v);
     }
 
+    @SuppressLint("SetTextI18n")
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         StationDepartureResponse.TrainService service = services.get(position);
@@ -77,7 +83,7 @@ public class DeparturesAdapter extends RecyclerView.Adapter<DeparturesAdapter.Vi
         if (!isArrivals && service.subsequentCallingPoints != null && !service.subsequentCallingPoints.isEmpty()) {
             List<StationDepartureResponse.CallingPoint> pts = service.subsequentCallingPoints.get(0).callingPoint;
             stopsCount = pts.size();
-            holder.tvCallingAt.setText("Next: " + pts.get(0).locationName);
+            holder.tvCallingAt.setText("Calling at " + userOriginStation);
             holder.tvCallingAt.setVisibility(View.VISIBLE);
 
             durationStr = calculateDuration(schTime, pts.get(pts.size() - 1).st);
@@ -85,7 +91,7 @@ public class DeparturesAdapter extends RecyclerView.Adapter<DeparturesAdapter.Vi
         } else if (isArrivals && service.previousCallingPoints != null && !service.previousCallingPoints.isEmpty()) {
             List<StationDepartureResponse.CallingPoint> pts = service.previousCallingPoints.get(0).callingPoint;
             stopsCount = pts.size();
-            holder.tvCallingAt.setText("Via " + pts.get(pts.size() - 1).locationName);
+            holder.tvCallingAt.setText("Arriving at " + userOriginStation);
             holder.tvCallingAt.setVisibility(View.VISIBLE);
 
             durationStr = calculateDuration(pts.get(0).st, schTime);

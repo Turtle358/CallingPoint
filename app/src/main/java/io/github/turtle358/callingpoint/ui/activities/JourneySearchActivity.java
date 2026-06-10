@@ -1,5 +1,7 @@
 package io.github.turtle358.callingpoint.ui.activities;
 
+import static io.github.turtle358.callingpoint.utils.InlineAutocompleteManager.applyInlineAutocomplete;
+
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -235,7 +237,9 @@ public class JourneySearchActivity extends AppCompatActivity {
             boolean isEnterPressed = event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER && event.getAction() == KeyEvent.ACTION_DOWN;
 
             if (actionId == EditorInfo.IME_ACTION_NEXT || actionId == EditorInfo.IME_ACTION_DONE || actionId == EditorInfo.IME_ACTION_SEARCH || isEnterPressed) {
-                if (adapter.getCount() > 0) {
+
+                String currentText = autoCompleteTextView.getText().toString();
+                if (!currentText.isEmpty() && adapter.getCount() > 0) {
                     String firstMatch = adapter.getItem(0);
                     if (firstMatch != null) {
                         autoCompleteTextView.setText(firstMatch);
@@ -255,36 +259,4 @@ public class JourneySearchActivity extends AppCompatActivity {
         });
     }
 
-    private void applyInlineAutocomplete(AutoCompleteTextView editText) {
-        editText.addTextChangedListener(new TextWatcher() {
-            boolean isTyping = false;
-
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                isTyping = before < count;
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-                if (!isTyping || s.toString().isEmpty()) return;
-
-                String input = s.toString();
-                List<String> stations = StationHelper.getStationNames();
-
-                for (String station : stations) {
-                    if (station.toLowerCase().startsWith(input.toLowerCase()) && !station.equalsIgnoreCase(input)) {
-                        editText.removeTextChangedListener(this);
-                        editText.setText(station);
-                        editText.setSelection(input.length(), station.length());
-
-                        editText.addTextChangedListener(this);
-                        break;
-                    }
-                }
-            }
-        });
-    }
 }

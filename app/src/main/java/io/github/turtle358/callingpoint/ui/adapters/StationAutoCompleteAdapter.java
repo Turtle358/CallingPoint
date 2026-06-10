@@ -115,6 +115,25 @@ public class StationAutoCompleteAdapter extends ArrayAdapter<String> {
                     }
                 }
 
+                java.util.Collections.sort(suggestions, new java.util.Comparator<String>() {
+                    @Override
+                    public int compare(String s1, String s2) {
+                        boolean s1Starts = s1.toLowerCase().startsWith(currentConstraint);
+                        boolean s2Starts = s2.toLowerCase().startsWith(currentConstraint);
+
+                        if (s1Starts && !s2Starts) return -1;
+                        if (!s1Starts && s2Starts) return 1;
+
+                        if (s1Starts && s2Starts) {
+                            if (s1.length() != s2.length()) {
+                                return Integer.compare(s1.length(), s2.length());
+                            }
+                        }
+
+                        return s1.compareToIgnoreCase(s2);
+                    }
+                });
+
                 results.values = suggestions;
                 results.count = suggestions.size();
                 return results;
