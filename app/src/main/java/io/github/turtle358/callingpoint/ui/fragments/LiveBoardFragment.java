@@ -142,19 +142,18 @@ public class LiveBoardFragment extends Fragment {
     }
 
     private void setupToggleAnimation() {
-        toggleBoardType.post(() -> {
-            int childCount = toggleBoardType.getChildCount();
-            if (childCount > 0) {
-                int width = toggleBoardType.getWidth() / childCount;
-                slidingPill.getLayoutParams().width = width;
-                slidingPill.requestLayout();
+        android.content.SharedPreferences prefs = requireContext().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
+        boolean preferArrivals = prefs.getBoolean("PREFER_ARRIVALS", false);
 
-                View selectedButton = toggleBoardType.findViewById(toggleBoardType.getCheckedRadioButtonId());
-                if (selectedButton != null) {
-                    slidingPill.setTranslationX(selectedButton.getX());
-                }
-            }
-        });
+        if (preferArrivals) {
+            toggleBoardType.check(R.id.radioArrivals);
+            etFromCrs.setHint("Arriving at");
+            etToCrs.setHint("Coming from (optional)");
+        } else {
+            toggleBoardType.check(R.id.radioDepartures);
+            etFromCrs.setHint("Departing from");
+            etToCrs.setHint("Going to (optional)");
+        }
 
         toggleBoardType.setOnCheckedChangeListener((group, checkedId) -> {
             View selectedButton = group.findViewById(checkedId);
@@ -166,12 +165,32 @@ public class LiveBoardFragment extends Fragment {
                         .start();
             }
 
+            android.content.SharedPreferences.Editor editor = prefs.edit();
             if (checkedId == R.id.radioArrivals) {
                 etFromCrs.setHint("Arriving at");
                 etToCrs.setHint("Coming from (optional)");
+                editor.putBoolean("PREFER_ARRIVALS", true);
             } else {
                 etFromCrs.setHint("Departing from");
                 etToCrs.setHint("Going to (optional)");
+                editor.putBoolean("PREFER_ARRIVALS", false);
+            }
+            editor.apply();
+        });
+
+        toggleBoardType.getViewTreeObserver().addOnGlobalLayoutListener(new android.view.ViewTreeObserver.OnGlobalLayoutListener() {
+            @Override
+            public void onGlobalLayout() {
+                if (toggleBoardType.getWidth() > 0) {
+                    toggleBoardType.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+
+                    View selectedButton = toggleBoardType.findViewById(toggleBoardType.getCheckedRadioButtonId());
+                    if (selectedButton != null) {
+                        slidingPill.getLayoutParams().width = selectedButton.getWidth();
+                        slidingPill.requestLayout();
+                        slidingPill.setTranslationX(selectedButton.getX());
+                    }
+                }
             }
         });
     }

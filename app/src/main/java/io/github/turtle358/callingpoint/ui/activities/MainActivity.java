@@ -131,12 +131,43 @@ public class MainActivity extends AppCompatActivity {
                     bottomNav.setSelectedItemId(R.id.nav_disruptions);
                 }
             }
+            handleIntentExtras(getIntent());
         } else {
             liveBoardFragment = fm.findFragmentByTag("1");
             journeyPlannerFragment = fm.findFragmentByTag("2");
             disruptionsFragment = fm.findFragmentByTag("3");
             settingsFragment = fm.findFragmentByTag("4");
             activeFragment = liveBoardFragment;
+        }
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        handleIntentExtras(intent);
+    }
+
+    private void handleIntentExtras(Intent intent) {
+        if (intent != null) {
+            String openCrs = intent.getStringExtra("OPEN_STATION_CRS");
+            if (openCrs != null) {
+                BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
+                bottomNav.setSelectedItemId(R.id.nav_departures);
+
+                io.github.turtle358.callingpoint.ui.fragments.StationFragment fragment = new io.github.turtle358.callingpoint.ui.fragments.StationFragment();
+                Bundle args = new Bundle();
+                args.putString("FROM_CRS", openCrs);
+                args.putString("TO_CRS", "");
+                args.putBoolean("IS_ARRIVALS", false);
+                fragment.setArguments(args);
+
+                getSupportFragmentManager().beginTransaction()
+                        .replace(R.id.fragment_container, fragment)
+                        .commit();
+
+                intent.removeExtra("OPEN_STATION_CRS");
+            }
         }
     }
 }

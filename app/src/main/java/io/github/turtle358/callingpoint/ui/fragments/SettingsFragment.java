@@ -181,20 +181,6 @@ public class SettingsFragment extends Fragment {
             themeRadioGroup.check(R.id.radioThemeAuto);
         }
 
-        themeRadioGroup.post(() -> {
-            int childCount = themeRadioGroup.getChildCount();
-            if (childCount > 0) {
-                int width = themeRadioGroup.getWidth() / childCount;
-                slidingPillTheme.getLayoutParams().width = width;
-                slidingPillTheme.requestLayout();
-
-                View selectedButton = themeRadioGroup.findViewById(themeRadioGroup.getCheckedRadioButtonId());
-                if (selectedButton != null) {
-                    slidingPillTheme.setTranslationX(selectedButton.getX());
-                }
-            }
-        });
-
         themeRadioGroup.setOnCheckedChangeListener((group, checkedId) -> {
             View selectedButton = group.findViewById(checkedId);
             if (selectedButton != null) {
@@ -214,6 +200,22 @@ public class SettingsFragment extends Fragment {
                     ThemeHelper.saveTheme(requireContext(), ThemeHelper.THEME_AUTO);
                 }
             }, 250);
+        });
+
+        themeRadioGroup.getViewTreeObserver().addOnGlobalLayoutListener(new android.view.ViewTreeObserver.OnGlobalLayoutListener() {
+            @Override
+            public void onGlobalLayout() {
+                if (themeRadioGroup.getWidth() > 0) {
+                    themeRadioGroup.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+
+                    View selectedButton = themeRadioGroup.findViewById(themeRadioGroup.getCheckedRadioButtonId());
+                    if (selectedButton != null) {
+                        slidingPillTheme.getLayoutParams().width = selectedButton.getWidth();
+                        slidingPillTheme.requestLayout();
+                        slidingPillTheme.setTranslationX(selectedButton.getX());
+                    }
+                }
+            }
         });
     }
 

@@ -180,7 +180,12 @@ public class ServiceDetailsActivity extends AppCompatActivity {
                         cardTrainDetails.setVisibility(View.GONE);
                     }
 
-                    TimelineAdapter adapter = new TimelineAdapter(allPoints, brandColour);
+                    TimelineAdapter adapter = new TimelineAdapter(allPoints, brandColour, data.locationName, crs -> {
+                        android.content.Intent intent = new android.content.Intent(ServiceDetailsActivity.this, MainActivity.class);
+                        intent.putExtra("OPEN_STATION_CRS", crs);
+                        startActivity(intent);
+                    });
+
                     recyclerTimeline.setAdapter(adapter);
 
                 } else {

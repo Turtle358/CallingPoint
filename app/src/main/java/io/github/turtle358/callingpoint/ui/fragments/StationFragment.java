@@ -39,7 +39,7 @@ public class StationFragment extends Fragment {
     private boolean isArrivals = false;
     private int currentOffset = 0;
 
-    private TextView tvStationTitle, tvStationSubtitle, tvEmptyState;
+    private TextView tvDirectionHeading, tvStationTitle, tvStationSubtitle, tvEmptyState;
     private ImageButton btnPinStation;
     private SwipeRefreshLayout swipeRefreshLayout;
     private RecyclerView recyclerDepartures;
@@ -67,6 +67,7 @@ public class StationFragment extends Fragment {
 
         pinKey = fromCrs + (toCrs.isEmpty() ? "" : ":" + toCrs);
 
+        tvDirectionHeading = view.findViewById(R.id.tvDirectionHeading);
         tvStationTitle = view.findViewById(R.id.tvStationTitle);
         tvStationSubtitle = view.findViewById(R.id.tvStationSubtitle);
         btnPinStation = view.findViewById(R.id.btnPinStation);
@@ -98,6 +99,12 @@ public class StationFragment extends Fragment {
     }
 
     private void setupHeader() {
+        if (isArrivals) {
+            tvDirectionHeading.setText("Trains arriving at");
+        } else {
+            tvDirectionHeading.setText("Trains departing from");
+        }
+
         tvStationTitle.setText(fromCrs);
         for (String name : StationHelper.getStationNames()) {
             if (fromCrs.equalsIgnoreCase(StationHelper.getCrsFromName(name))) {
@@ -114,7 +121,9 @@ public class StationFragment extends Fragment {
                     break;
                 }
             }
-            tvStationSubtitle.setText("to " + toName);
+
+            String prefix = isArrivals ? "from " : "to ";
+            tvStationSubtitle.setText(prefix + toName);
             tvStationSubtitle.setVisibility(View.VISIBLE);
         }
     }

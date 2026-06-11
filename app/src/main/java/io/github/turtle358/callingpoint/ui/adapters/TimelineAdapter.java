@@ -26,6 +26,13 @@ public class TimelineAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
     private final int brandColor;
     private boolean isExpanded = false;
 
+    private final String targetStationName;
+    private final OnStationClickListener listener;
+
+    public interface OnStationClickListener {
+        void onStationClick(String crs);
+    }
+
     private static class TimelineItem {
         int type;
         ServiceDetailsResponse.TimelinePoint point;
@@ -36,9 +43,11 @@ public class TimelineAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
         }
     }
 
-    public TimelineAdapter(List<ServiceDetailsResponse.TimelinePoint> allPoints, int brandColor) {
+    public TimelineAdapter(List<ServiceDetailsResponse.TimelinePoint> allPoints, int brandColor, String targetStationName, OnStationClickListener listener) {
         this.allPoints = allPoints;
         this.brandColor = brandColor;
+        this.targetStationName = targetStationName;
+        this.listener = listener;
         buildDisplayList(false);
     }
 
@@ -139,12 +148,23 @@ public class TimelineAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
             h.tvStationName.setText(point.locationName);
             h.tvTime.setText(point.scheduledTime);
 
-            if (point.platform != null && !point.platform.trim().isEmpty()) {
-                h.tvPlatform.setText("Platform " + point.platform);
-                h.tvPlatform.setVisibility(View.VISIBLE);
+            if (targetStationName != null && targetStationName.equalsIgnoreCase(point.locationName)) {
+                h.itemView.setBackgroundResource(R.drawable.bg_highlight_station);
             } else {
-                h.tvPlatform.setVisibility(View.GONE);
+                android.util.TypedValue outValue = new android.util.TypedValue();
+                h.itemView.getContext().getTheme().resolveAttribute(android.R.attr.selectableItemBackground, outValue, true);
+                h.itemView.setBackgroundResource(outValue.resourceId);
             }
+
+            h.itemView.setOnClickListener(v -> {
+                String crs = point.crs;
+                if (crs == null || crs.trim().isEmpty()) {
+                    crs = io.github.turtle358.callingpoint.utils.StationHelper.getCrsFromName(point.locationName);
+                }
+                if (crs != null && !crs.isEmpty() && listener != null) {
+                    listener.onStationClick(crs);
+                }
+            });
 
             h.lineTop.setVisibility(position == 0 ? View.INVISIBLE : View.VISIBLE);
             h.lineBottom.setVisibility(position == displayList.size() - 1 ? View.INVISIBLE : View.VISIBLE);
@@ -183,14 +203,13 @@ public class TimelineAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
     public int getItemCount() { return displayList.size(); }
 
     public static class StopViewHolder extends RecyclerView.ViewHolder {
-        TextView tvTime, tvLiveStatus, tvStationName, tvPlatform;
+        TextView tvTime, tvLiveStatus, tvStationName;
         View lineTop, dot, lineBottom;
         public StopViewHolder(View v) {
             super(v);
             tvTime = v.findViewById(R.id.tvTime);
             tvLiveStatus = v.findViewById(R.id.tvLiveStatus);
             tvStationName = v.findViewById(R.id.tvStationName);
-            tvPlatform = v.findViewById(R.id.tvPlatform);
             lineTop = v.findViewById(R.id.lineTop);
             dot = v.findViewById(R.id.dot);
             lineBottom = v.findViewById(R.id.lineBottom);
