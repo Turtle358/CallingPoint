@@ -29,9 +29,10 @@ public interface NationalRailAPI {
             @Header("x-apikey") String customerKey,
             @Path("crs") String crsCode,
             @Query("numRows") int numRows,
-            @Query("timeWindow") int timeWindow,
+            @Query("filterCrs") String filterCrs,
+            @Query("filterType") String filterType,
             @Query("timeOffset") int timeOffset,
-            @Query("filterCrs") String filterCrs
+            @Query("timeWindow") int timeWindow
     );
 
     @GET("1010-live-arrival-board-arr/LDBWS/api/20220120/GetArrBoardWithDetails/{crs}")
@@ -39,9 +40,10 @@ public interface NationalRailAPI {
             @Header("x-apikey") String customerKey,
             @Path("crs") String crsCode,
             @Query("numRows") int numRows,
-            @Query("timeWindow") int timeWindow,
+            @Query("filterCrs") String filterCrs,
+            @Query("filterType") String filterType,
             @Query("timeOffset") int timeOffset,
-            @Query("filterCrs") String filterCrs
+            @Query("timeWindow") int timeWindow
     );
 
     @GET("1010-service-details1_2/LDBWS/api/20220120/GetServiceDetails/{serviceID}")

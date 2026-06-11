@@ -158,11 +158,16 @@ public class StationFragment extends Fragment {
 
         String apiFilterCrs = toCrs.isEmpty() ? null : toCrs;
 
+        String apiFilterType = null;
+        if (apiFilterCrs != null) {
+            apiFilterType = isArrivals ? "from" : "to";
+        }
+
         Call<StationDepartureResponse> networkCall;
         if (isArrivals) {
-            networkCall = api.getStationArrivals(key, fromCrs, 150, 120, currentOffset, apiFilterCrs);
+            networkCall = api.getStationArrivals(key, fromCrs, 150, apiFilterCrs, apiFilterType, currentOffset, 120);
         } else {
-            networkCall = api.getStationDepartures(key, fromCrs, 150, 120, currentOffset, apiFilterCrs);
+            networkCall = api.getStationDepartures(key, fromCrs, 150, apiFilterCrs, apiFilterType, currentOffset, 120);
         }
 
         networkCall.enqueue(new Callback<>() {

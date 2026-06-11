@@ -165,6 +165,14 @@ public class LiveBoardFragment extends Fragment {
                         .setInterpolator(new androidx.interpolator.view.animation.FastOutSlowInInterpolator())
                         .start();
             }
+
+            if (checkedId == R.id.radioArrivals) {
+                etFromCrs.setHint("Arriving at");
+                etToCrs.setHint("Coming from (optional)");
+            } else {
+                etFromCrs.setHint("Departing from");
+                etToCrs.setHint("Going to (optional)");
+            }
         });
     }
 

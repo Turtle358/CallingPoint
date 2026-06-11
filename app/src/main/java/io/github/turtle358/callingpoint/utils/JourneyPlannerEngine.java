@@ -329,7 +329,8 @@ public class JourneyPlannerEngine {
         if (boardCache.containsKey(cacheKey)) return boardCache.get(cacheKey);
 
         try {
-            Response<StationDepartureResponse> res = api.getStationDepartures(ldbwsApiKey, crs, rows, 120, 0, filter).execute();
+            String filterType = filter != null ? "to" : null;
+            Response<StationDepartureResponse> res = api.getStationDepartures(ldbwsApiKey, crs, rows, filter, filterType, 0, 120).execute();
             if (res.isSuccessful() && res.body() != null) {
                 boardCache.put(cacheKey, res.body());
                 return res.body();
