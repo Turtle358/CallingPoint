@@ -238,14 +238,13 @@ public class LiveBoardFragment extends Fragment {
 
         if (!pinnedServices.isEmpty()) {
             NationalRailAPI api = APIClient.getClient().create(NationalRailAPI.class);
-            String apiKey = requireContext().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE).getString("SERVICE_DETAILS_KEY", "");
 
             List<ServiceDetailsResponse> tempServicesData = new ArrayList<>();
             final int totalRequests = pinnedServices.size();
             final int[] completedRequests = {0};
 
             for (String serviceId : pinnedServices) {
-                api.getServiceDetails(apiKey, serviceId).enqueue(new Callback<>() {
+                api.getServiceDetails(serviceId).enqueue(new Callback<>() {
                     @Override
                     public void onResponse(@NonNull Call<ServiceDetailsResponse> call, @NonNull Response<ServiceDetailsResponse> response) {
                         if (!isAdded()) return;

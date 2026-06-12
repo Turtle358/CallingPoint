@@ -46,7 +46,6 @@ import io.github.turtle358.callingpoint.models.Toc;
 import io.github.turtle358.callingpoint.workers.DataSyncWorker;
 
 public class SettingsFragment extends Fragment {
-    private EditText etCustomerKey, etLdbwsKey, etArrivalsKey, etServiceDetailsKey;
     private RadioGroup themeRadioGroup;
     private View slidingPillTheme;
     private Set<String> trackedTocs;
@@ -69,28 +68,7 @@ public class SettingsFragment extends Fragment {
             trackedTocs.addAll(Arrays.asList(savedTocs.split(",")));
         }
 
-        etCustomerKey = view.findViewById(R.id.etCustomerKey);
-        etLdbwsKey = view.findViewById(R.id.etLdbwsKey);
-        etArrivalsKey = view.findViewById(R.id.etArrivalsKey);
-        etServiceDetailsKey = view.findViewById(R.id.etServiceDetailsKey);
-        Button btnSaveSettings = view.findViewById(R.id.btnSaveSettings);
 
-        etCustomerKey.setText(prefs.getString("CUSTOMER_KEY", ""));
-        etLdbwsKey.setText(prefs.getString("LDBWS_KEY", ""));
-        etArrivalsKey.setText(prefs.getString("ARRIVALS_KEY", ""));
-        etServiceDetailsKey.setText(prefs.getString("SERVICE_DETAILS_KEY", ""));
-
-        ImageButton btnTogglePassword = view.findViewById(R.id.btnTogglePassword);
-        btnTogglePassword.setOnClickListener(v -> togglePasswordVisibility(etCustomerKey, btnTogglePassword));
-
-        ImageButton btnToggleLdbwsPassword = view.findViewById(R.id.btnToggleLdbwsPassword);
-        btnToggleLdbwsPassword.setOnClickListener(v -> togglePasswordVisibility(etLdbwsKey, btnToggleLdbwsPassword));
-
-        ImageButton btnToggleArrivalPassword = view.findViewById(R.id.btnToggleArrivalsPassword);
-        btnToggleArrivalPassword.setOnClickListener(v -> togglePasswordVisibility(etArrivalsKey, btnToggleArrivalPassword));
-
-        ImageButton btnToggleService = view.findViewById(R.id.btnToggleServiceDetailsPassword);
-        btnToggleService.setOnClickListener(v -> togglePasswordVisibility(etServiceDetailsKey, btnToggleService));
 
         themeRadioGroup = view.findViewById(R.id.themeRadioGroup);
         slidingPillTheme = view.findViewById(R.id.slidingPillTheme);
@@ -107,35 +85,10 @@ public class SettingsFragment extends Fragment {
             saveTrackedTocs();
         });
 
-        View headerApiKeys = view.findViewById(R.id.headerApiKeys);
-        View contentApiKeys = view.findViewById(R.id.contentApiKeys);
-        ImageView iconApiKeysToggle = view.findViewById(R.id.iconApiKeysToggle);
 
-        headerApiKeys.setOnClickListener(v -> {
-            AutoTransition transition = new AutoTransition();
-            transition.setDuration(200);
-            TransitionManager.beginDelayedTransition((ViewGroup) requireView(), transition);
-
-            if (contentApiKeys.getVisibility() == View.VISIBLE) {
-                contentApiKeys.setVisibility(View.GONE);
-                iconApiKeysToggle.animate().rotation(0f).setDuration(200).start();
-            } else {
-                contentApiKeys.setVisibility(View.VISIBLE);
-                iconApiKeysToggle.animate().rotation(180f).setDuration(200).start();
-            }
-        });
 
         recyclerTocs.setAdapter(adapter);
 
-        btnSaveSettings.setOnClickListener(v -> {
-            prefs.edit()
-                    .putString("CUSTOMER_KEY", etCustomerKey.getText().toString().trim())
-                    .putString("LDBWS_KEY", etLdbwsKey.getText().toString().trim())
-                    .putString("ARRIVALS_KEY", etArrivalsKey.getText().toString().trim())
-                    .putString("SERVICE_DETAILS_KEY", etServiceDetailsKey.getText().toString().trim())
-                    .apply();
-            Toast.makeText(requireContext(), "API Keys Saved", Toast.LENGTH_SHORT).show();
-        });
 
         Button btnManualSync = view.findViewById(R.id.btnManualSync);
         btnManualSync.setOnClickListener(v -> {
@@ -234,20 +187,5 @@ public class SettingsFragment extends Fragment {
         intent.setAction(AppWidgetManager.ACTION_APPWIDGET_UPDATE);
         intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, appWidgetIds);
         requireContext().sendBroadcast(intent);
-    }
-
-    private void togglePasswordVisibility(EditText editText, ImageButton button) {
-        android.graphics.Typeface currentTypeface = editText.getTypeface();
-        boolean isVisible = editText.getInputType() == (InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
-
-        if (isVisible) {
-            editText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
-            button.setImageResource(R.drawable.ic_visibility_off);
-        } else {
-            editText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
-            button.setImageResource(R.drawable.ic_visibility);
-        }
-        editText.setTypeface(currentTypeface);
-        editText.setSelection(editText.getText().length());
     }
 }

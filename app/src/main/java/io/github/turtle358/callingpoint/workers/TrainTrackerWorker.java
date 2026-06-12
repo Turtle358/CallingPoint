@@ -36,16 +36,10 @@ public class TrainTrackerWorker extends Worker {
         }
 
         NationalRailAPI api = APIClient.getClient().create(NationalRailAPI.class);
-        String apiKey = context.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
-                .getString("SERVICE_DETAILS_KEY", "");
-
-        if (apiKey == null || apiKey.isEmpty()) {
-            return Result.failure();
-        }
 
         for (String serviceId : pinnedServices) {
             try {
-                Call<ServiceDetailsResponse> call = api.getServiceDetails(apiKey, serviceId);
+                Call<ServiceDetailsResponse> call = api.getServiceDetails(serviceId);
                 Response<ServiceDetailsResponse> response = call.execute();
 
                 if (response.isSuccessful() && response.body() != null) {

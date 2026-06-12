@@ -93,18 +93,11 @@ public class ServiceDetailsActivity extends AppCompatActivity {
     }
 
     private void fetchServiceDetails(String serviceId) {
-        String key = getSharedPreferences("MyPrefs", Context.MODE_PRIVATE).getString("SERVICE_DETAILS_KEY", "");
-
-        if (key.isEmpty()) {
-            Toast.makeText(this, "Please enter your Service Details API Key in Settings", Toast.LENGTH_LONG).show();
-            swipeRefreshLayout.setRefreshing(false);
-            return;
-        }
 
         swipeRefreshLayout.setRefreshing(true);
         NationalRailAPI api = APIClient.getClient().create(NationalRailAPI.class);
 
-        api.getServiceDetails(key, serviceId).enqueue(new Callback<>() {
+        api.getServiceDetails(serviceId).enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<ServiceDetailsResponse> call, @NonNull Response<ServiceDetailsResponse> response) {
                 swipeRefreshLayout.setRefreshing(false);

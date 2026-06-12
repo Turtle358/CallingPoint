@@ -47,7 +47,6 @@ public class DisruptionsFragment extends Fragment {
     private View cardTracked, cardOthers, cardEngineering, cardGoodService;
     private DisruptionAdapter adapterTracked, adapterOthers, adapterEngineering;
     private NationalRailAPI api;
-    private String customerKey;
 
     @Nullable
     @Override
@@ -83,9 +82,8 @@ public class DisruptionsFragment extends Fragment {
         recyclerEngineering.setAdapter(adapterEngineering);
 
         api = APIClient.getClient().create(NationalRailAPI.class);
-        customerKey = requireContext().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE).getString("CUSTOMER_KEY", "");
 
-        swipeRefreshLayout.setOnRefreshListener(() -> fetchRailData(api, customerKey));
+        swipeRefreshLayout.setOnRefreshListener(() -> fetchRailData(api));
     }
 
     @Override
@@ -96,12 +94,7 @@ public class DisruptionsFragment extends Fragment {
 
     private void checkCacheAndLoad() {
         SharedPreferences prefs = requireContext().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
-        String key = prefs.getString("CUSTOMER_KEY", "");
 
-        if (key.isEmpty()) {
-            liveIndicator.setText("◉ Offline - No API Key");
-            return;
-        }
 
         long lastSync = prefs.getLong("LAST_SYNC_TIME", 0);
         long currentTime = System.currentTimeMillis();
@@ -138,14 +131,11 @@ public class DisruptionsFragment extends Fragment {
                 }
             }
         }
-        fetchRailData(api, key);
+        fetchRailData(api);
     }
 
-    private void fetchRailData(NationalRailAPI api, String key) {
-        if (key == null || key.isEmpty()) {
-            swipeRefreshLayout.setRefreshing(false);
-            return;
-        }
+    private void fetchRailData(NationalRailAPI api) {
+
 
         swipeRefreshLayout.setRefreshing(true);
         liveIndicator.setText("◉ Syncing Real-Time Delays...");

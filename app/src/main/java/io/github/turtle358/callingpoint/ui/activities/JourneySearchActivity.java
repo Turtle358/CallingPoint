@@ -65,14 +65,8 @@ public class JourneySearchActivity extends AppCompatActivity {
 
 
         GraphManager graphManager = GraphManager.getInstance(this);
-        String ldbwsKey = getSharedPreferences("MyPrefs", Context.MODE_PRIVATE).getString("LDBWS_KEY", "");
-        String serviceDetailsKey = getSharedPreferences("MyPrefs", Context.MODE_PRIVATE).getString("SERVICE_DETAILS_KEY", "");
 
-        if (ldbwsKey.isEmpty() || serviceDetailsKey.isEmpty()) {
-            Toast.makeText(this, "Error: Both API Keys must be set in Settings", Toast.LENGTH_LONG).show();
-        } else {
-            plannerEngine = new JourneyPlannerEngine(graphManager, ldbwsKey, serviceDetailsKey);
-        }
+        plannerEngine = new JourneyPlannerEngine(graphManager);
 
         List<String> stations = StationHelper.getStationNames();
         autoCompleteAdapter = new StationAutoCompleteAdapter(this, stations);

@@ -146,18 +146,6 @@ public class StationFragment extends Fragment {
     }
 
     private void fetchTrains(boolean isAppending) {
-        String key;
-        if (isArrivals) {
-            key = requireContext().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE).getString("ARRIVALS_KEY", "");
-        } else {
-            key = requireContext().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE).getString("LDBWS_KEY", "");
-        }
-
-        if (key.isEmpty()) {
-            Toast.makeText(requireContext(), "Please enter your API Key in Settings", Toast.LENGTH_LONG).show();
-            swipeRefreshLayout.setRefreshing(false);
-            return;
-        }
 
         if (!isAppending) {
             currentOffset = 0;
@@ -174,9 +162,9 @@ public class StationFragment extends Fragment {
 
         Call<StationDepartureResponse> networkCall;
         if (isArrivals) {
-            networkCall = api.getStationArrivals(key, fromCrs, 150, apiFilterCrs, apiFilterType, currentOffset, 120);
+            networkCall = api.getStationArrivals(fromCrs, 150, apiFilterCrs, apiFilterType, currentOffset, 120);
         } else {
-            networkCall = api.getStationDepartures(key, fromCrs, 150, apiFilterCrs, apiFilterType, currentOffset, 120);
+            networkCall = api.getStationDepartures(fromCrs, 150, apiFilterCrs, apiFilterType, currentOffset, 120);
         }
 
         networkCall.enqueue(new Callback<>() {
@@ -216,7 +204,7 @@ public class StationFragment extends Fragment {
                     }
                 } else {
                     if (btnLaterServices != null) btnLaterServices.setVisibility(View.GONE);
-                    if (!isAppending) showEmptyState("API Error: Please check your API key and CRS codes.");
+                    if (!isAppending) showEmptyState("API Error: Please check your connection and CRS codes.");
                 }
 
                 if (btnLaterServices != null && btnLaterServices.getVisibility() == View.VISIBLE) {

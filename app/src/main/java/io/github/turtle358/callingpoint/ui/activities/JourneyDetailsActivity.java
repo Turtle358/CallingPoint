@@ -89,8 +89,6 @@ public class JourneyDetailsActivity extends AppCompatActivity {
     }
 
     private void fetchLiveServiceDetails(JourneyOption journey) {
-        String apiKey = getSharedPreferences("MyPrefs", Context.MODE_PRIVATE).getString("SERVICE_DETAILS_KEY", "");
-        if (apiKey.isEmpty()) return;
 
         NationalRailAPI api = APIClient.getClient().create(NationalRailAPI.class);
 
@@ -108,7 +106,7 @@ public class JourneyDetailsActivity extends AppCompatActivity {
 
         for (JourneyLeg leg : journey.legs) {
             if ("TRAIN".equals(leg.transportMode) && leg.serviceId != null) {
-                api.getServiceDetails(apiKey, leg.serviceId).enqueue(new Callback<>() {
+                api.getServiceDetails(leg.serviceId).enqueue(new Callback<>() {
                     @Override
                     public void onResponse(@NonNull Call<ServiceDetailsResponse> call, @NonNull Response<ServiceDetailsResponse> response) {
                         completedRequests[0]++;

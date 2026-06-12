@@ -36,17 +36,13 @@ public class JourneyPlannerEngine {
     private final GraphManager graphManager;
     private final ExecutorService executor;
     private final Handler mainHandler;
-    private final String ldbwsApiKey;
-    private final String serviceDetailsApiKey;
 
     private Map<String, StationDepartureResponse> boardCache;
     private Map<String, ServiceDetailsResponse> detailCache;
 
-    public JourneyPlannerEngine(GraphManager graphManager, String ldbwsApiKey, String serviceDetailsApiKey) {
+    public JourneyPlannerEngine(GraphManager graphManager) {
         this.api = APIClient.getClient().create(NationalRailAPI.class);
         this.graphManager = graphManager;
-        this.ldbwsApiKey = ldbwsApiKey;
-        this.serviceDetailsApiKey = serviceDetailsApiKey;
         this.executor = Executors.newSingleThreadExecutor();
         this.mainHandler = new Handler(Looper.getMainLooper());
     }
@@ -330,7 +326,7 @@ public class JourneyPlannerEngine {
 
         try {
             String filterType = filter != null ? "to" : null;
-            Response<StationDepartureResponse> res = api.getStationDepartures(ldbwsApiKey, crs, rows, filter, filterType, 0, 120).execute();
+            Response<StationDepartureResponse> res = api.getStationDepartures(crs, rows, filter, filterType, 0, 120).execute();
             if (res.isSuccessful() && res.body() != null) {
                 boardCache.put(cacheKey, res.body());
                 return res.body();
@@ -348,7 +344,7 @@ public class JourneyPlannerEngine {
             details = detailCache.get(serviceId);
         } else {
             try {
-                Response<ServiceDetailsResponse> res = api.getServiceDetails(serviceDetailsApiKey, serviceId).execute();
+                Response<ServiceDetailsResponse> res = api.getServiceDetails(serviceId).execute();
                 if (res.isSuccessful() && res.body() != null) {
                     details = res.body();
                     detailCache.put(serviceId, details);

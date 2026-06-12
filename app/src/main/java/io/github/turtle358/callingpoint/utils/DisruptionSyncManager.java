@@ -48,9 +48,6 @@ public class DisruptionSyncManager {
 
     public static boolean syncSync(Context context, SyncCallback callback) {
         SharedPreferences prefs = context.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
-        String key = prefs.getString("CUSTOMER_KEY", "");
-
-        if (key.isEmpty()) return false;
 
         TOCBrandHelper.init(context);
 
@@ -69,7 +66,7 @@ public class DisruptionSyncManager {
         NationalRailAPI api = APIClient.getClient().create(NationalRailAPI.class);
 
         try {
-            Response<List<IncidentResponse>> response = api.searchIncidents(key, request).execute();
+            Response<List<IncidentResponse>> response = api.searchIncidents(request).execute();
 
             if (response.isSuccessful() && response.body() != null) {
                 Map<String, DisruptionResponce.ServiceIndicator> trackedMap = new LinkedHashMap<>();
