@@ -14,7 +14,7 @@
         android:paddingTop="20dp"
         android:paddingBottom="8dp"
         android:gravity="center_vertical"
-        android:baselineAligned="false"> <!-- Keeps baseline alignment off -->
+        android:baselineAligned="false">
 
         <ImageView
             android:layout_width="24dp"
@@ -30,7 +30,6 @@
             android:orientation="vertical"
             android:gravity="center_vertical">
 
-            <!-- includeFontPadding="false" removes invisible top/bottom text spacing -->
             <TextView
                 android:id="@+id/tvOperatorName"
                 android:layout_width="wrap_content"
@@ -40,7 +39,6 @@
                 android:textStyle="bold"
                 android:textSize="16sp" />
 
-            <!-- Added 2dp top margin to replace the stripped font padding -->
             <TextView
                 android:id="@+id/tvTrainDestination"
                 android:layout_width="wrap_content"
@@ -50,7 +48,6 @@
                 android:textColor="?android:attr/textColorSecondary"
                 android:textSize="14sp" />
 
-            <!-- CRITICAL: Set visibility="gone" by default so it doesn't skew the center height when empty -->
             <TextView
                 android:id="@+id/tvLiveLocation"
                 android:layout_width="wrap_content"

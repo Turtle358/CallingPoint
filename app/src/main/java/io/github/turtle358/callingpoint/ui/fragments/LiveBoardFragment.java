@@ -103,6 +103,8 @@ public class LiveBoardFragment extends Fragment {
         serviceAdapter = new PinnedServiceAdapter(requireContext(), liveServicesData);
         recyclerPinnedServices.setAdapter(serviceAdapter);
 
+        setupDragAndDrop();
+
         setupToggleAnimation();
 
         btnSwap.setOnClickListener(v -> {
@@ -324,5 +326,81 @@ public class LiveBoardFragment extends Fragment {
             }
             return false;
         });
+    }
+
+    private void setupDragAndDrop() {
+        // 1. Setup Drag for Stations
+        androidx.recyclerview.widget.ItemTouchHelper stationTouchHelper = new androidx.recyclerview.widget.ItemTouchHelper(
+                new androidx.recyclerview.widget.ItemTouchHelper.SimpleCallback(
+                        androidx.recyclerview.widget.ItemTouchHelper.UP | androidx.recyclerview.widget.ItemTouchHelper.DOWN, 0) {
+
+                    @Override
+                    public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) {
+                        int fromPos = viewHolder.getBindingAdapterPosition();
+                        int toPos = target.getBindingAdapterPosition();
+
+                        if (fromPos != RecyclerView.NO_POSITION && toPos != RecyclerView.NO_POSITION) {
+                            stationAdapter.swapItems(fromPos, toPos);
+                        }
+                        return true;
+                    }
+
+                    @Override
+                    public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
+                    }
+
+                    @Override
+                    public void onSelectedChanged(@androidx.annotation.Nullable RecyclerView.ViewHolder viewHolder, int actionState) {
+                        super.onSelectedChanged(viewHolder, actionState);
+                        if (actionState == androidx.recyclerview.widget.ItemTouchHelper.ACTION_STATE_DRAG && viewHolder != null) {
+                            viewHolder.itemView.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS);
+                        }
+                    }
+
+                    @Override
+                    public void clearView(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
+                        super.clearView(recyclerView, viewHolder);
+                        pinnedDataManager.saveAllPinnedStations(currentPinnedStations);
+                    }
+                });
+        stationTouchHelper.attachToRecyclerView(recyclerPinnedStations);
+
+        androidx.recyclerview.widget.ItemTouchHelper serviceTouchHelper = new androidx.recyclerview.widget.ItemTouchHelper(
+                new androidx.recyclerview.widget.ItemTouchHelper.SimpleCallback(
+                        androidx.recyclerview.widget.ItemTouchHelper.UP | androidx.recyclerview.widget.ItemTouchHelper.DOWN, 0) {
+
+                    @Override
+                    public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) {
+                        int fromPos = viewHolder.getBindingAdapterPosition();
+                        int toPos = target.getBindingAdapterPosition();
+
+                        if (fromPos != RecyclerView.NO_POSITION && toPos != RecyclerView.NO_POSITION) {
+                            serviceAdapter.swapItems(fromPos, toPos);
+                        }
+                        return true;
+                    }
+
+                    @Override
+                    public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {}
+
+                    @Override
+                    public void onSelectedChanged(@androidx.annotation.Nullable RecyclerView.ViewHolder viewHolder, int actionState) {
+                        super.onSelectedChanged(viewHolder, actionState);
+                        if (actionState == androidx.recyclerview.widget.ItemTouchHelper.ACTION_STATE_DRAG && viewHolder != null) {
+                            viewHolder.itemView.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS);
+                        }
+                    }
+
+                    @Override
+                    public void clearView(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
+                        super.clearView(recyclerView, viewHolder);
+                        List<String> newServiceIdOrder = new ArrayList<>();
+                        for (io.github.turtle358.callingpoint.models.ServiceDetailsResponse service : liveServicesData) {
+                            newServiceIdOrder.add(service.customServiceID);
+                        }
+                        pinnedDataManager.saveAllPinnedServices(newServiceIdOrder);
+                    }
+                });
+        serviceTouchHelper.attachToRecyclerView(recyclerPinnedServices);
     }
 }

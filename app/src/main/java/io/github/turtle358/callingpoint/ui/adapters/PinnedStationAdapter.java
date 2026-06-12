@@ -9,6 +9,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.util.Collections;
 import java.util.List;
 
 import io.github.turtle358.callingpoint.R;
@@ -67,6 +68,11 @@ public class PinnedStationAdapter extends RecyclerView.Adapter<PinnedStationAdap
     @Override
     public int getItemCount() {
         return pinnedKeys.size();
+    }
+
+    public void swapItems(int fromPosition, int toPosition) {
+        Collections.swap(pinnedKeys, fromPosition, toPosition);
+        notifyItemMoved(fromPosition, toPosition);
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {

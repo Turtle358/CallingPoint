@@ -67,4 +67,14 @@ public class PinnedDataManager {
     public boolean isServicePinned(String serviceId) {
         return getPinnedServices().contains(serviceId);
     }
+
+    public void saveAllPinnedStations(List<String> stations) {
+        String json = gson.toJson(stations);
+        prefs.edit().putString(KEY_PINNED_STATIONS, json).apply();
+    }
+
+    public void saveAllPinnedServices(List<String> services) {
+        String json = gson.toJson(services);
+        prefs.edit().putString(KEY_PINNED_SERVICES, json).apply();
+    }
 }

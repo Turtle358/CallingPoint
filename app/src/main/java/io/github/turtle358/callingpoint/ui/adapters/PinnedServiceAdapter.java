@@ -12,6 +12,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import io.github.turtle358.callingpoint.R;
@@ -139,6 +140,10 @@ public class PinnedServiceAdapter extends RecyclerView.Adapter<PinnedServiceAdap
     @Override
     public int getItemCount() {
         return liveServices.size();
+    }
+    public void swapItems(int fromPosition, int toPosition) {
+        Collections.swap(liveServices, fromPosition, toPosition);
+        notifyItemMoved(fromPosition, toPosition);
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
