@@ -172,7 +172,7 @@ public class JourneySearchActivity extends AppCompatActivity {
         if (plannerEngine != null) {
             findRoutes(fromCrs, toCrs);
         } else {
-            tvStatusUpdate.setText("Routing engine unavailable. Check API keys.");
+            tvStatusUpdate.setText("Routing engine unavailable. Check your connection.");
             progressSearch.setVisibility(View.GONE);
         }
     }
