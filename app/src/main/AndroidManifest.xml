@@ -17,12 +17,33 @@
         <activity
             android:name="io.github.turtle358.callingpoint.ui.activities.MainActivity"
             android:exported="true"
-            android:screenOrientation="portrait">
+            android:screenOrientation="portrait" />
+
+        <activity-alias
+            android:name=".MainActivityDefault"
+            android:enabled="true"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher"
+            android:roundIcon="@mipmap/ic_launcher_round"
+            android:targetActivity="io.github.turtle358.callingpoint.ui.activities.MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".MainActivityAlt"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_alt"
+            android:roundIcon="@mipmap/ic_launcher_alt_round"
+            android:targetActivity="io.github.turtle358.callingpoint.ui.activities.MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
 
         <activity android:name="io.github.turtle358.callingpoint.ui.activities.ServiceDetailsActivity"
             android:screenOrientation="portrait" />

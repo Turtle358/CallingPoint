@@ -5,6 +5,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.text.InputType;
 import android.text.TextUtils;
@@ -73,6 +74,8 @@ public class SettingsFragment extends Fragment {
         themeRadioGroup = view.findViewById(R.id.themeRadioGroup);
         slidingPillTheme = view.findViewById(R.id.slidingPillTheme);
         setupThemeControl();
+
+        setupAppIconControl(view);
 
         RecyclerView recyclerTocs = view.findViewById(R.id.recyclerTocsSettings);
         recyclerTocs.setLayoutManager(new LinearLayoutManager(requireContext()));
@@ -187,5 +190,47 @@ public class SettingsFragment extends Fragment {
         intent.setAction(AppWidgetManager.ACTION_APPWIDGET_UPDATE);
         intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, appWidgetIds);
         requireContext().sendBroadcast(intent);
+    }
+
+    private void setupAppIconControl(View view) {
+        View btnIconDefault = view.findViewById(R.id.btnIconDefault);
+        View btnIconAlt = view.findViewById(R.id.btnIconAlt);
+
+        PackageManager pm = requireContext().getPackageManager();
+        String packageName = requireContext().getPackageName();
+        ComponentName defaultAlias = new ComponentName(packageName, packageName + ".MainActivityDefault");
+        ComponentName altAlias = new ComponentName(packageName, packageName + ".MainActivityAlt");
+
+        int defaultState = pm.getComponentEnabledSetting(defaultAlias);
+        boolean isAltActive = (defaultState == PackageManager.COMPONENT_ENABLED_STATE_DISABLED);
+
+        btnIconDefault.setAlpha(isAltActive ? 0.4f : 1.0f);
+        btnIconAlt.setAlpha(isAltActive ? 1.0f : 0.4f);
+
+        btnIconDefault.setOnClickListener(v -> {
+            if (btnIconDefault.getAlpha() == 1.0f) return;
+            btnIconDefault.setAlpha(1.0f);
+            btnIconAlt.setAlpha(0.4f);
+            switchIcon(false, pm, defaultAlias, altAlias);
+        });
+
+        btnIconAlt.setOnClickListener(v -> {
+            if (btnIconAlt.getAlpha() == 1.0f) return;
+            btnIconAlt.setAlpha(1.0f);
+            btnIconDefault.setAlpha(0.4f);
+            switchIcon(true, pm, defaultAlias, altAlias);
+        });
+    }
+
+    private void switchIcon(boolean useAltIcon, PackageManager pm, ComponentName defaultAlias, ComponentName altAlias) {
+        if (useAltIcon) {
+            pm.setComponentEnabledSetting(altAlias, PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP);
+            pm.setComponentEnabledSetting(defaultAlias, PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP);
+        } else {
+            pm.setComponentEnabledSetting(defaultAlias, PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP);
+            pm.setComponentEnabledSetting(altAlias, PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP);
+        }
+
+        Toast.makeText(requireContext(), "Icon updated! It may take a moment to change on your home screen.", Toast.LENGTH_LONG).show();
     }
 }
