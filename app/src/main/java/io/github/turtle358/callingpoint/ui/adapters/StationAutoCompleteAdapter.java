@@ -10,6 +10,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.Filter;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -53,9 +54,11 @@ public class StationAutoCompleteAdapter extends ArrayAdapter<String> {
         }
 
         TextView tv = convertView.findViewById(R.id.tvStationSuggestion);
+        ImageView ivLogo = convertView.findViewById(R.id.ivStationLogo); // NEW: Find the logo view
         String stationName = getItem(position);
 
         if (stationName != null) {
+            // 1. Handle the bolding of the search text
             if (!currentConstraint.isEmpty() && stationName.toLowerCase().contains(currentConstraint)) {
                 int startPos = stationName.toLowerCase().indexOf(currentConstraint);
                 int endPos = startPos + currentConstraint.length();
@@ -65,6 +68,19 @@ public class StationAutoCompleteAdapter extends ArrayAdapter<String> {
                 tv.setText(spannable);
             } else {
                 tv.setText(stationName);
+            }
+
+            // 2. NEW: Handle the dynamic logo loading
+            String type = StationHelper.getStationType(stationName);
+
+            if ("eurostar".equalsIgnoreCase(type)) {
+                ivLogo.setImageResource(R.drawable.ic_eurostar);
+            } else if ("other".equalsIgnoreCase(type)) {
+                ivLogo.setImageResource(R.drawable.ic_train);
+            } else if ("tfl".equalsIgnoreCase(type)) {
+                ivLogo.setImageResource(R.drawable.ic_tfl);
+             } else {
+                ivLogo.setImageResource(R.drawable.ic_national_rail);
             }
         }
 

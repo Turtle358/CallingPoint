@@ -17,6 +17,8 @@ public class StationHelper {
     private static final Map<String, String> stationMap = new HashMap<>();
     private static final Map<String, String> crsMap = new HashMap<>();
 
+    private static final Map<String, String> typeMap = new HashMap<>();
+
     public static void init(Context context) {
         String json = null;
         try {
@@ -39,12 +41,21 @@ public class StationHelper {
 
             JSONObject jsonObject = new JSONObject(json);
             stationMap.clear();
+            crsMap.clear();
+            typeMap.clear();
+
             Iterator<String> keys = jsonObject.keys();
             while (keys.hasNext()) {
                 String stationName = keys.next();
-                String crsCode = jsonObject.getString(stationName);
+
+                JSONObject stationData = jsonObject.getJSONObject(stationName);
+                String crsCode = stationData.getString("crs");
+
+                String type = stationData.optString("type", "other");
+
                 stationMap.put(stationName, crsCode);
                 crsMap.put(crsCode, stationName);
+                typeMap.put(stationName, type);
             }
 
         } catch (Exception e) {
@@ -61,9 +72,15 @@ public class StationHelper {
     }
 
     public static String getNameFromCrs(String crs) {
-        if(crs==null)
+        if(crs == null)
             return "Unknown";
         return crsMap.getOrDefault(crs.toUpperCase(), "Unknown");
     }
 
+    public static String getStationType(String name) {
+        if (name == null) {
+            return "national";
+        }
+        return typeMap.getOrDefault(name, "national");
+    }
 }
