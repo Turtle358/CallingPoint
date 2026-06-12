@@ -329,7 +329,6 @@ public class LiveBoardFragment extends Fragment {
     }
 
     private void setupDragAndDrop() {
-        // 1. Setup Drag for Stations
         androidx.recyclerview.widget.ItemTouchHelper stationTouchHelper = new androidx.recyclerview.widget.ItemTouchHelper(
                 new androidx.recyclerview.widget.ItemTouchHelper.SimpleCallback(
                         androidx.recyclerview.widget.ItemTouchHelper.UP | androidx.recyclerview.widget.ItemTouchHelper.DOWN, 0) {

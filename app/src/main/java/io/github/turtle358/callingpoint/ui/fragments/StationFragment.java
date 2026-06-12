@@ -89,7 +89,7 @@ public class StationFragment extends Fragment {
         swipeRefreshLayout.setOnRefreshListener(() -> fetchTrains(false));
 
         btnLaterServices.setOnClickListener(v -> {
-            currentOffset += 119;
+            currentOffset += 10;
             btnLaterServices.setText("Loading...");
             btnLaterServices.setEnabled(false);
             fetchTrains(true);
@@ -162,9 +162,9 @@ public class StationFragment extends Fragment {
 
         Call<StationDepartureResponse> networkCall;
         if (isArrivals) {
-            networkCall = api.getStationArrivals(fromCrs, 150, apiFilterCrs, apiFilterType, currentOffset, 120);
+            networkCall = api.getStationArrivals(fromCrs, 10, apiFilterCrs, apiFilterType, currentOffset, 120);
         } else {
-            networkCall = api.getStationDepartures(fromCrs, 150, apiFilterCrs, apiFilterType, currentOffset, 120);
+            networkCall = api.getStationDepartures(fromCrs, 10, apiFilterCrs, apiFilterType, currentOffset, 120);
         }
 
         networkCall.enqueue(new Callback<>() {
