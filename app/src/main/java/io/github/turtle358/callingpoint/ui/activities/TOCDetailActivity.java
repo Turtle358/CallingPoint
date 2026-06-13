@@ -1,25 +1,43 @@
 package io.github.turtle358.callingpoint.ui.activities;
 
+import android.appwidget.AppWidgetManager;
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
 import android.os.Bundle;
 import android.text.Html;
+import android.text.TextUtils;
 import android.text.method.LinkMovementMethod;
 import android.view.View;
 import android.webkit.WebChromeClient;
 import android.webkit.WebView;
+import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
+
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.WindowCompat;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import io.github.turtle358.callingpoint.utils.DividerSpan;
 import io.github.turtle358.callingpoint.R;
 import io.github.turtle358.callingpoint.utils.TOCBrandHelper;
+import io.github.turtle358.callingpoint.widget.AppWidgetProvider;
 
 public class TOCDetailActivity extends AppCompatActivity {
+
+    private SharedPreferences prefs;
+    private Set<String> trackedTocs;
+    private String currentTocCode;
+    private ImageButton btnPinTocWidget;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -28,7 +46,7 @@ public class TOCDetailActivity extends AppCompatActivity {
         setContentView(R.layout.activity_toc_detail);
 
         String tocName = getIntent().getStringExtra("TOC_NAME");
-        String tocCode = getIntent().getStringExtra("TOC_CODE");
+        currentTocCode = getIntent().getStringExtra("TOC_CODE");
         String tocStatus = getIntent().getStringExtra("TOC_STATUS");
         String tocDescription = getIntent().getStringExtra("TOC_DESCRIPTION");
         String tocPlanned = getIntent().getStringExtra("TOC_PLANNED");
@@ -38,18 +56,44 @@ public class TOCDetailActivity extends AppCompatActivity {
         TextView tvCode = findViewById(R.id.detailTocCode);
         ImageView tocIcon = findViewById(R.id.detailTocIcon);
         TextView tvStatus = findViewById(R.id.detailTocStatus);
+        btnPinTocWidget = findViewById(R.id.btnPinTocWidget);
 
         View cardActiveIncidents = findViewById(R.id.cardActiveIncidents);
         View cardPlannedWorks = findViewById(R.id.cardPlannedWorks);
-
-        TextView tvDetailText = findViewById(R.id.detailIncidentsText);
-        TextView tvPlannedText = findViewById(R.id.detailPlannedText);
-        WebView activeVideoWebView = findViewById(R.id.activeVideoWebView);
-        WebView plannedVideoWebView = findViewById(R.id.plannedVideoWebView);
+        LinearLayout layoutActiveIncidents = findViewById(R.id.layoutActiveIncidents);
+        LinearLayout layoutPlannedWorks = findViewById(R.id.layoutPlannedWorks);
 
         tvName.setText(tocName != null ? tocName : "Unknown Operator");
-        tvCode.setText(tocCode != null ? tocCode : "--");
+        tvCode.setText(currentTocCode != null ? currentTocCode : "--");
         tvStatus.setText(tocStatus != null ? tocStatus : "Status Unavailable");
+
+        prefs = getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
+        String savedTocs = prefs.getString("WIDGET_TRACKED_TOCS", "");
+        trackedTocs = new HashSet<>();
+        if (!savedTocs.trim().isEmpty()) {
+            trackedTocs.addAll(Arrays.asList(savedTocs.split(",")));
+        }
+
+        updatePinIcon();
+
+        btnPinTocWidget.setOnClickListener(v -> {
+            if (currentTocCode == null || currentTocCode.equals("--")) return;
+
+            boolean isNowPinned;
+            if (trackedTocs.contains(currentTocCode)) {
+                trackedTocs.remove(currentTocCode);
+                isNowPinned = false;
+            } else {
+                trackedTocs.add(currentTocCode);
+                isNowPinned = true;
+            }
+
+            saveTrackedTocs();
+            updatePinIcon();
+
+            String message = isNowPinned ? "Added to widget" : "Removed from widget";
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+        });
 
         if (tocName != null) {
             int brandColor = TOCBrandHelper.getColourForToc(tocName);
@@ -59,25 +103,92 @@ public class TOCDetailActivity extends AppCompatActivity {
         }
 
         if (tocDescription != null && !tocDescription.trim().isEmpty()) {
-            setHtmlWithDividers(tvDetailText, tocDescription);
-            String vimeoId = extractVimeoId(tocDescription);
-            if (vimeoId != null) {
-                setupVideoPlayer(activeVideoWebView, vimeoId);
-            }
+            populateIncidents(layoutActiveIncidents, tocDescription);
         } else {
             cardActiveIncidents.setVisibility(View.GONE);
         }
 
         if (tocPlanned != null && !tocPlanned.trim().isEmpty()) {
-            setHtmlWithDividers(tvPlannedText, tocPlanned);
-
-            String vimeoIdPlanned = extractVimeoId(tocPlanned);
-            if (vimeoIdPlanned != null) {
-                setupVideoPlayer(plannedVideoWebView, vimeoIdPlanned);
-            }
+            populateIncidents(layoutPlannedWorks, tocPlanned);
         } else {
             cardPlannedWorks.setVisibility(View.GONE);
         }
+    }
+
+    private void populateIncidents(LinearLayout container, String htmlText) {
+        if (htmlText == null || htmlText.isEmpty()) return;
+
+        String[] incidents = htmlText.split("<hr>");
+
+        for (int i = 0; i < incidents.length; i++) {
+            String chunk = incidents[i].trim();
+
+            chunk = chunk.replaceAll("^(?:<br\\s*/?>\\s*)+", "");
+            chunk = chunk.replaceAll("(?:<br\\s*/?>\\s*)+$", "");
+
+            String vimeoId = extractVimeoId(chunk);
+
+            chunk = chunk.replaceAll("<a[^>]*vimeo\\.com/\\d+[^>]*>.*?</a>", "");
+            chunk = chunk.replaceAll("https?://(?:www\\.)?vimeo\\.com/\\d+", "");
+
+            // 1. Add the text description
+            TextView tv = new TextView(this);
+            tv.setLayoutParams(new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+            ));
+
+            int secondaryColor = getResources().getColor(R.color.text_secondary, getTheme());
+            tv.setTextColor(secondaryColor);
+            tv.setLinkTextColor(android.graphics.Color.parseColor("#0A56F1"));
+            tv.setTextSize(15f);
+            tv.setLineSpacing(0, 1.2f);
+            tv.setMovementMethod(LinkMovementMethod.getInstance());
+            tv.setText(Html.fromHtml(chunk, Html.FROM_HTML_MODE_COMPACT));
+            container.addView(tv);
+
+            if (vimeoId != null) {
+                WebView webView = new WebView(this);
+                LinearLayout.LayoutParams wvParams = new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        (int) (220 * getResources().getDisplayMetrics().density)
+                );
+                wvParams.setMargins(0, (int) (12 * getResources().getDisplayMetrics().density), 0, (int) (12 * getResources().getDisplayMetrics().density));
+                webView.setLayoutParams(wvParams);
+                setupVideoPlayer(webView, vimeoId);
+                container.addView(webView);
+            }
+
+            if (i < incidents.length - 1) {
+                View divider = new View(this);
+                LinearLayout.LayoutParams divParams = new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        (int) (5 * getResources().getDisplayMetrics().density)
+                );
+                divParams.setMargins(0, (int) (16 * getResources().getDisplayMetrics().density), 0, (int) (16 * getResources().getDisplayMetrics().density));
+                divider.setLayoutParams(divParams);
+                divider.setBackgroundColor(android.graphics.Color.parseColor("#D1D1D6"));
+                container.addView(divider);
+            }
+        }
+    }
+
+    private void updatePinIcon() {
+        if (currentTocCode != null && trackedTocs.contains(currentTocCode)) {
+            btnPinTocWidget.setImageResource(R.drawable.ic_bookmark);
+        } else {
+            btnPinTocWidget.setImageResource(R.drawable.ic_bookmark_outline);
+        }
+    }
+
+    private void saveTrackedTocs() {
+        String joined = TextUtils.join(",", trackedTocs);
+        prefs.edit()
+                .putString("WIDGET_TRACKED_TOCS", joined)
+                .putLong("LAST_SYNC_TIME", 0)
+                .apply();
+
+        io.github.turtle358.callingpoint.utils.DisruptionSyncManager.syncAsync(this, null);
     }
 
     private String extractVimeoId(String text) {
@@ -91,7 +202,6 @@ public class TOCDetailActivity extends AppCompatActivity {
     }
 
     private void setupVideoPlayer(WebView webView, String videoId) {
-        webView.setVisibility(View.VISIBLE);
         webView.getSettings().setJavaScriptEnabled(true);
         webView.setWebChromeClient(new WebChromeClient());
 
@@ -110,26 +220,4 @@ public class TOCDetailActivity extends AppCompatActivity {
                 "</html>";
         webView.post(() -> webView.loadDataWithBaseURL("https://vimeo.com", html, "text/html", "UTF-8", null));
     }
-
-    private void setHtmlWithDividers(TextView textView, String htmlText) {
-        if (htmlText == null) return;
-        String processedHtml = htmlText.replace("<hr>", "___DIVIDER___");
-
-        android.text.Spanned spanned = Html.fromHtml(processedHtml, Html.FROM_HTML_MODE_COMPACT);
-        android.text.SpannableStringBuilder builder = new android.text.SpannableStringBuilder(spanned);
-        String marker = "___DIVIDER___";
-        int start = builder.toString().indexOf(marker);
-
-        while (start >= 0) {
-            int end = start + marker.length();
-            builder.replace(start, end, " \n\n");
-            builder.setSpan(new DividerSpan(android.graphics.Color.parseColor("#D1D1D6"), 5),
-                    start, start + 1, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-            start = builder.toString().indexOf(marker, start + 1);
-        }
-
-        textView.setText(builder);
-        textView.setMovementMethod(LinkMovementMethod.getInstance());
-    }
 }
-

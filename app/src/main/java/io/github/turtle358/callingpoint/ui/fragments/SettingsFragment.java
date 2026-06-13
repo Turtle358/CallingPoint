@@ -51,6 +51,7 @@ public class SettingsFragment extends Fragment {
     private View slidingPillTheme;
     private Set<String> trackedTocs;
     private SharedPreferences prefs;
+    private TocSettingAdapter adapter;
 
     @Nullable
     @Override
@@ -69,8 +70,6 @@ public class SettingsFragment extends Fragment {
             trackedTocs.addAll(Arrays.asList(savedTocs.split(",")));
         }
 
-
-
         themeRadioGroup = view.findViewById(R.id.themeRadioGroup);
         slidingPillTheme = view.findViewById(R.id.slidingPillTheme);
         setupThemeControl();
@@ -82,16 +81,13 @@ public class SettingsFragment extends Fragment {
 
         List<Toc> allTocs = TOCBrandHelper.getVisibleTocs();
 
-        TocSettingAdapter adapter = new TocSettingAdapter(allTocs, trackedTocs, (tocCode, isTracked) -> {
+        adapter = new TocSettingAdapter(allTocs, trackedTocs, (tocCode, isTracked) -> {
             if (isTracked) trackedTocs.add(tocCode);
             else trackedTocs.remove(tocCode);
             saveTrackedTocs();
         });
 
-
-
         recyclerTocs.setAdapter(adapter);
-
 
         Button btnManualSync = view.findViewById(R.id.btnManualSync);
         btnManualSync.setOnClickListener(v -> {
@@ -232,5 +228,18 @@ public class SettingsFragment extends Fragment {
         }
 
         Toast.makeText(requireContext(), "Icon updated! It may take a moment to change on your home screen.", Toast.LENGTH_LONG).show();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (adapter != null && prefs != null) {
+            String savedTocs = prefs.getString("WIDGET_TRACKED_TOCS", "");
+            trackedTocs.clear();
+            if (!savedTocs.trim().isEmpty()) {
+                trackedTocs.addAll(Arrays.asList(savedTocs.split(",")));
+            }
+            adapter.notifyDataSetChanged();
+        }
     }
 }

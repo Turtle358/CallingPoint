@@ -12,6 +12,7 @@ import com.google.gson.Gson;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -60,8 +61,13 @@ public class DisruptionSyncManager {
         }
 
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-        String today = sdf.format(new Date());
-        IncidentSearchRequest request = new IncidentSearchRequest(today, today, new ArrayList<>());
+        Calendar cal = Calendar.getInstance();
+
+        cal.add(Calendar.DAY_OF_YEAR, 1);
+        String today = sdf.format(cal.getTime());
+        cal.add(Calendar.DAY_OF_YEAR, 2);
+        String tomorrow = sdf.format(cal.getTime());
+        IncidentSearchRequest request = new IncidentSearchRequest(today, tomorrow, new ArrayList<>());
 
         NationalRailAPI api = APIClient.getClient().create(NationalRailAPI.class);
 
@@ -83,6 +89,9 @@ public class DisruptionSyncManager {
                         boolean isEngineering = (currentSummary.contains("engineering") || currentDesc.contains("engineering"))
                                 && !currentSummary.contains("overrun") && !currentDesc.contains("overrun");
 
+                        boolean isStrike = currentSummary.contains("industrial action") ||
+                                currentDesc.contains("industrial action");
+
                         boolean hasSevereDelay = false;
                         java.util.regex.Pattern delayPattern = java.util.regex.Pattern.compile("(\\d+)\\s*(?:min|minute)");
                         java.util.regex.Matcher matcher = delayPattern.matcher(currentSummary + " " + currentDesc);
@@ -96,7 +105,7 @@ public class DisruptionSyncManager {
                             } catch (NumberFormatException ignored) {}
                         }
 
-                        if (currentSummary.contains("strike") || currentDesc.contains("strike") || currentSummary.contains("industrial action") || currentDesc.contains("industrial action")) {
+                        if (isStrike) {
                             simplifiedStatus = "Planned Industrial Action";
                         } else if (isEngineering) {
                             simplifiedStatus = "Planned Engineering Works";
