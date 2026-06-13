@@ -10,8 +10,16 @@ CallingPoint is a robust, feature-rich Android companion app designed for naviga
 Instantly check live departure times, platforms, and train operators for any station in the UK. To streamline your daily commute, you can pin your most frequented stations or specific live train services directly to the main dashboard for quick, one-tap access.
 
 <div align="center">
-  <img src="./readmeimg/DepartureBoard-Mixed.png" width="400" alt="Departure Board Dashboard"/>
-  <img src="./readmeimg/StationView-Mixed.png" width="400" alt="Live Station View"/>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./readmeimg/LiveTrains-Dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="./readmeimg/LiveTrains-Light.png">
+    <img src="./readmeimg/LiveTrains-Light.png" width="400" alt="Live Trains Dashboard"/>
+  </picture>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./readmeimg/DepartureBoard-Dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="./readmeimg/DepartureBoard-Light.png">
+    <img src="./readmeimg/DepartureBoard-Light.png" width="400" alt="Live Station View"/>
+  </picture>
 </div>
 
 ### 🗺️ Intelligent Journey Planner
@@ -21,16 +29,32 @@ Plan your travels effortlessly with a custom routing engine. The app finds direc
 * Built in google maps implementation
 
 <div align="center">
-  <img src="./readmeimg/JourneyPlannerFragment-Mixed.png" width="260" alt="Journey Planner Tab"/>
-  <img src="./readmeimg/JourneyPlanner-Mixed.png" width="260" alt="Journey Options"/>
-  <img src="./readmeimg/PlannedJourney-Mixed.png" width="260" alt="Planned Journey Route"/>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./readmeimg/JourneyPlannerHome-Dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="./readmeimg/JourneyPlannerHome-Light.png">
+    <img src="./readmeimg/JourneyPlannerHome-Light.png" width="260" alt="Journey Planner Home"/>
+  </picture>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./readmeimg/JourneySearch-Dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="./readmeimg/JourneySearch-Light.png">
+    <img src="./readmeimg/JourneySearch-Light.png" width="260" alt="Journey Search Options"/>
+  </picture>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./readmeimg/JourneyPlan-Dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="./readmeimg/JourneyPlan-Light.png">
+    <img src="./readmeimg/JourneyPlan-Light.png" width="260" alt="Planned Journey Route"/>
+  </picture>
 </div>
 
 ### 🚆 In-Depth Service Details
 Track your train's exact progress along its route. The service details view provides a visual timeline of all calling points, comparing scheduled times against live estimates. For supported services, you can check the train's coach formation (e.g., 12 coaches) and easily locate onboard facilities like accessible toilets before you board.
 
 <div align="center">
-  <img src="./readmeimg/ServiceDetails-Mixed.png" width="400" alt="Train Service Details"/>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./readmeimg/ServiceDetails-Dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="./readmeimg/ServiceDetails-Light.png">
+    <img src="./readmeimg/ServiceDetails-Light.png" width="400" alt="Train Service Details"/>
+  </picture>
 </div>
 
 ### ⚠️ Live Disruptions & Home Screen Widget
@@ -39,8 +63,16 @@ Never get caught off-guard by delays or cancellations. The Disruptions tab clear
 * Add the CallingPoint widget to your home screen for at-a-glance status updates (e.g., "Good service on selected lines") that automatically refresh in the background.
 
 <div align="center">
-  <img src="./readmeimg/DisruptionFragment-Mixed.png" width="400" alt="Disruptions Dashboard"/>
-  <img src="./readmeimg/DisruptionDetails-Mixed.png" width="400" alt="Disruption Incident Details"/>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./readmeimg/Disruptions-Dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="./readmeimg/Disruptions-Light.png">
+    <img src="./readmeimg/Disruptions-Light.png" width="400" alt="Disruptions Dashboard"/>
+  </picture>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./readmeimg/DisruptionDetails-Dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="./readmeimg/DisruptionDetails-Light.png">
+    <img src="./readmeimg/DisruptionDetails-Light.png" width="400" alt="Disruption Incident Details"/>
+  </picture>
 </div>
 <br>
 <div align="center">
@@ -51,7 +83,11 @@ Never get caught off-guard by delays or cancellations. The Disruptions tab clear
 Tailor the app to your preferences. Select between Auto, Light, and Dark themes for a comfortable viewing experience in any environment. You can securely configure your own National Rail API credentials and customise exactly which Train Operating Companies (TOCs) you want to actively track on your widget.
 
 <div align="center">
-  <img src="./readmeimg/Settings-Mixed.png" width="400" alt="Settings Menu"/>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./readmeimg/Settings-Dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="./readmeimg/Settings-Light.png">
+    <img src="./readmeimg/Settings-Light.png" width="400" alt="Settings Menu"/>
+  </picture>
 </div>
 
 ---
@@ -79,9 +115,9 @@ To fetch live data, CallingPoint requires active API keys from the National Rail
 2. Click **Register** and create a free account.
 3. Once logged in, navigate to **Search the marketplace**.
 4. Search for and subscribe to the following data products:
-    - [Service Details](https://raildata.org.uk/dashboard/dataProduct/P-4dec1247-d040-4290-80a4-639dfac54a92/overview)
-    - [Live Departure Board](https://raildata.org.uk/dashboard/dataProduct/P-d81d6eaf-8060-4467-a339-1c833e50cbbe/overview)
-    - [NationalRail Disruptions API](https://raildata.org.uk/dashboard/dataProduct/P-fcf959e5-e454-4bef-a97d-83c749194f63/overview)
+   - [Service Details](https://raildata.org.uk/dashboard/dataProduct/P-4dec1247-d040-4290-80a4-639dfac54a92/overview)
+   - [Live Departure Board](https://raildata.org.uk/dashboard/dataProduct/P-d81d6eaf-8060-4467-a339-1c833e50cbbe/overview)
+   - [NationalRail Disruptions API](https://raildata.org.uk/dashboard/dataProduct/P-fcf959e5-e454-4bef-a97d-83c749194f63/overview)
 5. Once subscribed, you will be issued **Customer Keys** (Tokens) for each service.
 6. Open the Calling Point app, navigate to the **Settings** tab, and paste these keys into their respective input fields.
 
@@ -101,7 +137,7 @@ You are free to:
 * **Share** — copy and redistribute the material in any medium or format.
 
 Under the following terms:
-* **Attribution** — You must give appropriate credit, provide a link to the license, and indicate if changes were made. 
+* **Attribution** — You must give appropriate credit, provide a link to the license, and indicate if changes were made.
 * **NonCommercial** — You may not use the material for commercial purposes.
 * **NoDerivatives** — If you remix, transform, or build upon the material, you may not distribute the modified material.
 
