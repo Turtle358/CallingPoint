@@ -89,7 +89,6 @@ public class StationFragment extends Fragment {
         swipeRefreshLayout.setOnRefreshListener(() -> fetchTrains(false));
 
         btnLaterServices.setOnClickListener(v -> {
-            currentOffset += 10;
             btnLaterServices.setText("Loading...");
             btnLaterServices.setEnabled(false);
             fetchTrains(true);
@@ -146,15 +145,14 @@ public class StationFragment extends Fragment {
     }
 
     private void fetchTrains(boolean isAppending) {
-
         if (!isAppending) {
             currentOffset = 0;
             swipeRefreshLayout.setRefreshing(true);
             tvEmptyState.setVisibility(View.GONE);
+            if (btnLaterServices != null) btnLaterServices.setVisibility(View.GONE);
         }
 
         String apiFilterCrs = toCrs.isEmpty() ? null : toCrs;
-
         String apiFilterType = null;
         if (apiFilterCrs != null) {
             apiFilterType = isArrivals ? "from" : "to";
@@ -171,45 +169,40 @@ public class StationFragment extends Fragment {
             @Override
             public void onResponse(@NonNull Call<StationDepartureResponse> call, @NonNull Response<StationDepartureResponse> response) {
                 if (!isAdded()) return;
-                swipeRefreshLayout.setRefreshing(false);
 
                 if (response.isSuccessful() && response.body() != null) {
                     List<StationDepartureResponse.TrainService> allServices = response.body().trainServices;
 
-
-
                     if (allServices != null && !allServices.isEmpty()) {
-                        if (isAppending) {
-                            int newTrainsAdded = adapter.appendData(allServices);
+                        int newTrainsAdded = isAppending ? adapter.appendData(allServices) : allServices.size();
 
-
-                            if (newTrainsAdded == 0) {
-                                Toast.makeText(requireContext(), "End of scheduled services.", Toast.LENGTH_SHORT).show();
-                                if (btnLaterServices != null) btnLaterServices.setVisibility(View.GONE);
-                            } else {
-                                if (btnLaterServices != null) btnLaterServices.setVisibility(View.VISIBLE);
-                            }
+                        if (newTrainsAdded == 0) {
+                            handleEmptyOrOverlapResult(allServices, isAppending);
                         } else {
-                            adapter.updateData(allServices, isArrivals, fromCrs, toCrs);
-                            recyclerDepartures.setVisibility(View.VISIBLE);
-                            if (btnLaterServices != null) btnLaterServices.setVisibility(View.VISIBLE);
+                            swipeRefreshLayout.setRefreshing(false);
+
+                            if (!isAppending) {
+                                adapter.updateData(allServices, isArrivals, fromCrs, toCrs);
+                                recyclerDepartures.setVisibility(View.VISIBLE);
+                            }
+
+                            currentOffset = calculateNextOffset(allServices);
+
+                            if (btnLaterServices != null && currentOffset < 119) {
+                                btnLaterServices.setVisibility(View.VISIBLE);
+                                btnLaterServices.setText("View later services");
+                                btnLaterServices.setEnabled(true);
+                            } else if (btnLaterServices != null) {
+                                btnLaterServices.setVisibility(View.GONE);
+                            }
                         }
                     } else {
-                        if (btnLaterServices != null) btnLaterServices.setVisibility(View.GONE);
-                        if (!isAppending) {
-                            showEmptyState(isArrivals ? "No direct arrivals found right now." : "No direct trains found right now.");
-                        } else {
-                            Toast.makeText(requireContext(), "No later services found.", Toast.LENGTH_SHORT).show();
-                        }
+                        handleEmptyOrOverlapResult(null, isAppending);
                     }
                 } else {
+                    swipeRefreshLayout.setRefreshing(false);
                     if (btnLaterServices != null) btnLaterServices.setVisibility(View.GONE);
-                    if (!isAppending) showEmptyState("API Error: Please check your connection and CRS codes.");
-                }
-
-                if (btnLaterServices != null && btnLaterServices.getVisibility() == View.VISIBLE) {
-                    btnLaterServices.setText("View later services");
-                    btnLaterServices.setEnabled(true);
+                    if (!isAppending) showEmptyState("Connection Error: Please check your connection.");
                 }
             }
 
@@ -218,13 +211,10 @@ public class StationFragment extends Fragment {
                 if (!isAdded()) return;
                 swipeRefreshLayout.setRefreshing(false);
 
-                android.util.Log.e("API_DEBUG", "Network Call Failed!", t);
-
                 if (btnLaterServices != null) {
                     btnLaterServices.setText("View later services");
                     btnLaterServices.setEnabled(true);
                 }
-
                 if (!isAppending) showEmptyState("Network error. Please try again.");
             }
         });
@@ -235,5 +225,65 @@ public class StationFragment extends Fragment {
         recyclerDepartures.setVisibility(View.GONE);
         tvEmptyState.setText(message);
         tvEmptyState.setVisibility(View.VISIBLE);
+    }
+
+    private void handleEmptyOrOverlapResult(List<StationDepartureResponse.TrainService> fetchedServices, boolean isAppending) {
+        if (currentOffset >= 119) {
+            swipeRefreshLayout.setRefreshing(false);
+
+            if (adapter.getItemCount() == 0) {
+                if (btnLaterServices != null) btnLaterServices.setVisibility(View.GONE);
+                showEmptyState(isArrivals ? "No arrivals found within the next 2 hours." : "No direct trains found within the next 2 hours.");
+            } else {
+                if (btnLaterServices != null) btnLaterServices.setVisibility(View.GONE);
+                Toast.makeText(requireContext(), "End of scheduled services.", Toast.LENGTH_SHORT).show();
+            }
+        } else {
+            if (adapter.getItemCount() == 0) {
+                tvEmptyState.setVisibility(View.VISIBLE);
+                tvEmptyState.setText("Scanning forward for services...");
+            } else if (btnLaterServices != null) {
+                btnLaterServices.setText("Scanning...");
+                btnLaterServices.setEnabled(false);
+            }
+
+            currentOffset = calculateNextOffset(fetchedServices);
+            fetchTrains(true);
+        }
+    }
+
+    private int calculateNextOffset(List<StationDepartureResponse.TrainService> fetchedServices) {
+        if (fetchedServices == null || fetchedServices.isEmpty()) {
+            return Math.min(119, currentOffset + 30);
+        }
+
+        StationDepartureResponse.TrainService lastService = fetchedServices.get(fetchedServices.size() - 1);
+        String timeStr = lastService.std != null ? lastService.std : lastService.sta;
+
+        if (timeStr == null || !timeStr.contains(":")) return Math.min(119, currentOffset + 10);
+
+        try {
+            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("HH:mm", java.util.Locale.UK);
+            java.util.Date trainTime = sdf.parse(timeStr);
+
+            java.util.Calendar nowCal = java.util.Calendar.getInstance();
+            int currentH = nowCal.get(java.util.Calendar.HOUR_OF_DAY);
+            int currentM = nowCal.get(java.util.Calendar.MINUTE);
+            String nowStr = String.format(java.util.Locale.UK, "%02d:%02d", currentH, currentM);
+            java.util.Date nowTime = sdf.parse(nowStr);
+
+            long diffMins = (trainTime.getTime() - nowTime.getTime()) / 60000;
+            if (diffMins < 0) diffMins += 24 * 60;
+
+            int nextOffset = (int) diffMins;
+            if (nextOffset <= currentOffset) {
+                nextOffset = currentOffset + 5;
+            }
+
+            return Math.min(119, nextOffset);
+
+        } catch (Exception e) {
+            return Math.min(119, currentOffset + 10);
+        }
     }
 }
