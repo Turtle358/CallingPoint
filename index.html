@@ -10,9 +10,16 @@
         .hero-gradient {
             background: linear-gradient(135deg, #2E2A74 0%, #1a1845 100%);
         }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-800 font-sans antialiased">
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100 font-sans antialiased transition-colors duration-300">
 
 <header class="hero-gradient text-white py-20 px-6 lg:px-12">
     <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center">
@@ -31,7 +38,11 @@
             </div>
         </div>
         <div class="md:w-1/2 flex justify-center">
-            <img src="./readmeimg/DepartureBoard-Mixed.png" alt="CallingPoint App" class="w-64 rounded-[2rem] shadow-2xl border-4 border-gray-800">
+            <picture>
+                <source media="(prefers-color-scheme: dark)" srcset="./readmeimg/DepatureBoard-Dark.png">
+                <source media="(prefers-color-scheme: light)" srcset="./readmeimg/DepatureBoard-Light.png">
+                <img src="./readmeimg/DepatureBoard-Light.png" alt="Departure Board" class="w-64 rounded-[2rem] shadow-2xl border-4 border-gray-800 dark:border-gray-600">
+            </picture>
         </div>
     </div>
 </header>
@@ -39,37 +50,113 @@
 <section class="py-20 px-6 lg:px-12 max-w-6xl mx-auto">
     <div class="text-center mb-16">
         <h2 class="text-3xl font-bold mb-4">Everything you need for your commute</h2>
-        <p class="text-gray-600 max-w-2xl mx-auto">CallingPoint connects directly to the National Rail Data Portal to provide the most accurate, up-to-the-minute data available.</p>
+        <p class="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">CallingPoint connects directly to the National Rail Data Portal to provide the most accurate, up-to-the-minute data available.</p>
     </div>
 
     <div class="grid md:grid-cols-3 gap-12">
         <div class="text-center">
             <div class="flex justify-center mb-6">
-                <img src="./readmeimg/StationView-Mixed.png" alt="Live Departures" class="w-48 rounded-[1.5rem] shadow-lg border border-gray-200">
+                <picture>
+                    <source media="(prefers-color-scheme: dark)" srcset="./readmeimg/LiveTrains-Dark.png">
+                    <source media="(prefers-color-scheme: light)" srcset="./readmeimg/LiveTrains-Light.png">
+                    <img src="./readmeimg/LiveTrains-Light.png" alt="Live Departures" class="w-48 rounded-[1.5rem] shadow-lg border border-gray-200 dark:border-gray-700">
+                </picture>
             </div>
-            <h3 class="text-xl font-bold mb-2">Live Departures</h3>
-            <p class="text-gray-600">Instantly check live departure times, platforms, and train operators. Pin your frequented stations to the dashboard.</p>
+            <h3 class="text-xl font-bold mb-2">Live Tracking</h3>
+            <p class="text-gray-600 dark:text-gray-400">Instantly check live departure times, platforms, and train operators. Pin your frequented stations to the dashboard.</p>
         </div>
 
         <div class="text-center">
             <div class="flex justify-center mb-6">
-                <img src="./readmeimg/PlannedJourney-Mixed.png" alt="Journey Planner" class="w-48 rounded-[1.5rem] shadow-lg border border-gray-200">
+                <picture>
+                    <source media="(prefers-color-scheme: dark)" srcset="./readmeimg/JourneyPlan-Dark.png">
+                    <source media="(prefers-color-scheme: light)" srcset="./readmeimg/JourneyPlan-Light.png">
+                    <img src="./readmeimg/JourneyPlan-Light.png" alt="Journey Planner" class="w-48 rounded-[1.5rem] shadow-lg border border-gray-200 dark:border-gray-700">
+                </picture>
             </div>
             <h3 class="text-xl font-bold mb-2">Smart Routing</h3>
-            <p class="text-gray-600">Find direct trains, calculate multi-change routes, and seamlessly map out cross-city London Underground transfers.</p>
+            <p class="text-gray-600 dark:text-gray-400">Find direct trains, calculate multi-change routes, and seamlessly map out cross-city London transfers.</p>
         </div>
 
         <div class="text-center">
             <div class="flex justify-center mb-6">
-                <img src="./readmeimg/Widget.png" alt="Disruptions Widget" class="w-48 rounded-[1.5rem] shadow-lg border border-gray-200">
+                <img src="./readmeimg/Widget.png" alt="Disruptions Widget" class="w-48 rounded-[1.5rem] shadow-lg border border-gray-200 dark:border-gray-700">
             </div>
             <h3 class="text-xl font-bold mb-2">Proactive Alerts</h3>
-            <p class="text-gray-600">Add the CallingPoint widget to your home screen for background updates on engineering works and active incidents.</p>
+            <p class="text-gray-600 dark:text-gray-400">Add the CallingPoint widget to your home screen for background updates on engineering works and active incidents.</p>
         </div>
     </div>
 </section>
 
-<footer class="bg-gray-900 text-gray-400 py-8 text-center">
+<section class="py-16 bg-gray-200 dark:bg-gray-800 border-y border-gray-300 dark:border-gray-700 overflow-hidden">
+    <div class="max-w-6xl mx-auto px-6 lg:px-12 mb-8">
+        <h2 class="text-2xl font-bold text-center md:text-left">Explore the App</h2>
+    </div>
+
+    <div class="flex overflow-x-auto gap-8 px-6 lg:px-12 pb-8 snap-x snap-mandatory hide-scrollbar">
+
+        <div class="flex-none w-64 snap-center">
+            <picture>
+                <source media="(prefers-color-scheme: dark)" srcset="./readmeimg/ArrivalBoard-Dark.png">
+                <source media="(prefers-color-scheme: light)" srcset="./readmeimg/ArrivalBoard-Light.png">
+                <img src="./readmeimg/ArrivalBoard-Light.png" alt="Arrival Board" class="w-full rounded-[2rem] shadow-xl border-4 border-gray-400 dark:border-gray-600">
+            </picture>
+        </div>
+
+        <div class="flex-none w-64 snap-center">
+            <picture>
+                <source media="(prefers-color-scheme: dark)" srcset="./readmeimg/ServiceDetails-Dark.png">
+                <source media="(prefers-color-scheme: light)" srcset="./readmeimg/ServiceDetails-Light.png">
+                <img src="./readmeimg/ServiceDetails-Light.png" alt="Service Details" class="w-full rounded-[2rem] shadow-xl border-4 border-gray-400 dark:border-gray-600">
+            </picture>
+        </div>
+
+        <div class="flex-none w-64 snap-center">
+            <picture>
+                <source media="(prefers-color-scheme: dark)" srcset="./readmeimg/JourneySearch-Dark.png">
+                <source media="(prefers-color-scheme: light)" srcset="./readmeimg/JourneySearch-Light.png">
+                <img src="./readmeimg/JourneySearch-Light.png" alt="Journey Search" class="w-full rounded-[2rem] shadow-xl border-4 border-gray-400 dark:border-gray-600">
+            </picture>
+        </div>
+
+        <div class="flex-none w-64 snap-center">
+            <picture>
+                <source media="(prefers-color-scheme: dark)" srcset="./readmeimg/JourneyPlannerHome-Dark.png">
+                <source media="(prefers-color-scheme: light)" srcset="./readmeimg/JourneyPlannerHome-Light.png">
+                <img src="./readmeimg/JourneyPlannerHome-Light.png" alt="Journey Planner Home" class="w-full rounded-[2rem] shadow-xl border-4 border-gray-400 dark:border-gray-600">
+            </picture>
+        </div>
+
+        <div class="flex-none w-64 snap-center">
+            <picture>
+                <source media="(prefers-color-scheme: dark)" srcset="./readmeimg/Disruptions-Dark.png">
+                <source media="(prefers-color-scheme: light)" srcset="./readmeimg/Disruptions-Light.png">
+                <img src="./readmeimg/Disruptions-Light.png" alt="Disruptions Overview" class="w-full rounded-[2rem] shadow-xl border-4 border-gray-400 dark:border-gray-600">
+            </picture>
+        </div>
+
+        <div class="flex-none w-64 snap-center">
+            <picture>
+                <source media="(prefers-color-scheme: dark)" srcset="./readmeimg/DisruptionDetails-Dark.png">
+                <source media="(prefers-color-scheme: light)" srcset="./readmeimg/DisruptionDetails-Light.png">
+                <img src="./readmeimg/DisruptionDetails-Light.png" alt="Disruption Details" class="w-full rounded-[2rem] shadow-xl border-4 border-gray-400 dark:border-gray-600">
+            </picture>
+        </div>
+
+        <div class="flex-none w-64 snap-center">
+            <picture>
+                <source media="(prefers-color-scheme: dark)" srcset="./readmeimg/Settings-Dark.png">
+                <source media="(prefers-color-scheme: light)" srcset="./readmeimg/Settings-Light.png">
+                <img src="./readmeimg/Settings-Light.png" alt="Settings Page" class="w-full rounded-[2rem] shadow-xl border-4 border-gray-400 dark:border-gray-600">
+            </picture>
+        </div>
+
+        <div class="flex-none w-6"></div>
+
+    </div>
+</section>
+
+<footer class="bg-gray-900 dark:bg-black text-gray-400 py-8 text-center border-t border-gray-800">
     <p>&copy; 2026 CallingPoint. Powered by the National Rail Data Portal.</p>
 </footer>
 
