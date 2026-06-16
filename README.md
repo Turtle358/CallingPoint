@@ -11,14 +11,14 @@ Instantly check live departure times, platforms, and train operators for any sta
 
 <div align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="./readmeimg/LiveTrains-Dark.png">
-    <source media="(prefers-color-scheme: light)" srcset="./readmeimg/LiveTrains-Light.png">
-    <img src="./readmeimg/LiveTrains-Light.png" width="400" alt="Live Trains Dashboard"/>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/readmeimg/LiveTrains-Dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/readmeimg/LiveTrains-Light.png">
+    <img src="docs/readmeimg/LiveTrains-Light.png" width="400" alt="Live Trains Dashboard"/>
   </picture>
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="./readmeimg/DepartureBoard-Dark.png">
-    <source media="(prefers-color-scheme: light)" srcset="./readmeimg/DepartureBoard-Light.png">
-    <img src="./readmeimg/DepartureBoard-Light.png" width="400" alt="Live Station View"/>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/readmeimg/DepartureBoard-Dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/readmeimg/DepartureBoard-Light.png">
+    <img src="docs/readmeimg/DepartureBoard-Light.png" width="400" alt="Live Station View"/>
   </picture>
 </div>
 
@@ -30,19 +30,19 @@ Plan your travels effortlessly with a custom routing engine. The app finds direc
 
 <div align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="./readmeimg/JourneyPlannerHome-Dark.png">
-    <source media="(prefers-color-scheme: light)" srcset="./readmeimg/JourneyPlannerHome-Light.png">
-    <img src="./readmeimg/JourneyPlannerHome-Light.png" width="260" alt="Journey Planner Home"/>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/readmeimg/JourneyPlannerHome-Dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/readmeimg/JourneyPlannerHome-Light.png">
+    <img src="docs/readmeimg/JourneyPlannerHome-Light.png" width="260" alt="Journey Planner Home"/>
   </picture>
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="./readmeimg/JourneySearch-Dark.png">
-    <source media="(prefers-color-scheme: light)" srcset="./readmeimg/JourneySearch-Light.png">
-    <img src="./readmeimg/JourneySearch-Light.png" width="260" alt="Journey Search Options"/>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/readmeimg/JourneySearch-Dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/readmeimg/JourneySearch-Light.png">
+    <img src="docs/readmeimg/JourneySearch-Light.png" width="260" alt="Journey Search Options"/>
   </picture>
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="./readmeimg/JourneyPlan-Dark.png">
-    <source media="(prefers-color-scheme: light)" srcset="./readmeimg/JourneyPlan-Light.png">
-    <img src="./readmeimg/JourneyPlan-Light.png" width="260" alt="Planned Journey Route"/>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/readmeimg/JourneyPlan-Dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/readmeimg/JourneyPlan-Light.png">
+    <img src="docs/readmeimg/JourneyPlan-Light.png" width="260" alt="Planned Journey Route"/>
   </picture>
 </div>
 
@@ -51,9 +51,9 @@ Track your train's exact progress along its route. The service details view prov
 
 <div align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="./readmeimg/ServiceDetails-Dark.png">
-    <source media="(prefers-color-scheme: light)" srcset="./readmeimg/ServiceDetails-Light.png">
-    <img src="./readmeimg/ServiceDetails-Light.png" width="400" alt="Train Service Details"/>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/readmeimg/ServiceDetails-Dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/readmeimg/ServiceDetails-Light.png">
+    <img src="docs/readmeimg/ServiceDetails-Light.png" width="400" alt="Train Service Details"/>
   </picture>
 </div>
 
@@ -64,19 +64,19 @@ Never get caught off-guard by delays or cancellations. The Disruptions tab clear
 
 <div align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="./readmeimg/Disruptions-Dark.png">
-    <source media="(prefers-color-scheme: light)" srcset="./readmeimg/Disruptions-Light.png">
-    <img src="./readmeimg/Disruptions-Light.png" width="400" alt="Disruptions Dashboard"/>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/readmeimg/Disruptions-Dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/readmeimg/Disruptions-Light.png">
+    <img src="docs/readmeimg/Disruptions-Light.png" width="400" alt="Disruptions Dashboard"/>
   </picture>
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="./readmeimg/DisruptionDetails-Dark.png">
-    <source media="(prefers-color-scheme: light)" srcset="./readmeimg/DisruptionDetails-Light.png">
-    <img src="./readmeimg/DisruptionDetails-Light.png" width="400" alt="Disruption Incident Details"/>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/readmeimg/DisruptionDetails-Dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/readmeimg/DisruptionDetails-Light.png">
+    <img src="docs/readmeimg/DisruptionDetails-Light.png" width="400" alt="Disruption Incident Details"/>
   </picture>
 </div>
 <br>
 <div align="center">
-  <img src="./readmeimg/Widget.png" width="400" alt="Home Screen Widget"/>
+  <img src="docs/readmeimg/Widget.png" width="400" alt="Home Screen Widget"/>
 </div>
 
 ### ⚙️ Personalisation & Settings
@@ -84,9 +84,9 @@ Tailor the app to your preferences. Select between Auto, Light, and Dark themes 
 
 <div align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="./readmeimg/Settings-Dark.png">
-    <source media="(prefers-color-scheme: light)" srcset="./readmeimg/Settings-Light.png">
-    <img src="./readmeimg/Settings-Light.png" width="400" alt="Settings Menu"/>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/readmeimg/Settings-Dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/readmeimg/Settings-Light.png">
+    <img src="docs/readmeimg/Settings-Light.png" width="400" alt="Settings Menu"/>
   </picture>
 </div>
 
