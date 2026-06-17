@@ -252,7 +252,7 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Calling Point is completely free and ad-free. If you find it useful for your commute, consider buying me a coffee to help cover the server costs!"
+                        android:text="Calling Point is completely free and ad-free. If you find it useful for your commute, consider buying me a coffee to help cover the development costs!"
                         android:textColor="@color/text_secondary"
                         android:lineSpacingExtra="2dp"
                         android:textSize="14sp"

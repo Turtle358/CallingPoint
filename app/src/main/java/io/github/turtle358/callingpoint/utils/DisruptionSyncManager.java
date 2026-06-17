@@ -86,7 +86,7 @@ public class DisruptionSyncManager {
                         String currentDesc = incident.description != null ? incident.description.toLowerCase() : "";
                         String simplifiedStatus = "Minor Disruption";
 
-                        boolean isEngineering = (currentSummary.contains("engineering") || currentDesc.contains("engineering"))
+                        boolean isEngineering = (currentSummary.contains("engineering work") || currentDesc.contains("engineering work"))
                                 && !currentSummary.contains("overrun") && !currentDesc.contains("overrun");
 
                         boolean isStrike = currentSummary.contains("industrial action") ||
@@ -115,10 +115,7 @@ public class DisruptionSyncManager {
                                 currentSummary.contains("suspended") ||
                                 currentSummary.contains("do not travel")) {
                             simplifiedStatus = "Major Disruption";
-                        } else if (currentSummary.contains("bus") || currentSummary.contains("amended")) {
-                            simplifiedStatus = "Planned Engineering Works";
                         }
-
                         Map<String, DisruptionResponce.ServiceIndicator> targetMap;
                         if (trackedSet.isEmpty() || trackedSet.contains(op.tocCode)) {
                             targetMap = trackedMap;
@@ -131,6 +128,7 @@ public class DisruptionSyncManager {
                             si.tocCode = op.tocCode;
                             si.tocName = TOCBrandHelper.getNameForCode(op.tocCode);
                             si.status = simplifiedStatus;
+
                             if (simplifiedStatus.equals("Planned Engineering Works")) {
                                 si.plannedDescription = incident.description;
                             } else {
@@ -139,6 +137,7 @@ public class DisruptionSyncManager {
                             targetMap.put(op.tocCode, si);
                         } else {
                             DisruptionResponce.ServiceIndicator existing = targetMap.get(op.tocCode);
+
                             if (simplifiedStatus.equals("Major Disruption")) {
                                 existing.status = "Major Disruption";
                             } else if (simplifiedStatus.equals("Minor Disruption") && existing.status.equals("Planned Engineering Works")) {
@@ -146,13 +145,13 @@ public class DisruptionSyncManager {
                             }
 
                             if (simplifiedStatus.equals("Planned Engineering Works")) {
-                                if (existing.plannedDescription.isEmpty()) {
+                                if (existing.plannedDescription == null || existing.plannedDescription.isEmpty()) {
                                     existing.plannedDescription = incident.description;
                                 } else {
                                     existing.plannedDescription += "<br><br><hr><br>" + incident.description;
                                 }
                             } else {
-                                if (existing.description.isEmpty()) {
+                                if (existing.description == null || existing.description.isEmpty()) {
                                     existing.description = incident.description;
                                 } else {
                                     existing.description += "<br><br><hr><br>" + incident.description;
