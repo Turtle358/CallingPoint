@@ -138,7 +138,6 @@
                         android:textSize="20sp"
                         android:textStyle="bold" />
 
-                    <!-- Dynamic TextViews and WebViews will be inserted here -->
 
                 </LinearLayout>
             </androidx.cardview.widget.CardView>

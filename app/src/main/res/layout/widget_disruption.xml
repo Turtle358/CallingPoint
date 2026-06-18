@@ -38,7 +38,7 @@
                 android:layout_height="wrap_content"
                 android:text="Disruption"
                 android:textColor="#111111"
-                android:textSize="20sp" />
+                android:textSize="18sp" />
         </LinearLayout>
 
         <FrameLayout

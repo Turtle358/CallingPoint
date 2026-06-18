@@ -131,7 +131,18 @@ public class TOCDetailActivity extends AppCompatActivity {
             chunk = chunk.replaceAll("<a[^>]*vimeo\\.com/\\d+[^>]*>.*?</a>", "");
             chunk = chunk.replaceAll("https?://(?:www\\.)?vimeo\\.com/\\d+", "");
 
-            // 1. Add the text description
+            if (vimeoId != null) {
+                WebView webView = new WebView(this);
+                LinearLayout.LayoutParams wvParams = new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        (int) (220 * getResources().getDisplayMetrics().density)
+                );
+                wvParams.setMargins(0, 0, 0, (int) (12 * getResources().getDisplayMetrics().density));
+                webView.setLayoutParams(wvParams);
+                setupVideoPlayer(webView, vimeoId);
+                container.addView(webView);
+            }
+
             TextView tv = new TextView(this);
             tv.setLayoutParams(new LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
@@ -146,18 +157,6 @@ public class TOCDetailActivity extends AppCompatActivity {
             tv.setMovementMethod(LinkMovementMethod.getInstance());
             tv.setText(Html.fromHtml(chunk, Html.FROM_HTML_MODE_COMPACT));
             container.addView(tv);
-
-            if (vimeoId != null) {
-                WebView webView = new WebView(this);
-                LinearLayout.LayoutParams wvParams = new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        (int) (220 * getResources().getDisplayMetrics().density)
-                );
-                wvParams.setMargins(0, (int) (12 * getResources().getDisplayMetrics().density), 0, (int) (12 * getResources().getDisplayMetrics().density));
-                webView.setLayoutParams(wvParams);
-                setupVideoPlayer(webView, vimeoId);
-                container.addView(webView);
-            }
 
             if (i < incidents.length - 1) {
                 View divider = new View(this);
