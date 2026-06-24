@@ -68,7 +68,6 @@ public class DisruptionSyncManager {
         cal.add(Calendar.DAY_OF_YEAR, 2);
         String tomorrow = sdf.format(cal.getTime());
         IncidentSearchRequest request = new IncidentSearchRequest(today, tomorrow, new ArrayList<>());
-
         NationalRailAPI api = APIClient.getClient().create(NationalRailAPI.class);
 
         try {

@@ -6,6 +6,7 @@ import io.github.turtle358.callingpoint.models.IncidentResponse;
 import io.github.turtle358.callingpoint.models.IncidentSearchRequest;
 import io.github.turtle358.callingpoint.models.ServiceDetailsResponse;
 import io.github.turtle358.callingpoint.models.StationDepartureResponse;
+import io.github.turtle358.callingpoint.models.StationMessage;
 import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.POST;
@@ -45,6 +46,12 @@ public interface NationalRailAPI {
     @GET("1010-service-details1_2/LDBWS/api/20220120/GetServiceDetails/{serviceID}")
     Call<ServiceDetailsResponse> getServiceDetails(
             @Path("serviceID") String serviceID
+    );
+
+
+    @GET("1010-disruptions-experience-api-11_0/stations/disruptions/stationMessages")
+    Call<List<StationMessage>> getStationMessages(
+            @Query("crsCode") List<String> crsCodes
     );
 
     @GET

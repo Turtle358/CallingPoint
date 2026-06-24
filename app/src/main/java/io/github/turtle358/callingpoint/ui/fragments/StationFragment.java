@@ -1,32 +1,40 @@
 package io.github.turtle358.callingpoint.ui.fragments;
 
-import android.content.Context;
 import android.os.Bundle;
+import android.text.method.LinkMovementMethod;
+import android.transition.ChangeBounds;
+import android.transition.Fade;
+import android.transition.TransitionManager;
+import android.transition.TransitionSet;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.text.HtmlCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
-import io.github.turtle358.callingpoint.ui.adapters.DeparturesAdapter;
-import io.github.turtle358.callingpoint.data.PinnedDataManager;
 import io.github.turtle358.callingpoint.R;
-import io.github.turtle358.callingpoint.utils.StationHelper;
 import io.github.turtle358.callingpoint.api.APIClient;
 import io.github.turtle358.callingpoint.api.NationalRailAPI;
+import io.github.turtle358.callingpoint.data.PinnedDataManager;
 import io.github.turtle358.callingpoint.models.StationDepartureResponse;
+import io.github.turtle358.callingpoint.models.StationMessage;
+import io.github.turtle358.callingpoint.ui.adapters.DeparturesAdapter;
+import io.github.turtle358.callingpoint.utils.StationHelper;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -45,9 +53,39 @@ public class StationFragment extends Fragment {
     private RecyclerView recyclerDepartures;
     private Button btnLaterServices;
 
+    private LinearLayout containerStationMessages;
+    private TextView btnToggleMessages;
+
     private DeparturesAdapter adapter;
     private NationalRailAPI api;
     private PinnedDataManager pinnedDataManager;
+
+    private boolean isMessagesExpanded = false;
+    private List<UnifiedMessage> currentMessages = new ArrayList<>();
+
+    private static class UnifiedMessage implements Comparable<UnifiedMessage> {
+        String text;
+        String severity;
+        String category;
+        int severityWeight;
+
+        UnifiedMessage(String text, String severity, String category) {
+            this.text = text;
+            this.severity = severity != null ? severity : "Information";
+            this.category = category != null ? category : "Station Alert";
+
+            String sevLower = this.severity.toLowerCase();
+            if (sevLower.contains("severe")) severityWeight = 4;
+            else if (sevLower.contains("major")) severityWeight = 3;
+            else if (sevLower.contains("minor")) severityWeight = 2;
+            else severityWeight = 1;
+        }
+
+        @Override
+        public int compareTo(UnifiedMessage other) {
+            return Integer.compare(other.severityWeight, this.severityWeight);
+        }
+    }
 
     @Nullable
     @Override
@@ -75,6 +113,7 @@ public class StationFragment extends Fragment {
         recyclerDepartures = view.findViewById(R.id.recyclerDepartures);
         tvEmptyState = view.findViewById(R.id.tvEmptyState);
         btnLaterServices = view.findViewById(R.id.btnLaterServices);
+        containerStationMessages = view.findViewById(R.id.containerStationMessages);
 
         pinnedDataManager = new PinnedDataManager(requireContext());
         api = APIClient.getClient().create(NationalRailAPI.class);
@@ -86,7 +125,10 @@ public class StationFragment extends Fragment {
         adapter = new DeparturesAdapter(requireContext(), new ArrayList<>());
         recyclerDepartures.setAdapter(adapter);
 
-        swipeRefreshLayout.setOnRefreshListener(() -> fetchTrains(false));
+        swipeRefreshLayout.setOnRefreshListener(() -> {
+            fetchTrains(false);
+            fetchStationMessages();
+        });
 
         btnLaterServices.setOnClickListener(v -> {
             btnLaterServices.setText("Loading...");
@@ -95,6 +137,7 @@ public class StationFragment extends Fragment {
         });
 
         fetchTrains(false);
+        fetchStationMessages();
     }
 
     private void setupHeader() {
@@ -143,6 +186,159 @@ public class StationFragment extends Fragment {
         boolean isPinned = pinnedDataManager.isStationPinned(pinKey);
         btnPinStation.setImageResource(isPinned ? R.drawable.ic_bookmark : R.drawable.ic_bookmark_outline);
     }
+
+
+    private void fetchStationMessages() {
+        List<String> queryStations = new ArrayList<>();
+        queryStations.add(fromCrs);
+        if (!toCrs.isEmpty()) {
+            queryStations.add(toCrs);
+        }
+
+        api.getStationMessages(queryStations).enqueue(new Callback<>() {
+            @Override
+            public void onResponse(@NonNull Call<List<StationMessage>> call, @NonNull Response<List<StationMessage>> response) {
+                if (!isAdded()) return;
+
+                if (response.isSuccessful() && response.body() != null) {
+                    displayStationMessages(response.body());
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<List<StationMessage>> call, @NonNull Throwable t) {
+            }
+        });
+    }
+
+    private void displayStationMessages(List<StationMessage> messages) {
+        currentMessages.clear();
+
+        for (StationMessage msg : messages) {
+            if (msg.stationAlerts != null && !msg.stationAlerts.trim().isEmpty()) {
+                currentMessages.add(new UnifiedMessage(msg.stationAlerts, "Information", "Station Alert"));
+            }
+
+            if (msg.stationDisruptions != null) {
+                for (StationMessage.StationDisruption disruption : msg.stationDisruptions) {
+                    if (disruption.summary != null && !disruption.summary.trim().isEmpty()) {
+                        currentMessages.add(new UnifiedMessage(disruption.summary, disruption.severity, disruption.category));
+                    }
+                }
+            }
+        }
+
+        Collections.sort(currentMessages);
+        buildMessageViews();
+    }
+
+    private void buildMessageViews() {
+        containerStationMessages.removeAllViews();
+        isMessagesExpanded = false;
+
+        if (currentMessages.isEmpty()) {
+            containerStationMessages.setVisibility(View.GONE);
+            return;
+        }
+
+        containerStationMessages.setVisibility(View.VISIBLE);
+
+        for (int i = 0; i < currentMessages.size(); i++) {
+            View view = createMessageView(currentMessages.get(i));
+
+            if (i > 0) {
+                view.setVisibility(View.GONE);
+            }
+
+            containerStationMessages.addView(view);
+        }
+
+        if (currentMessages.size() > 1) {
+            setupToggleButton();
+            containerStationMessages.addView(btnToggleMessages);
+        }
+    }
+
+    private void toggleMessagesExpansion() {
+        android.transition.AutoTransition transition = new android.transition.AutoTransition();
+        transition.setDuration(200);
+
+        TransitionManager.beginDelayedTransition((ViewGroup) requireView(), transition);
+
+        isMessagesExpanded = !isMessagesExpanded;
+
+        for (int i = 1; i < currentMessages.size(); i++) {
+            View child = containerStationMessages.getChildAt(i);
+            if (child != null) {
+                child.setVisibility(isMessagesExpanded ? View.VISIBLE : View.GONE);
+            }
+        }
+        if (isMessagesExpanded) {
+            btnToggleMessages.setText("Show less");
+        } else {
+            btnToggleMessages.setText("Show " + (currentMessages.size() - 1) + " more alerts");
+        }
+    }
+
+    private View createMessageView(UnifiedMessage msg) {
+        View view = getLayoutInflater().inflate(R.layout.item_station_message, containerStationMessages, false);
+
+        View colorBar = view.findViewById(R.id.severityColourBar);
+        TextView tvSeverity = view.findViewById(R.id.tvSeverityLabel);
+        TextView tvContent = view.findViewById(R.id.tvMessageContent);
+
+        tvSeverity.setText(msg.category + " • " + msg.severity);
+
+        String cleanHtml = msg.text.replace("\\n", "<br/>");
+        tvContent.setText(HtmlCompat.fromHtml(cleanHtml, HtmlCompat.FROM_HTML_MODE_COMPACT));
+        tvContent.setMovementMethod(LinkMovementMethod.getInstance());
+
+        int color;
+        switch (msg.severityWeight) {
+            case 4: color = 0xFFD32F2F; break;
+            case 3: color = 0xFFF57C00; break;
+            case 2: color = 0xFFFBC02D; break;
+            default: color = 0xFF1976D2; break;
+        }
+        colorBar.setBackgroundColor(color);
+
+        final boolean[] isCardExpanded = {false};
+        View.OnClickListener expandClickListener = v -> {
+            android.transition.AutoTransition transition = new android.transition.AutoTransition();
+            transition.setDuration(200);
+            TransitionManager.beginDelayedTransition((ViewGroup) requireView(), transition);
+
+            isCardExpanded[0] = !isCardExpanded[0];
+
+            if (isCardExpanded[0]) {
+                tvContent.setMaxLines(Integer.MAX_VALUE);
+            } else {
+                tvContent.setMaxLines(4);
+            }
+        };
+        view.setOnClickListener(expandClickListener);
+        tvContent.setOnClickListener(expandClickListener);
+
+        return view;
+    }
+
+    private void setupToggleButton() {
+        btnToggleMessages = new TextView(requireContext());
+        btnToggleMessages.setText("Show " + (currentMessages.size() - 1) + " more alerts");
+        btnToggleMessages.setTextColor(getResources().getColor(R.color.brand_primary, null));
+
+        float density = getResources().getDisplayMetrics().density;
+        int topPadding = (int) (8 * density);
+        int bottomPadding = (int) (32 * density);
+
+        btnToggleMessages.setPadding(0, topPadding, 0, bottomPadding);
+        btnToggleMessages.setTextSize(14f);
+        btnToggleMessages.setTypeface(null, android.graphics.Typeface.BOLD);
+        btnToggleMessages.setGravity(android.view.Gravity.CENTER);
+
+        btnToggleMessages.setOnClickListener(v -> toggleMessagesExpansion());
+    }
+
 
     private void fetchTrains(boolean isAppending) {
         if (!isAppending) {
