@@ -10,6 +10,8 @@ import android.graphics.Color;
 import android.view.View;
 import android.widget.RemoteViews;
 
+import androidx.core.graphics.ColorUtils;
+
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
@@ -141,8 +143,8 @@ public class AppWidgetProvider extends android.appwidget.AppWidgetProvider {
 
                 int maxBars = Math.min(disruptedTocs.size(), 5);
                 for (int i = 0; i < maxBars; i++) {
-                    int color = TOCBrandHelper.getColourForToc(disruptedTocs.get(i).tocName);
-                    views.setInt(barIds[i], "setColorFilter", color);
+                    int colour = TOCBrandHelper.getColourForToc(disruptedTocs.get(i).tocName);
+                    views.setInt(barIds[i], "setColorFilter", colour);
                     views.setViewVisibility(barIds[i], View.VISIBLE);
                 }
             }
@@ -150,10 +152,13 @@ public class AppWidgetProvider extends android.appwidget.AppWidgetProvider {
     }
 
     private void updatePill(RemoteViews views, int containerId, int bgId, int textId, DisruptionResponce.ServiceIndicator toc) {
-        int color = TOCBrandHelper.getColourForToc(toc.tocName);
-        views.setInt(bgId, "setColorFilter", color);
+        int colour = TOCBrandHelper.getColourForToc(toc.tocName);
+        views.setInt(bgId, "setColorFilter", colour);
         views.setTextViewText(textId, toc.tocCode);
         views.setViewVisibility(containerId, View.VISIBLE);
+
+        boolean isLightColour = ColorUtils.calculateLuminance(colour) > 0.5;
+        views.setTextColor(textId, isLightColour ? Color.BLACK : Color.WHITE);
     }
 
     @Override

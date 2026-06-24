@@ -9,6 +9,8 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.core.graphics.ColorUtils;
+import android.graphics.Color;
 import java.util.List;
 
 import io.github.turtle358.callingpoint.R;
@@ -61,6 +63,9 @@ public class DisruptionAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
 
             int brandColor = TOCBrandHelper.getColourForToc(item.tocName);
             dHolder.tvTocCode.setBackgroundTintList(ColorStateList.valueOf(brandColor));
+
+            boolean isLightColor = ColorUtils.calculateLuminance(brandColor) > 0.5;
+            dHolder.tvTocCode.setTextColor(isLightColor ? Color.BLACK : Color.WHITE);
 
             dHolder.itemView.setOnClickListener(v -> {
                 Intent intent = new Intent(context, TOCDetailActivity.class);

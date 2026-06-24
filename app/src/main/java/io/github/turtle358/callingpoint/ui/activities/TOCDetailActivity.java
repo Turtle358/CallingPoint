@@ -1,9 +1,6 @@
 package io.github.turtle358.callingpoint.ui.activities;
 
-import android.appwidget.AppWidgetManager;
-import android.content.ComponentName;
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
 import android.os.Bundle;
@@ -21,6 +18,8 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.WindowCompat;
+import androidx.core.graphics.ColorUtils;
+import android.graphics.Color;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -30,7 +29,6 @@ import java.util.regex.Pattern;
 
 import io.github.turtle358.callingpoint.R;
 import io.github.turtle358.callingpoint.utils.TOCBrandHelper;
-import io.github.turtle358.callingpoint.widget.AppWidgetProvider;
 
 public class TOCDetailActivity extends AppCompatActivity {
 
@@ -100,6 +98,9 @@ public class TOCDetailActivity extends AppCompatActivity {
             headerColorBar.setBackgroundColor(brandColor);
             tvCode.setBackgroundTintList(ColorStateList.valueOf(brandColor));
             tocIcon.setImageResource(TOCBrandHelper.getIconForToc(tocName));
+
+            boolean isLightColor = ColorUtils.calculateLuminance(brandColor) > 0.5;
+            tvCode.setTextColor(isLightColor ? Color.BLACK : Color.WHITE);
         }
 
         if (tocDescription != null && !tocDescription.trim().isEmpty()) {
