@@ -293,14 +293,14 @@ public class StationFragment extends Fragment {
         tvContent.setText(HtmlCompat.fromHtml(cleanHtml, HtmlCompat.FROM_HTML_MODE_COMPACT));
         tvContent.setMovementMethod(LinkMovementMethod.getInstance());
 
-        int color;
+        int colour;
         switch (msg.severityWeight) {
-            case 4: color = 0xFFD32F2F; break;
-            case 3: color = 0xFFF57C00; break;
-            case 2: color = 0xFFFBC02D; break;
-            default: color = 0xFF1976D2; break;
+            case 4: colour = 0xFFD32F2F; break;
+            case 3: colour = 0xFFD32F2F; break;
+            case 2: colour = 0xFFFBC02D; break;
+            default: colour = 0xFF1976D2; break;
         }
-        colorBar.setBackgroundColor(color);
+        colorBar.setBackgroundColor(colour);
 
         final boolean[] isCardExpanded = {false};
         View.OnClickListener expandClickListener = v -> {
@@ -313,7 +313,7 @@ public class StationFragment extends Fragment {
             if (isCardExpanded[0]) {
                 tvContent.setMaxLines(Integer.MAX_VALUE);
             } else {
-                tvContent.setMaxLines(4);
+                tvContent.setMaxLines(5);
             }
         };
         view.setOnClickListener(expandClickListener);
