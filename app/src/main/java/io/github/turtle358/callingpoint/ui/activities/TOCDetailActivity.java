@@ -4,7 +4,6 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
 import android.os.Bundle;
-import android.text.Html;
 import android.text.TextUtils;
 import android.text.method.LinkMovementMethod;
 import android.view.View;
@@ -17,6 +16,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
+import androidx.core.text.HtmlCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.graphics.ColorUtils;
 import android.graphics.Color;
@@ -56,8 +57,8 @@ public class TOCDetailActivity extends AppCompatActivity {
         TextView tvStatus = findViewById(R.id.detailTocStatus);
         btnPinTocWidget = findViewById(R.id.btnPinTocWidget);
 
-        View cardActiveIncidents = findViewById(R.id.cardActiveIncidents);
-        View cardPlannedWorks = findViewById(R.id.cardPlannedWorks);
+        View sectionActiveIncidents = findViewById(R.id.sectionActiveIncidents);
+        View sectionPlannedWorks = findViewById(R.id.sectionPlannedWorks);
         LinearLayout layoutActiveIncidents = findViewById(R.id.layoutActiveIncidents);
         LinearLayout layoutPlannedWorks = findViewById(R.id.layoutPlannedWorks);
 
@@ -105,14 +106,16 @@ public class TOCDetailActivity extends AppCompatActivity {
 
         if (tocDescription != null && !tocDescription.trim().isEmpty()) {
             populateIncidents(layoutActiveIncidents, tocDescription);
+            sectionActiveIncidents.setVisibility(View.VISIBLE);
         } else {
-            cardActiveIncidents.setVisibility(View.GONE);
+            sectionActiveIncidents.setVisibility(View.GONE);
         }
 
         if (tocPlanned != null && !tocPlanned.trim().isEmpty()) {
             populateIncidents(layoutPlannedWorks, tocPlanned);
+            sectionPlannedWorks.setVisibility(View.VISIBLE);
         } else {
-            cardPlannedWorks.setVisibility(View.GONE);
+            sectionPlannedWorks.setVisibility(View.GONE);
         }
     }
 
@@ -120,6 +123,7 @@ public class TOCDetailActivity extends AppCompatActivity {
         if (htmlText == null || htmlText.isEmpty()) return;
 
         String[] incidents = htmlText.split("<hr>");
+        float density = getResources().getDisplayMetrics().density;
 
         for (int i = 0; i < incidents.length; i++) {
             String chunk = incidents[i].trim();
@@ -127,49 +131,58 @@ public class TOCDetailActivity extends AppCompatActivity {
             chunk = chunk.replaceAll("^(?:<br\\s*/?>\\s*)+", "");
             chunk = chunk.replaceAll("(?:<br\\s*/?>\\s*)+$", "");
 
+            if (chunk.isEmpty()) continue;
+
             String vimeoId = extractVimeoId(chunk);
 
             chunk = chunk.replaceAll("<a[^>]*vimeo\\.com/\\d+[^>]*>.*?</a>", "");
             chunk = chunk.replaceAll("https?://(?:www\\.)?vimeo\\.com/\\d+", "");
 
+            androidx.cardview.widget.CardView card = new androidx.cardview.widget.CardView(this);
+            LinearLayout.LayoutParams cardParams = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+            );
+            cardParams.setMargins((int)(12 * density), 0, (int)(12 * density), (int)(12 * density));
+            card.setLayoutParams(cardParams);
+            card.setRadius(16 * density);
+            card.setCardElevation(2 * density);
+            card.setCardBackgroundColor(ContextCompat.getColor(this, R.color.bg_card));
+
+            card.setUseCompatPadding(true);
+
+            LinearLayout innerLayout = new LinearLayout(this);
+            innerLayout.setOrientation(LinearLayout.VERTICAL);
+            innerLayout.setPadding((int)(16 * density), (int)(16 * density), (int)(16 * density), (int)(16 * density));
+
             if (vimeoId != null) {
                 WebView webView = new WebView(this);
                 LinearLayout.LayoutParams wvParams = new LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT,
-                        (int) (220 * getResources().getDisplayMetrics().density)
+                        (int) (220 * density)
                 );
-                wvParams.setMargins(0, 0, 0, (int) (12 * getResources().getDisplayMetrics().density));
+                wvParams.setMargins(0, 0, 0, (int) (12 * density));
                 webView.setLayoutParams(wvParams);
                 setupVideoPlayer(webView, vimeoId);
-                container.addView(webView);
+                innerLayout.addView(webView);
             }
-
             TextView tv = new TextView(this);
             tv.setLayoutParams(new LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
             ));
 
-            int secondaryColor = getResources().getColor(R.color.text_secondary, getTheme());
+            int secondaryColor = ContextCompat.getColor(this, R.color.text_secondary);
             tv.setTextColor(secondaryColor);
             tv.setLinkTextColor(android.graphics.Color.parseColor("#0A56F1"));
             tv.setTextSize(15f);
             tv.setLineSpacing(0, 1.2f);
             tv.setMovementMethod(LinkMovementMethod.getInstance());
-            tv.setText(Html.fromHtml(chunk, Html.FROM_HTML_MODE_COMPACT));
-            container.addView(tv);
+            tv.setText(HtmlCompat.fromHtml(chunk, HtmlCompat.FROM_HTML_MODE_COMPACT));
 
-            if (i < incidents.length - 1) {
-                View divider = new View(this);
-                LinearLayout.LayoutParams divParams = new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        (int) (5 * getResources().getDisplayMetrics().density)
-                );
-                divParams.setMargins(0, (int) (16 * getResources().getDisplayMetrics().density), 0, (int) (16 * getResources().getDisplayMetrics().density));
-                divider.setLayoutParams(divParams);
-                divider.setBackgroundColor(android.graphics.Color.parseColor("#D1D1D6"));
-                container.addView(divider);
-            }
+            innerLayout.addView(tv);
+            card.addView(innerLayout);
+            container.addView(card);
         }
     }
 
