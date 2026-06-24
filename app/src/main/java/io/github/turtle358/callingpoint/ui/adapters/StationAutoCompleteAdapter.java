@@ -54,11 +54,10 @@ public class StationAutoCompleteAdapter extends ArrayAdapter<String> {
         }
 
         TextView tv = convertView.findViewById(R.id.tvStationSuggestion);
-        ImageView ivLogo = convertView.findViewById(R.id.ivStationLogo); // NEW: Find the logo view
+        ImageView ivLogo = convertView.findViewById(R.id.ivStationLogo);
         String stationName = getItem(position);
 
         if (stationName != null) {
-            // 1. Handle the bolding of the search text
             if (!currentConstraint.isEmpty() && stationName.toLowerCase().contains(currentConstraint)) {
                 int startPos = stationName.toLowerCase().indexOf(currentConstraint);
                 int endPos = startPos + currentConstraint.length();
@@ -70,7 +69,6 @@ public class StationAutoCompleteAdapter extends ArrayAdapter<String> {
                 tv.setText(stationName);
             }
 
-            // 2. NEW: Handle the dynamic logo loading
             String type = StationHelper.getStationType(stationName);
 
             if ("eurostar".equalsIgnoreCase(type)) {

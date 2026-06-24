@@ -11,4 +11,6 @@
     <color name="gbr_logo_text">#FFFFFF</color>
 
     <color name="train_logo">#FFFFFF</color>
+
+    <color name="logo_circle_bg">#F2F2F2</color>
 </resources>

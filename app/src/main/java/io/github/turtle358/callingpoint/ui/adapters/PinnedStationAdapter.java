@@ -4,6 +4,7 @@ import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -55,6 +56,18 @@ public class PinnedStationAdapter extends RecyclerView.Adapter<PinnedStationAdap
 
         holder.tvStationName.setText(fromName);
 
+        String type = StationHelper.getStationType(fromName);
+        if ("eurostar".equalsIgnoreCase(type)) {
+            holder.ivLogo.setImageResource(R.drawable.ic_eurostar);
+        } else if ("other".equalsIgnoreCase(type)) {
+            holder.ivLogo.setImageResource(R.drawable.ic_train);
+        } else if ("tfl".equalsIgnoreCase(type)) {
+            holder.ivLogo.setImageResource(R.drawable.ic_tfl);
+        } else {
+            holder.ivLogo.setImageResource(R.drawable.ic_national_rail);
+        }
+
+
         if (!toCrs.isEmpty()) {
             holder.tvDestinationName.setText("to " + toName);
             holder.tvDestinationName.setVisibility(View.VISIBLE);
@@ -77,11 +90,14 @@ public class PinnedStationAdapter extends RecyclerView.Adapter<PinnedStationAdap
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
         TextView tvStationName, tvDestinationName;
+        ImageView ivLogo;
 
         public ViewHolder(View v) {
             super(v);
             tvStationName = v.findViewById(R.id.tvStationName);
             tvDestinationName = v.findViewById(R.id.tvDestinationName);
+            ivLogo = v.findViewById(R.id.stationBranding);
         }
     }
+
 }
