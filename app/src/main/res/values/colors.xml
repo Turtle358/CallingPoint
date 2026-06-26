@@ -20,4 +20,6 @@
     <color name="logo_circle_bg">#F2F2F2</color>
 
     <color name="logo_border">#333333</color>
+
+    <color name="good_service_logo">#003366</color>
 </resources>

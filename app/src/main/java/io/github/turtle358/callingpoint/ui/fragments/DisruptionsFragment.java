@@ -83,7 +83,10 @@ public class DisruptionsFragment extends Fragment {
 
         api = APIClient.getClient().create(NationalRailAPI.class);
 
-        swipeRefreshLayout.setOnRefreshListener(() -> fetchRailData(api));
+        swipeRefreshLayout.setOnRefreshListener(() -> {
+            swipeRefreshLayout.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK);
+            fetchRailData(api);
+        });
     }
 
     @Override

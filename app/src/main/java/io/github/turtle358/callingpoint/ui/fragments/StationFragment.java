@@ -126,6 +126,7 @@ public class StationFragment extends Fragment {
         recyclerDepartures.setAdapter(adapter);
 
         swipeRefreshLayout.setOnRefreshListener(() -> {
+            swipeRefreshLayout.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK);
             fetchTrains(false);
             fetchStationMessages();
         });

@@ -222,15 +222,42 @@
             android:layout_height="wrap_content"
             android:clipToPadding="false" />
 
-        <TextView
-            android:id="@+id/tvEmptyPinnedStations"
+        <LinearLayout
+            android:id="@+id/layoutEmptyPinnedStations"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center"
             android:layout_marginHorizontal="24dp"
-            android:layout_marginBottom="24dp"
-            android:text="You haven't pinned any stations yet. Pin a station to see it here for quick access."
-            android:textColor="@color/text_secondary"
-            android:textSize="14sp" />
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="32dp"
+            android:visibility="gone">
+
+            <ImageView
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:src="@drawable/ic_bookmark_outline"
+                app:tint="@color/text_secondary"
+                android:alpha="0.4"
+                android:layout_marginBottom="12dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="No pinned stations"
+                android:textColor="@color/text_primary"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="4dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textAlignment="center"
+                android:text="Pin a station to see it here for quick access."
+                android:textColor="@color/text_secondary"
+                android:textSize="14sp" />
+        </LinearLayout>
 
         <TextView
             android:layout_width="wrap_content"
@@ -247,17 +274,44 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:clipToPadding="false"
-            android:paddingBottom="32dp" />
+            android:paddingBottom="8dp" />
 
-        <TextView
-            android:id="@+id/tvEmptyPinnedServices"
+        <LinearLayout
+            android:id="@+id/layoutEmptyPinnedServices"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center"
             android:layout_marginHorizontal="24dp"
-            android:layout_marginBottom="32dp"
-            android:text="Tap the pin icon on any live train to save it here."
-            android:textColor="@color/text_secondary"
-            android:textSize="14sp" />
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="48dp"
+            android:visibility="gone">
+
+            <ImageView
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:src="@drawable/ic_train"
+                app:tint="@color/text_secondary"
+                android:alpha="0.4"
+                android:layout_marginBottom="12dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="No pinned services"
+                android:textColor="@color/text_primary"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="4dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textAlignment="center"
+                android:text="Tap the pin icon on any live train to save it here."
+                android:textColor="@color/text_secondary"
+                android:textSize="14sp" />
+        </LinearLayout>
 
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>

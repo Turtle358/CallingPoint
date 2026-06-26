@@ -165,40 +165,43 @@
                     </LinearLayout>
                 </androidx.cardview.widget.CardView>
 
-                <androidx.cardview.widget.CardView
+                <LinearLayout
                     android:id="@+id/cardGoodService"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginHorizontal="12dp"
-                    android:layout_marginBottom="16dp"
-                    app:cardBackgroundColor="#0019A8"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="2dp"
-                    app:cardUseCompatPadding="true">
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:layout_marginHorizontal="24dp"
+                    android:layout_marginTop="32dp"
+                    android:layout_marginBottom="48dp"
+                    android:visibility="gone">
 
-                    <LinearLayout
+                    <ImageView
+                        android:layout_width="64dp"
+                        android:layout_height="64dp"
+                        android:src="@drawable/ic_national_rail"
+                        app:tint="@color/good_service_logo"
+                        android:layout_marginBottom="16dp" />
+
+                    <TextView
+                        android:id="@+id/goodServiceTitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Good Service"
+                        android:textColor="@color/text_primary"
+                        android:textSize="22sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="4dp" />
+
+                    <TextView
+                        android:id="@+id/goodServiceSubtext"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="20dp">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Good service"
-                            android:textColor="#FFFFFF"
-                            android:textSize="18sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:id="@+id/goodServiceSubtext"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="All other lines"
-                            android:textColor="#FFFFFF"
-                            android:textSize="16sp" />
-                    </LinearLayout>
-                </androidx.cardview.widget.CardView>
+                        android:textAlignment="center"
+                        android:text="On all lines"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="16sp" />
+                </LinearLayout>
 
             </LinearLayout>
         </androidx.core.widget.NestedScrollView>

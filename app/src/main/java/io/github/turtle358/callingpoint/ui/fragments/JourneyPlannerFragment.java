@@ -25,7 +25,8 @@ import io.github.turtle358.callingpoint.utils.PinnedJourneyManager;
 public class JourneyPlannerFragment extends Fragment {
 
     private RecyclerView recyclerPinnedJourneys;
-    private TextView tvEmptyState, tvListHeader;
+    private View layoutEmptyState;
+    private TextView tvListHeader;
 
     @Nullable
     @Override
@@ -38,7 +39,7 @@ public class JourneyPlannerFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         recyclerPinnedJourneys = view.findViewById(R.id.recyclerPinnedJourneys);
-        tvEmptyState = view.findViewById(R.id.tvEmptyState);
+        layoutEmptyState = view.findViewById(R.id.layoutEmptyState);
         tvListHeader = view.findViewById(R.id.tvListHeader);
         CardView cardMockSearch = view.findViewById(R.id.cardMockSearch);
 
@@ -61,7 +62,7 @@ public class JourneyPlannerFragment extends Fragment {
 
         if (savedJourneys != null && !savedJourneys.isEmpty()) {
             tvListHeader.setVisibility(View.VISIBLE);
-            tvEmptyState.setVisibility(View.GONE);
+            layoutEmptyState.setVisibility(View.GONE);
             recyclerPinnedJourneys.setVisibility(View.VISIBLE);
 
             PinnedJourneyAdapter adapter = new PinnedJourneyAdapter(requireContext(), savedJourneys);
@@ -69,7 +70,7 @@ public class JourneyPlannerFragment extends Fragment {
         } else {
             tvListHeader.setVisibility(View.GONE);
             recyclerPinnedJourneys.setVisibility(View.GONE);
-            tvEmptyState.setVisibility(View.VISIBLE);
+            layoutEmptyState.setVisibility(View.VISIBLE);
         }
     }
 }

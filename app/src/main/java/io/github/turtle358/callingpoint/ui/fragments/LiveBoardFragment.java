@@ -50,8 +50,8 @@ public class LiveBoardFragment extends Fragment {
     private View slidingPill;
     private RecyclerView recyclerPinnedStations;
     private RecyclerView recyclerPinnedServices;
-    private TextView tvEmptyPinnedStations;
-    private TextView tvEmptyPinnedServices;
+    private View layoutEmptyPinnedStations;
+    private View layoutEmptyPinnedServices;
     private PinnedDataManager pinnedDataManager;
     private PinnedStationAdapter stationAdapter;
     private PinnedServiceAdapter serviceAdapter;
@@ -79,8 +79,8 @@ public class LiveBoardFragment extends Fragment {
 
         recyclerPinnedStations = view.findViewById(R.id.recyclerPinnedStations);
         recyclerPinnedServices = view.findViewById(R.id.recyclerPinnedServices);
-        tvEmptyPinnedStations = view.findViewById(R.id.tvEmptyPinnedStations);
-        tvEmptyPinnedServices = view.findViewById(R.id.tvEmptyPinnedServices);
+        layoutEmptyPinnedStations = view.findViewById(R.id.layoutEmptyPinnedStations);
+        layoutEmptyPinnedServices = view.findViewById(R.id.layoutEmptyPinnedServices);
 
         pinnedDataManager = new PinnedDataManager(requireContext());
 
@@ -228,10 +228,10 @@ public class LiveBoardFragment extends Fragment {
         List<String> pinnedStations = pinnedDataManager.getPinnedStations();
         List<String> pinnedServices = pinnedDataManager.getPinnedServices();
 
-        tvEmptyPinnedStations.setVisibility(pinnedStations.isEmpty() ? View.VISIBLE : View.GONE);
+        layoutEmptyPinnedStations.setVisibility(pinnedStations.isEmpty() ? View.VISIBLE : View.GONE);
         recyclerPinnedStations.setVisibility(pinnedStations.isEmpty() ? View.GONE : View.VISIBLE);
 
-        tvEmptyPinnedServices.setVisibility(pinnedServices.isEmpty() ? View.VISIBLE : View.GONE);
+        layoutEmptyPinnedServices.setVisibility(pinnedServices.isEmpty() ? View.VISIBLE : View.GONE);
         recyclerPinnedServices.setVisibility(pinnedServices.isEmpty() ? View.GONE : View.VISIBLE);
 
         currentPinnedStations.clear();

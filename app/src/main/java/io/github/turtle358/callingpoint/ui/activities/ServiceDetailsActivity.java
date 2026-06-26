@@ -69,7 +69,10 @@ public class ServiceDetailsActivity extends AppCompatActivity {
 
         serviceId = getIntent().getStringExtra("SERVICE_ID");
         if (serviceId != null) {
-            swipeRefreshLayout.setOnRefreshListener(() -> fetchServiceDetails(serviceId));
+            swipeRefreshLayout.setOnRefreshListener(() -> {
+                fetchServiceDetails(serviceId);
+                swipeRefreshLayout.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK);
+            });
             fetchServiceDetails(serviceId);
         } else {
             Toast.makeText(this, "Error: No Service ID provided", Toast.LENGTH_SHORT).show();
