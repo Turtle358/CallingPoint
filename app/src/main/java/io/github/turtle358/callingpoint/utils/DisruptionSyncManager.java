@@ -129,9 +129,9 @@ public class DisruptionSyncManager {
                             si.status = simplifiedStatus;
 
                             if (simplifiedStatus.equals("Planned Engineering Works")) {
-                                si.plannedDescription = incident.description;
+                                si.plannedIncidents.add(incident);
                             } else {
-                                si.description = incident.description;
+                                si.activeIncidents.add(incident);
                             }
                             targetMap.put(op.tocCode, si);
                         } else {
@@ -144,16 +144,12 @@ public class DisruptionSyncManager {
                             }
 
                             if (simplifiedStatus.equals("Planned Engineering Works")) {
-                                if (existing.plannedDescription == null || existing.plannedDescription.isEmpty()) {
-                                    existing.plannedDescription = incident.description;
-                                } else {
-                                    existing.plannedDescription += "<br><br><hr><br>" + incident.description;
+                                if (!existing.plannedIncidents.contains(incident)) {
+                                    existing.plannedIncidents.add(incident);
                                 }
                             } else {
-                                if (existing.description == null || existing.description.isEmpty()) {
-                                    existing.description = incident.description;
-                                } else {
-                                    existing.description += "<br><br><hr><br>" + incident.description;
+                                if (!existing.activeIncidents.contains(incident)) {
+                                    existing.activeIncidents.add(incident);
                                 }
                             }
                         }

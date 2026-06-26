@@ -24,11 +24,13 @@ import android.graphics.Color;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import io.github.turtle358.callingpoint.R;
+import io.github.turtle358.callingpoint.models.IncidentResponse;
 import io.github.turtle358.callingpoint.utils.TOCBrandHelper;
 
 public class TOCDetailActivity extends AppCompatActivity {
@@ -47,10 +49,11 @@ public class TOCDetailActivity extends AppCompatActivity {
         String tocName = getIntent().getStringExtra("TOC_NAME");
         currentTocCode = getIntent().getStringExtra("TOC_CODE");
         String tocStatus = getIntent().getStringExtra("TOC_STATUS");
-        String tocDescription = getIntent().getStringExtra("TOC_DESCRIPTION");
-        String tocPlanned = getIntent().getStringExtra("TOC_PLANNED");
 
-        View headerColorBar = findViewById(R.id.headerColorBar);
+        String activeJson = getIntent().getStringExtra("TOC_ACTIVE_JSON");
+        String plannedJson = getIntent().getStringExtra("TOC_PLANNED_JSON");
+
+        View headerColourBar = findViewById(R.id.headerColorBar);
         TextView tvName = findViewById(R.id.detailTocName);
         TextView tvCode = findViewById(R.id.detailTocCode);
         ImageView tocIcon = findViewById(R.id.detailTocIcon);
@@ -95,46 +98,48 @@ public class TOCDetailActivity extends AppCompatActivity {
         });
 
         if (tocName != null) {
-            int brandColor = TOCBrandHelper.getColourForToc(tocName);
-            headerColorBar.setBackgroundColor(brandColor);
-            tvCode.setBackgroundTintList(ColorStateList.valueOf(brandColor));
+            int brandColour = TOCBrandHelper.getColourForToc(tocName);
+            headerColourBar.setBackgroundColor(brandColour);
+            tvCode.setBackgroundTintList(ColorStateList.valueOf(brandColour));
             tocIcon.setImageResource(TOCBrandHelper.getIconForToc(tocName));
 
-            boolean isLightColor = ColorUtils.calculateLuminance(brandColor) > 0.5;
-            tvCode.setTextColor(isLightColor ? Color.BLACK : Color.WHITE);
+            boolean isLightColour = ColorUtils.calculateLuminance(brandColour) > 0.5;
+            tvCode.setTextColor(isLightColour ? Color.BLACK : Color.WHITE);
         }
 
-        if (tocDescription != null && !tocDescription.trim().isEmpty()) {
-            populateIncidents(layoutActiveIncidents, tocDescription);
+        com.google.gson.Gson gson = new com.google.gson.Gson();
+        java.lang.reflect.Type listType = new com.google.gson.reflect.TypeToken<List<IncidentResponse>>(){}.getType();
+
+        List<io.github.turtle358.callingpoint.models.IncidentResponse> activeIncidents = gson.fromJson(activeJson, listType);
+        List<io.github.turtle358.callingpoint.models.IncidentResponse> plannedIncidents = gson.fromJson(plannedJson, listType);
+
+        if (activeIncidents != null && !activeIncidents.isEmpty()) {
+            populateIncidents(layoutActiveIncidents, activeIncidents);
             sectionActiveIncidents.setVisibility(View.VISIBLE);
         } else {
             sectionActiveIncidents.setVisibility(View.GONE);
         }
 
-        if (tocPlanned != null && !tocPlanned.trim().isEmpty()) {
-            populateIncidents(layoutPlannedWorks, tocPlanned);
+        if (plannedIncidents != null && !plannedIncidents.isEmpty()) {
+            populateIncidents(layoutPlannedWorks, plannedIncidents);
             sectionPlannedWorks.setVisibility(View.VISIBLE);
         } else {
             sectionPlannedWorks.setVisibility(View.GONE);
         }
     }
 
-    private void populateIncidents(LinearLayout container, String htmlText) {
-        if (htmlText == null || htmlText.isEmpty()) return;
+    private void populateIncidents(LinearLayout container, List<io.github.turtle358.callingpoint.models.IncidentResponse> incidents) {
+        if (incidents == null || incidents.isEmpty()) return;
 
-        String[] incidents = htmlText.split("<hr>");
         float density = getResources().getDisplayMetrics().density;
 
-        for (int i = 0; i < incidents.length; i++) {
-            String chunk = incidents[i].trim();
+        for (io.github.turtle358.callingpoint.models.IncidentResponse incident : incidents) {
+            if (incident.description == null || incident.description.trim().isEmpty()) continue;
 
+            String chunk = incident.description.trim();
             chunk = chunk.replaceAll("^(?:<br\\s*/?>\\s*)+", "");
             chunk = chunk.replaceAll("(?:<br\\s*/?>\\s*)+$", "");
-
-            if (chunk.isEmpty()) continue;
-
             String vimeoId = extractVimeoId(chunk);
-
             chunk = chunk.replaceAll("<a[^>]*vimeo\\.com/\\d+[^>]*>.*?</a>", "");
             chunk = chunk.replaceAll("https?://(?:www\\.)?vimeo\\.com/\\d+", "");
 
@@ -143,17 +148,79 @@ public class TOCDetailActivity extends AppCompatActivity {
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
             );
-            cardParams.setMargins((int)(12 * density), 0, (int)(12 * density), (int)(12 * density));
+            cardParams.setMargins((int)(12 * density), 0, (int)(12 * density), (int)(8 * density));
             card.setLayoutParams(cardParams);
-            card.setRadius(16 * density);
+            card.setRadius(12 * density);
             card.setCardElevation(2 * density);
             card.setCardBackgroundColor(ContextCompat.getColor(this, R.color.bg_card));
-
             card.setUseCompatPadding(true);
 
             LinearLayout innerLayout = new LinearLayout(this);
             innerLayout.setOrientation(LinearLayout.VERTICAL);
             innerLayout.setPadding((int)(16 * density), (int)(16 * density), (int)(16 * density), (int)(16 * density));
+
+            LinearLayout headerLayout = new LinearLayout(this);
+            headerLayout.setOrientation(LinearLayout.HORIZONTAL);
+            headerLayout.setGravity(android.view.Gravity.TOP);
+
+            TextView tvSummary = new TextView(this);
+            LinearLayout.LayoutParams summaryParams = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+            tvSummary.setLayoutParams(summaryParams);
+            tvSummary.setText(incident.summary != null ? incident.summary : "Service Update");
+            tvSummary.setTextSize(15f);
+            tvSummary.setTypeface(null, android.graphics.Typeface.BOLD);
+            tvSummary.setTextColor(ContextCompat.getColor(this, R.color.text_primary));
+            tvSummary.setLineSpacing(0, 1.1f);
+            headerLayout.addView(tvSummary);
+
+            ImageView arrowIcon = new ImageView(this);
+            LinearLayout.LayoutParams arrowParams = new LinearLayout.LayoutParams((int)(24 * density), (int)(24 * density));
+            arrowParams.setMargins((int)(8 * density), 0, 0, 0);
+            arrowIcon.setLayoutParams(arrowParams);
+            arrowIcon.setImageResource(R.drawable.ic_chevron_down);
+            arrowIcon.setColorFilter(ContextCompat.getColor(this, R.color.text_secondary));
+            headerLayout.addView(arrowIcon);
+
+            innerLayout.addView(headerLayout);
+
+            if (incident.affectedOperators != null && !incident.affectedOperators.isEmpty()) {
+                android.widget.HorizontalScrollView hsv = new android.widget.HorizontalScrollView(this);
+                hsv.setHorizontalScrollBarEnabled(false);
+
+                LinearLayout.LayoutParams hsvParams = new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+                hsvParams.setMargins(0, (int)(8 * density), 0, 0);
+                hsv.setLayoutParams(hsvParams);
+
+                LinearLayout pillContainer = new LinearLayout(this);
+                pillContainer.setOrientation(LinearLayout.HORIZONTAL);
+
+                for (io.github.turtle358.callingpoint.models.IncidentResponse.AffectedOperator op : incident.affectedOperators) {
+                    TextView pill = new TextView(this);
+                    pill.setText(op.tocCode);
+                    pill.setTextSize(10f);
+                    pill.setTypeface(null, android.graphics.Typeface.BOLD);
+                    pill.setPadding((int)(6 * density), (int)(2 * density), (int)(6 * density), (int)(2 * density));
+
+                    String tocName = TOCBrandHelper.getNameForCode(op.tocCode);
+                    int colour = TOCBrandHelper.getColourForToc(tocName);
+
+                    android.graphics.drawable.GradientDrawable gd = new android.graphics.drawable.GradientDrawable();
+                    gd.setColor(colour);
+                    gd.setCornerRadius(8 * density);
+                    pill.setBackground(gd);
+
+                    boolean isLightColour = ColorUtils.calculateLuminance(colour) > 0.5;
+                    pill.setTextColor(isLightColour ? android.graphics.Color.BLACK : android.graphics.Color.WHITE);
+
+                    LinearLayout.LayoutParams pillParams = new LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+                    pillParams.setMargins(0, 0, (int)(6 * density), 0);
+                    pillContainer.addView(pill, pillParams);
+                }
+                hsv.addView(pillContainer);
+                innerLayout.addView(hsv);
+            }
 
             if (vimeoId != null) {
                 WebView webView = new WebView(this);
@@ -161,28 +228,82 @@ public class TOCDetailActivity extends AppCompatActivity {
                         LinearLayout.LayoutParams.MATCH_PARENT,
                         (int) (220 * density)
                 );
-                wvParams.setMargins(0, 0, 0, (int) (12 * density));
+                wvParams.setMargins(0, (int) (12 * density), 0, 0);
                 webView.setLayoutParams(wvParams);
                 setupVideoPlayer(webView, vimeoId);
                 innerLayout.addView(webView);
             }
+
             TextView tv = new TextView(this);
-            tv.setLayoutParams(new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams bodyParams = new LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
-            ));
-
-            int secondaryColor = ContextCompat.getColor(this, R.color.text_secondary);
-            tv.setTextColor(secondaryColor);
+            );
+            bodyParams.setMargins(0, (int)(12 * density), 0, 0);
+            tv.setLayoutParams(bodyParams);
+            tv.setTextColor(ContextCompat.getColor(this, R.color.text_secondary));
             tv.setLinkTextColor(android.graphics.Color.parseColor("#0A56F1"));
-            tv.setTextSize(15f);
+            tv.setTextSize(14f);
             tv.setLineSpacing(0, 1.2f);
             tv.setMovementMethod(LinkMovementMethod.getInstance());
             tv.setText(HtmlCompat.fromHtml(chunk, HtmlCompat.FROM_HTML_MODE_COMPACT));
-
+            tv.setVisibility(View.GONE);
             innerLayout.addView(tv);
+
             card.addView(innerLayout);
             container.addView(card);
+
+            final boolean[] isExpanded = {false};
+            View.OnClickListener toggleListener = v -> {
+
+                android.transition.TransitionSet transition = new android.transition.TransitionSet();
+                transition.addTransition(new android.transition.Fade(android.transition.Fade.OUT).setDuration(100));
+                transition.addTransition(new android.transition.ChangeBounds().setDuration(250));
+                transition.addTransition(new android.transition.Fade(android.transition.Fade.IN).setDuration(150).setStartDelay(100));
+
+                android.view.ViewParent parentNode = container.getParent();
+                android.widget.ScrollView scrollView = null;
+                while (parentNode != null) {
+                    if (parentNode instanceof android.widget.ScrollView) {
+                        scrollView = (android.widget.ScrollView) parentNode;
+                        break;
+                    }
+                    parentNode = parentNode.getParent();
+                }
+
+                if (scrollView != null) {
+                    android.transition.TransitionManager.beginDelayedTransition(scrollView, transition);
+                } else {
+                    android.transition.TransitionManager.beginDelayedTransition((android.view.ViewGroup) getWindow().getDecorView(), transition);
+                }
+
+                isExpanded[0] = !isExpanded[0];
+                if (isExpanded[0]) {
+                    tv.setVisibility(View.VISIBLE);
+                    arrowIcon.animate().rotation(180f).setDuration(250).start();
+                } else {
+                    tv.setVisibility(View.GONE);
+                    arrowIcon.animate().rotation(0f).setDuration(250).start();
+
+                    if (scrollView != null) {
+                        final android.widget.ScrollView finalScrollView = scrollView;
+                        finalScrollView.post(() -> {
+                            android.graphics.Rect rect = new android.graphics.Rect();
+                            card.getHitRect(rect);
+                            finalScrollView.offsetDescendantRectToMyCoords(card, rect);
+
+                            int topMargin = (int) (12 * density);
+                            int targetY = rect.top - topMargin;
+
+                            if (finalScrollView.getScrollY() > targetY) {
+                                finalScrollView.smoothScrollTo(0, targetY);
+                            }
+                        });
+                    }
+                }
+            };
+
+            card.setOnClickListener(toggleListener);
         }
     }
 

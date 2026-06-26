@@ -72,8 +72,11 @@ public class DisruptionAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
                 intent.putExtra("TOC_NAME", item.tocName);
                 intent.putExtra("TOC_CODE", item.tocCode);
                 intent.putExtra("TOC_STATUS", item.status);
-                intent.putExtra("TOC_DESCRIPTION", item.description);
-                intent.putExtra("TOC_PLANNED", item.plannedDescription);
+
+                com.google.gson.Gson gson = new com.google.gson.Gson();
+                intent.putExtra("TOC_ACTIVE_JSON", gson.toJson(item.activeIncidents));
+                intent.putExtra("TOC_PLANNED_JSON", gson.toJson(item.plannedIncidents));
+
                 context.startActivity(intent);
             });
         } else if (holder instanceof SeparatorViewHolder) {
