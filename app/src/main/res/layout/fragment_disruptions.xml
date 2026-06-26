@@ -72,17 +72,38 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:paddingVertical="16dp">
+                        android:paddingTop="16dp"
+                        android:paddingBottom="8dp">
 
-                        <TextView
-                            android:layout_width="wrap_content"
+                        <LinearLayout
+                            android:id="@+id/headerTracked"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="Tracked Operators"
-                            android:textSize="18sp"
-                            android:textStyle="bold"
-                            android:textColor="@color/text_primary"
-                            android:layout_marginHorizontal="20dp"
-                            android:layout_marginBottom="8dp"/>
+                            android:background="?attr/selectableItemBackground"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:paddingHorizontal="20dp"
+                            android:paddingBottom="8dp">
+
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="Tracked Operators"
+                                android:textColor="@color/text_primary"
+                                android:textSize="18sp"
+                                android:textStyle="bold" />
+
+                            <ImageView
+                                android:id="@+id/iconExpandTracked"
+                                android:layout_width="24dp"
+                                android:layout_height="24dp"
+                                android:rotation="180"
+                                android:src="@drawable/ic_chevron_down"
+                                app:tint="@color/text_secondary" />
+                        </LinearLayout>
 
                         <androidx.recyclerview.widget.RecyclerView
                             android:id="@+id/recyclerTracked"
@@ -108,17 +129,38 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:paddingVertical="16dp">
+                        android:paddingTop="16dp"
+                        android:paddingBottom="8dp">
 
-                        <TextView
-                            android:layout_width="wrap_content"
+                        <LinearLayout
+                            android:id="@+id/headerOthers"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="Other Operators"
-                            android:textSize="18sp"
-                            android:textStyle="bold"
-                            android:textColor="@color/text_primary"
-                            android:layout_marginHorizontal="20dp"
-                            android:layout_marginBottom="8dp"/>
+                            android:background="?attr/selectableItemBackground"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:paddingHorizontal="20dp"
+                            android:paddingBottom="8dp">
+
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="Other Operators"
+                                android:textColor="@color/text_primary"
+                                android:textSize="18sp"
+                                android:textStyle="bold" />
+
+                            <ImageView
+                                android:id="@+id/iconExpandOthers"
+                                android:layout_width="24dp"
+                                android:layout_height="24dp"
+                                android:rotation="180"
+                                android:src="@drawable/ic_chevron_down"
+                                app:tint="@color/text_secondary" />
+                        </LinearLayout>
 
                         <androidx.recyclerview.widget.RecyclerView
                             android:id="@+id/recyclerOthers"
@@ -144,17 +186,38 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:paddingVertical="16dp">
+                        android:paddingTop="16dp"
+                        android:paddingBottom="8dp">
 
-                        <TextView
-                            android:layout_width="wrap_content"
+                        <LinearLayout
+                            android:id="@+id/headerEngineering"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="Engineering Works"
-                            android:textSize="18sp"
-                            android:textStyle="bold"
-                            android:textColor="@color/text_primary"
-                            android:layout_marginHorizontal="20dp"
-                            android:layout_marginBottom="8dp"/>
+                            android:background="?attr/selectableItemBackground"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:paddingHorizontal="20dp"
+                            android:paddingBottom="8dp">
+
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="Engineering Works"
+                                android:textColor="@color/text_primary"
+                                android:textSize="18sp"
+                                android:textStyle="bold" />
+
+                            <ImageView
+                                android:id="@+id/iconExpandEngineering"
+                                android:layout_width="24dp"
+                                android:layout_height="24dp"
+                                android:rotation="180"
+                                android:src="@drawable/ic_chevron_down"
+                                app:tint="@color/text_secondary" />
+                        </LinearLayout>
 
                         <androidx.recyclerview.widget.RecyclerView
                             android:id="@+id/recyclerEngineering"

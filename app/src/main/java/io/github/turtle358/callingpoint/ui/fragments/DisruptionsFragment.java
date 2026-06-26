@@ -1,9 +1,6 @@
 package io.github.turtle358.callingpoint.ui.fragments;
 
-import android.appwidget.AppWidgetManager;
-import android.content.ComponentName;
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -21,25 +18,14 @@ import com.google.gson.reflect.TypeToken;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
 
-import io.github.turtle358.callingpoint.widget.AppWidgetProvider;
-import io.github.turtle358.callingpoint.ui.adapters.DisruptionAdapter;
 import io.github.turtle358.callingpoint.R;
-import io.github.turtle358.callingpoint.utils.TOCBrandHelper;
 import io.github.turtle358.callingpoint.api.APIClient;
 import io.github.turtle358.callingpoint.api.NationalRailAPI;
 import io.github.turtle358.callingpoint.models.DisruptionResponce;
-import io.github.turtle358.callingpoint.models.IncidentResponse;
-import io.github.turtle358.callingpoint.models.IncidentSearchRequest;
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
+import io.github.turtle358.callingpoint.ui.adapters.DisruptionAdapter;
 
 public class DisruptionsFragment extends Fragment {
     private TextView liveIndicator, goodServiceSubtext;
@@ -61,31 +47,78 @@ public class DisruptionsFragment extends Fragment {
         liveIndicator = view.findViewById(R.id.liveIndicator);
         goodServiceSubtext = view.findViewById(R.id.goodServiceSubtext);
         swipeRefreshLayout = view.findViewById(R.id.swipeRefreshLayout);
+
         cardTracked = view.findViewById(R.id.cardTracked);
         cardOthers = view.findViewById(R.id.cardOthers);
         cardEngineering = view.findViewById(R.id.cardEngineering);
         cardGoodService = view.findViewById(R.id.cardGoodService);
 
+        api = APIClient.getClient().create(NationalRailAPI.class);
+        swipeRefreshLayout.setOnRefreshListener(() -> {
+            swipeRefreshLayout.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK);
+            fetchRailData(api);
+        });
         RecyclerView recyclerTracked = view.findViewById(R.id.recyclerTracked);
         recyclerTracked.setLayoutManager(new LinearLayoutManager(requireContext()));
         adapterTracked = new DisruptionAdapter(requireContext(), new ArrayList<>());
         recyclerTracked.setAdapter(adapterTracked);
+
+        setupCollapsibleSection(
+                view.findViewById(R.id.headerTracked),
+                view.findViewById(R.id.iconExpandTracked),
+                recyclerTracked,
+                cardTracked,
+                "TRACKED_EXPANDED"
+        );
 
         RecyclerView recyclerOthers = view.findViewById(R.id.recyclerOthers);
         recyclerOthers.setLayoutManager(new LinearLayoutManager(requireContext()));
         adapterOthers = new DisruptionAdapter(requireContext(), new ArrayList<>());
         recyclerOthers.setAdapter(adapterOthers);
 
+        setupCollapsibleSection(
+                view.findViewById(R.id.headerOthers),
+                view.findViewById(R.id.iconExpandOthers),
+                recyclerOthers,
+                cardOthers,
+                "OTHERS_EXPANDED"
+        );
         RecyclerView recyclerEngineering = view.findViewById(R.id.recyclerEngineering);
         recyclerEngineering.setLayoutManager(new LinearLayoutManager(requireContext()));
         adapterEngineering = new DisruptionAdapter(requireContext(), new ArrayList<>());
         recyclerEngineering.setAdapter(adapterEngineering);
 
-        api = APIClient.getClient().create(NationalRailAPI.class);
+        setupCollapsibleSection(
+                view.findViewById(R.id.headerEngineering),
+                view.findViewById(R.id.iconExpandEngineering),
+                recyclerEngineering,
+                cardEngineering,
+                "ENGINEERING_EXPANDED"
+        );
+    }
 
-        swipeRefreshLayout.setOnRefreshListener(() -> {
-            swipeRefreshLayout.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK);
-            fetchRailData(api);
+    private void setupCollapsibleSection(View header, android.widget.ImageView icon, RecyclerView recycler, View cardView, String prefKey) {
+
+        SharedPreferences prefs = requireContext().getSharedPreferences("DisruptionPrefs", Context.MODE_PRIVATE);
+        boolean isExpanded = prefs.getBoolean(prefKey, true);
+
+        recycler.setVisibility(isExpanded ? View.VISIBLE : View.GONE);
+        icon.setRotation(isExpanded ? 180f : 0f);
+
+        header.setOnClickListener(v -> {
+            boolean currentlyExpanded = recycler.getVisibility() == View.VISIBLE;
+
+            android.transition.TransitionManager.beginDelayedTransition((android.view.ViewGroup) cardView.getParent());
+
+            if (currentlyExpanded) {
+                recycler.setVisibility(View.GONE);
+                icon.animate().rotation(0f).setDuration(200).start();
+                prefs.edit().putBoolean(prefKey, false).apply();
+            } else {
+                recycler.setVisibility(View.VISIBLE);
+                icon.animate().rotation(180f).setDuration(200).start();
+                prefs.edit().putBoolean(prefKey, true).apply();
+            }
         });
     }
 
@@ -97,7 +130,6 @@ public class DisruptionsFragment extends Fragment {
 
     private void checkCacheAndLoad() {
         SharedPreferences prefs = requireContext().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
-
 
         long lastSync = prefs.getLong("LAST_SYNC_TIME", 0);
         long currentTime = System.currentTimeMillis();
@@ -138,8 +170,6 @@ public class DisruptionsFragment extends Fragment {
     }
 
     private void fetchRailData(NationalRailAPI api) {
-
-
         swipeRefreshLayout.setRefreshing(true);
         liveIndicator.setText("◉ Syncing Real-Time Delays...");
 
@@ -168,11 +198,12 @@ public class DisruptionsFragment extends Fragment {
         adapterTracked.updateData(tracked);
         adapterOthers.updateData(others);
         adapterEngineering.updateData(engineering);
+
         cardTracked.setVisibility(tracked.isEmpty() ? View.GONE : View.VISIBLE);
         cardOthers.setVisibility(others.isEmpty() ? View.GONE : View.VISIBLE);
         cardEngineering.setVisibility(engineering.isEmpty() ? View.GONE : View.VISIBLE);
+
         goodServiceSubtext.setText(tracked.isEmpty() ? "On all lines" : "All other lines");
         cardGoodService.setVisibility(View.VISIBLE);
     }
-
 }
