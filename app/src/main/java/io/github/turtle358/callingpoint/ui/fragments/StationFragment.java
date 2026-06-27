@@ -96,6 +96,11 @@ public class StationFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(view, (v, insets) -> {
+            androidx.core.graphics.Insets systemBars = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.statusBars());
+            v.setPadding(0, systemBars.top, 0, 0);
+            return insets;
+        });
 
         if (getArguments() != null) {
             fromCrs = getArguments().getString("FROM_CRS", "");

@@ -61,11 +61,11 @@ public class DisruptionAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
             dHolder.tvTocCode.setText(item.tocCode);
             dHolder.tvStatus.setText(item.status);
 
-            int brandColor = TOCBrandHelper.getColourForToc(item.tocName);
-            dHolder.tvTocCode.setBackgroundTintList(ColorStateList.valueOf(brandColor));
+            int brandColour = TOCBrandHelper.getColourForToc(item.tocName);
+            dHolder.tvTocCode.setBackgroundTintList(ColorStateList.valueOf(brandColour));
 
-            boolean isLightColor = ColorUtils.calculateLuminance(brandColor) > 0.5;
-            dHolder.tvTocCode.setTextColor(isLightColor ? Color.BLACK : Color.WHITE);
+            boolean isLightColour = ColorUtils.calculateLuminance(brandColour) > 0.5;
+            dHolder.tvTocCode.setTextColor(isLightColour ? Color.BLACK : Color.WHITE);
 
             dHolder.itemView.setOnClickListener(v -> {
                 Intent intent = new Intent(context, TOCDetailActivity.class);

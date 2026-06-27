@@ -22,6 +22,10 @@ import androidx.core.view.WindowCompat;
 import androidx.core.graphics.ColorUtils;
 import android.graphics.Color;
 
+import com.google.common.reflect.TypeToken;
+import com.google.gson.Gson;
+
+import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -39,16 +43,24 @@ public class TOCDetailActivity extends AppCompatActivity {
     private Set<String> trackedTocs;
     private String currentTocCode;
     private ImageButton btnPinTocWidget;
+    boolean isLightColour;
+
+    int brandColour;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView()).setAppearanceLightStatusBars(false);
+
         setContentView(R.layout.activity_toc_detail);
 
         String tocName = getIntent().getStringExtra("TOC_NAME");
         currentTocCode = getIntent().getStringExtra("TOC_CODE");
         String tocStatus = getIntent().getStringExtra("TOC_STATUS");
+
+        brandColour = TOCBrandHelper.getColourForToc(tocName);
+        isLightColour = ColorUtils.calculateLuminance(brandColour) > 0.5;
+        WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView()).setAppearanceLightStatusBars(isLightColour);
 
         String activeJson = getIntent().getStringExtra("TOC_ACTIVE_JSON");
         String plannedJson = getIntent().getStringExtra("TOC_PLANNED_JSON");
@@ -98,17 +110,16 @@ public class TOCDetailActivity extends AppCompatActivity {
         });
 
         if (tocName != null) {
-            int brandColour = TOCBrandHelper.getColourForToc(tocName);
             headerColourBar.setBackgroundColor(brandColour);
             tvCode.setBackgroundTintList(ColorStateList.valueOf(brandColour));
             tocIcon.setImageResource(TOCBrandHelper.getIconForToc(tocName));
 
-            boolean isLightColour = ColorUtils.calculateLuminance(brandColour) > 0.5;
+            isLightColour = ColorUtils.calculateLuminance(brandColour) > 0.5;
             tvCode.setTextColor(isLightColour ? Color.BLACK : Color.WHITE);
         }
 
-        com.google.gson.Gson gson = new com.google.gson.Gson();
-        java.lang.reflect.Type listType = new com.google.gson.reflect.TypeToken<List<IncidentResponse>>(){}.getType();
+        Gson gson = new Gson();
+        Type listType = new TypeToken<List<IncidentResponse>>(){}.getType();
 
         List<io.github.turtle358.callingpoint.models.IncidentResponse> activeIncidents = gson.fromJson(activeJson, listType);
         List<io.github.turtle358.callingpoint.models.IncidentResponse> plannedIncidents = gson.fromJson(plannedJson, listType);
@@ -226,10 +237,30 @@ public class TOCDetailActivity extends AppCompatActivity {
                 WebView webView = new WebView(this);
                 LinearLayout.LayoutParams wvParams = new LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT,
-                        (int) (220 * density)
+                        (int) (200 * density)
                 );
                 wvParams.setMargins(0, (int) (12 * density), 0, 0);
                 webView.setLayoutParams(wvParams);
+                webView.setOutlineProvider(new android.view.ViewOutlineProvider() {
+                    @Override
+                    public void getOutline(android.view.View view, android.graphics.Outline outline) {
+                        outline.setRoundRect(0, 0, view.getWidth(), view.getHeight(), 12 * density);
+                    }
+                });
+                webView.setClipToOutline(true);
+                webView.post(() -> {
+                    int actualWidth = webView.getWidth();
+                    if (actualWidth > 0) {
+                        int perfectHeight = (int) (actualWidth * (9.0f / 16.0f));
+
+                        if (webView.getHeight() != perfectHeight) {
+                            LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) webView.getLayoutParams();
+                            params.height = perfectHeight;
+                            webView.setLayoutParams(params);
+                        }
+                    }
+                });
+
                 setupVideoPlayer(webView, vimeoId);
                 innerLayout.addView(webView);
             }
@@ -338,18 +369,19 @@ public class TOCDetailActivity extends AppCompatActivity {
     private void setupVideoPlayer(WebView webView, String videoId) {
         webView.getSettings().setJavaScriptEnabled(true);
         webView.setWebChromeClient(new WebChromeClient());
+        webView.setBackgroundColor(Color.TRANSPARENT);
 
         String html = "<!DOCTYPE html>" +
                 "<html>" +
                 "<head>" +
                 "  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no\">" +
                 "  <style>" +
-                "    html, body { margin: 0; padding: 0; width: 100%; height: 100%; background-color: #000000; overflow: hidden; }" +
+                "    html, body { margin: 0; padding: 0; width: 100%; height: 100%; background-color: transparent; overflow: hidden; }" +
                 "    iframe { width: 100%; height: 100%; border: none; }" +
                 "  </style>" +
                 "</head>" +
                 "<body>" +
-                "  <iframe src=\"https://player.vimeo.com/video/" + videoId + "?autoplay=0&muted=0\" allow=\"autoplay; fullscreen; picture-in-picture\" allowfullscreen></iframe>" +
+                "  <iframe src=\"https://player.vimeo.com/video/" + videoId + "?autoplay=0&muted=0&title=0&byline=0&portrait=0&transparent=1\" allow=\"autoplay; fullscreen; picture-in-picture\" allowfullscreen></iframe>" +
                 "</body>" +
                 "</html>";
         webView.post(() -> webView.loadDataWithBaseURL("https://vimeo.com", html, "text/html", "UTF-8", null));

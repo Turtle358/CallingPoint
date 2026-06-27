@@ -12,8 +12,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
-import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentManager;
+import androidx.viewpager2.widget.ViewPager2;
 import androidx.work.Constraints;
 import androidx.work.ExistingPeriodicWorkPolicy;
 import androidx.work.NetworkType;
@@ -26,20 +25,14 @@ import com.google.android.material.color.DynamicColors;
 import java.util.concurrent.TimeUnit;
 
 import io.github.turtle358.callingpoint.R;
-import io.github.turtle358.callingpoint.ui.fragments.DisruptionsFragment;
-import io.github.turtle358.callingpoint.ui.fragments.JourneyPlannerFragment;
-import io.github.turtle358.callingpoint.ui.fragments.LiveBoardFragment;
-import io.github.turtle358.callingpoint.ui.fragments.SettingsFragment;
+import io.github.turtle358.callingpoint.ui.adapters.MainPagerAdapter;
 import io.github.turtle358.callingpoint.utils.TOCBrandHelper;
 import io.github.turtle358.callingpoint.workers.TrainTrackerWorker;
 
 public class MainActivity extends AppCompatActivity {
 
-    private Fragment liveBoardFragment;
-    private Fragment journeyPlannerFragment;
-    private Fragment disruptionsFragment;
-    private Fragment settingsFragment;
-    private Fragment activeFragment;
+    private ViewPager2 viewPager;
+    private BottomNavigationView bottomNav;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,7 +48,13 @@ public class MainActivity extends AppCompatActivity {
         windowController.setAppearanceLightStatusBars(!isDarkMode);
 
         setContentView(R.layout.activity_main);
+        androidx.core.view.WindowCompat.setDecorFitsSystemWindows(getWindow(), true);
+        getWindow().setStatusBarColor(androidx.core.content.ContextCompat.getColor(this, R.color.bg_screen));
+        getWindow().setNavigationBarColor(androidx.core.content.ContextCompat.getColor(this, R.color.bg_card));
 
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+            getWindow().setNavigationBarContrastEnforced(false);
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
                 ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.POST_NOTIFICATIONS}, 101);
@@ -75,69 +74,65 @@ public class MainActivity extends AppCompatActivity {
                 ExistingPeriodicWorkPolicy.KEEP,
                 trackerRequest
         );
+        viewPager = findViewById(R.id.view_pager);
+        bottomNav = findViewById(R.id.bottom_navigation);
 
-        BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
-        FragmentManager fm = getSupportFragmentManager();
-
+        MainPagerAdapter pagerAdapter = new MainPagerAdapter(this);
+        viewPager.setAdapter(pagerAdapter);
+        viewPager.setOffscreenPageLimit(3);
         bottomNav.setOnItemSelectedListener(item -> {
             int itemId = item.getItemId();
-            getSupportFragmentManager().popBackStack(null, FragmentManager.POP_BACK_STACK_INCLUSIVE);
+            final int targetPage;
 
-            if (itemId == R.id.nav_departures) {
-                fm.beginTransaction()
-                        .setCustomAnimations(R.anim.fade_in_fast, R.anim.fade_out_fast)
-                        .hide(activeFragment).show(liveBoardFragment).commit();
-                activeFragment = liveBoardFragment;
-                return true;
-            } else if (itemId == R.id.nav_journey) {
-                fm.beginTransaction()
-                        .setCustomAnimations(R.anim.fade_in_fast, R.anim.fade_out_fast)
-                        .hide(activeFragment).show(journeyPlannerFragment).commit();
-                activeFragment = journeyPlannerFragment;
-                return true;
-            } else if (itemId == R.id.nav_disruptions) {
-                fm.beginTransaction()
-                        .setCustomAnimations(R.anim.fade_in_fast, R.anim.fade_out_fast)
-                        .hide(activeFragment).show(disruptionsFragment).commit();
-                activeFragment = disruptionsFragment;
-                return true;
-            } else if (itemId == R.id.nav_settings) {
-                fm.beginTransaction()
-                        .setCustomAnimations(R.anim.fade_in_fast, R.anim.fade_out_fast)
-                        .hide(activeFragment).show(settingsFragment).commit();
-                activeFragment = settingsFragment;
-                return true;
+            if (itemId == R.id.nav_departures) targetPage = 0;
+            else if (itemId == R.id.nav_journey) targetPage = 1;
+            else if (itemId == R.id.nav_disruptions) targetPage = 2;
+            else if (itemId == R.id.nav_settings) targetPage = 3;
+            else return false;
+
+            if (viewPager.getCurrentItem() != targetPage) {
+                if (Math.abs(viewPager.getCurrentItem() - targetPage) > 1) {
+                    viewPager.animate()
+                            .alpha(0f)
+                            .setDuration(100)
+                            .withEndAction(() -> {
+                                viewPager.setCurrentItem(targetPage, false);
+                                viewPager.animate()
+                                        .alpha(1f)
+                                        .setDuration(150)
+                                        .start();
+                            })
+                            .start();
+                } else {
+                    viewPager.setCurrentItem(targetPage, true);
+                }
             }
-            return false;
+            return true;
+        });
+        viewPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
+            @Override
+            public void onPageSelected(int position) {
+                bottomNav.getMenu().getItem(position).setChecked(true);
+            }
+
+            @Override
+            public void onPageScrollStateChanged(int state) {
+                super.onPageScrollStateChanged(state);
+                if (state == ViewPager2.SCROLL_STATE_DRAGGING) {
+                    hideKeyboard();
+                }
+            }
         });
 
         if (savedInstanceState == null) {
-            liveBoardFragment = new LiveBoardFragment();
-            journeyPlannerFragment = new JourneyPlannerFragment();
-            disruptionsFragment = new DisruptionsFragment();
-            settingsFragment = new SettingsFragment();
-
-            fm.beginTransaction().add(R.id.fragment_container, settingsFragment, "4").hide(settingsFragment).commit();
-            fm.beginTransaction().add(R.id.fragment_container, disruptionsFragment, "3").hide(disruptionsFragment).commit();
-            fm.beginTransaction().add(R.id.fragment_container, journeyPlannerFragment, "2").hide(journeyPlannerFragment).commit();
-            fm.beginTransaction().add(R.id.fragment_container, liveBoardFragment, "1").commit();
-
-            activeFragment = liveBoardFragment;
-
             Intent intent = getIntent();
             if (intent != null) {
                 String navigateTo = intent.getStringExtra("NAVIGATE_TO");
                 if ("disruptions".equalsIgnoreCase(navigateTo)) {
-                    bottomNav.setSelectedItemId(R.id.nav_disruptions);
+                    viewPager.setCurrentItem(2, false);
                 }
             }
             handleIntentExtras(getIntent());
-        } else {
-            liveBoardFragment = fm.findFragmentByTag("1");
-            journeyPlannerFragment = fm.findFragmentByTag("2");
-            disruptionsFragment = fm.findFragmentByTag("3");
-            settingsFragment = fm.findFragmentByTag("4");
-            activeFragment = liveBoardFragment;
         }
     }
 
@@ -152,8 +147,7 @@ public class MainActivity extends AppCompatActivity {
         if (intent != null) {
             String openCrs = intent.getStringExtra("OPEN_STATION_CRS");
             if (openCrs != null) {
-                BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
-                bottomNav.setSelectedItemId(R.id.nav_departures);
+                viewPager.setCurrentItem(0, false);
 
                 io.github.turtle358.callingpoint.ui.fragments.StationFragment fragment = new io.github.turtle358.callingpoint.ui.fragments.StationFragment();
                 Bundle args = new Bundle();
@@ -164,9 +158,21 @@ public class MainActivity extends AppCompatActivity {
 
                 getSupportFragmentManager().beginTransaction()
                         .replace(R.id.fragment_container, fragment)
+                        .addToBackStack(null)
                         .commit();
 
                 intent.removeExtra("OPEN_STATION_CRS");
+            }
+        }
+    }
+
+    private void hideKeyboard() {
+        android.view.View view = this.getCurrentFocus();
+        if (view != null) {
+            android.view.inputmethod.InputMethodManager imm =
+                    (android.view.inputmethod.InputMethodManager) getSystemService(android.content.Context.INPUT_METHOD_SERVICE);
+            if (imm != null) {
+                imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
             }
         }
     }
