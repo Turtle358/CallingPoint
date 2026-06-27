@@ -3,6 +3,7 @@ package io.github.turtle358.callingpoint.ui.fragments;
 import static io.github.turtle358.callingpoint.utils.InlineAutocompleteManager.applyInlineAutocomplete;
 
 import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -15,7 +16,6 @@ import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.RadioGroup;
-import android.widget.TextView;
 import android.widget.Toast;
 import android.view.KeyEvent;
 import android.view.inputmethod.EditorInfo;
@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import io.github.turtle358.callingpoint.data.PinnedDataManager;
+import io.github.turtle358.callingpoint.ui.activities.StationActivity;
 import io.github.turtle358.callingpoint.ui.adapters.PinnedServiceAdapter;
 import io.github.turtle358.callingpoint.ui.adapters.PinnedStationAdapter;
 import io.github.turtle358.callingpoint.R;
@@ -95,7 +96,7 @@ public class LiveBoardFragment extends Fragment {
 
         recyclerPinnedStations.setLayoutManager(new LinearLayoutManager(requireContext()));
         recyclerPinnedStations.setNestedScrollingEnabled(false);
-        stationAdapter = new PinnedStationAdapter(requireContext(), currentPinnedStations, (from, to) -> launchStationFragment(from, to, false));
+        stationAdapter = new PinnedStationAdapter(requireContext(), currentPinnedStations, (from, to) -> launchStationActivity(from, to, false));
         recyclerPinnedStations.setAdapter(stationAdapter);
 
         recyclerPinnedServices.setLayoutManager(new LinearLayoutManager(requireContext()));
@@ -127,7 +128,7 @@ public class LiveBoardFragment extends Fragment {
             if (fromCrs != null && fromCrs.length() == 3) {
                 hideKeyboard();
                 boolean isArrivals = toggleBoardType.getCheckedRadioButtonId() == R.id.radioArrivals;
-                launchStationFragment(fromCrs, toCrs, isArrivals);
+                launchStationActivity(fromCrs, toCrs, isArrivals);
             } else {
                 Toast.makeText(requireContext(), "Please select a valid departing station", Toast.LENGTH_SHORT).show();
             }
@@ -210,18 +211,13 @@ public class LiveBoardFragment extends Fragment {
         autoRefreshHandler.removeCallbacks(autoRefreshRunnable);
     }
 
-    private void launchStationFragment(String fromCrs, String toCrs, boolean isArrivals) {
-        StationFragment fragment = new StationFragment();
-        Bundle args = new Bundle();
-        args.putString("FROM_CRS", fromCrs);
-        args.putString("TO_CRS", toCrs);
-        args.putBoolean("IS_ARRIVALS", isArrivals);
-        fragment.setArguments(args);
-
-        getParentFragmentManager().beginTransaction()
-                .replace(R.id.fragment_container, fragment)
-                .addToBackStack(null)
-                .commit();
+    private void launchStationActivity(String fromCrs, String toCrs, boolean isArrivals) {
+        Intent intent = new Intent(requireContext(), StationActivity.class);
+        intent.putExtra("FROM_CRS", fromCrs);
+        intent.putExtra("TO_CRS", toCrs);
+        intent.putExtra("IS_ARRIVALS", isArrivals);
+        startActivity(intent);
+        requireActivity().overridePendingTransition(R.anim.fade_in_fast, R.anim.fade_out_fast);
     }
 
     private void loadPinnedData() {

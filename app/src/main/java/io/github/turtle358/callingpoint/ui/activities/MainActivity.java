@@ -147,20 +147,12 @@ public class MainActivity extends AppCompatActivity {
         if (intent != null) {
             String openCrs = intent.getStringExtra("OPEN_STATION_CRS");
             if (openCrs != null) {
-                viewPager.setCurrentItem(0, false);
-
-                io.github.turtle358.callingpoint.ui.fragments.StationFragment fragment = new io.github.turtle358.callingpoint.ui.fragments.StationFragment();
-                Bundle args = new Bundle();
-                args.putString("FROM_CRS", openCrs);
-                args.putString("TO_CRS", "");
-                args.putBoolean("IS_ARRIVALS", false);
-                fragment.setArguments(args);
-
-                getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.fragment_container, fragment)
-                        .addToBackStack(null)
-                        .commit();
-
+                Intent stationIntent = new Intent(this, StationActivity.class);
+                stationIntent.putExtra("FROM_CRS", openCrs);
+                stationIntent.putExtra("TO_CRS", "");
+                stationIntent.putExtra("IS_ARRIVALS", false);
+                startActivity(stationIntent);
+                overridePendingTransition(R.anim.fade_in_fast, R.anim.fade_out_fast);
                 intent.removeExtra("OPEN_STATION_CRS");
             }
         }

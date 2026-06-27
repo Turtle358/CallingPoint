@@ -1,12 +1,8 @@
-package io.github.turtle358.callingpoint.ui.fragments;
+package io.github.turtle358.callingpoint.ui.activities;
 
 import android.os.Bundle;
 import android.text.method.LinkMovementMethod;
-import android.transition.ChangeBounds;
-import android.transition.Fade;
 import android.transition.TransitionManager;
-import android.transition.TransitionSet;
-import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -17,8 +13,8 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.text.HtmlCompat;
-import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
@@ -39,13 +35,15 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class StationFragment extends Fragment {
+public class StationActivity extends AppCompatActivity {
 
     private String fromCrs = "";
     private String toCrs = "";
     private String pinKey = "";
     private boolean isArrivals = false;
     private int currentOffset = 0;
+
+    private View rootView;
 
     private TextView tvDirectionHeading, tvStationTitle, tvStationSubtitle, tvEmptyState;
     private ImageButton btnPinStation;
@@ -87,47 +85,59 @@ public class StationFragment extends Fragment {
         }
     }
 
-    @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.fragment_station, container, false);
-    }
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
 
-    @Override
-    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
-        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(view, (v, insets) -> {
+        // Draw edge-to-edge and make the status bar transparent so it matches
+        // the activity's background, the same way the parent Activity used to
+        // handle it when this screen was a hosted Fragment.
+        androidx.core.view.WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+        getWindow().setStatusBarColor(android.graphics.Color.TRANSPARENT);
+
+        setContentView(R.layout.activity_station);
+
+        // Use the actual inflated layout as our root, not the android.R.id.content
+        // wrapper around it. The wrapper has no background, so padding it for the
+        // status bar left a gap above our LinearLayout showing the window's
+        // default background instead of bg_screen. The inflated layout already
+        // fills the window and carries the right background, so insetting it
+        // directly lets that background paint all the way behind the status bar.
+        rootView = ((ViewGroup) findViewById(android.R.id.content)).getChildAt(0);
+
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(rootView, (v, insets) -> {
             androidx.core.graphics.Insets systemBars = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.statusBars());
             v.setPadding(0, systemBars.top, 0, 0);
             return insets;
         });
 
-        if (getArguments() != null) {
-            fromCrs = getArguments().getString("FROM_CRS", "");
-            toCrs = getArguments().getString("TO_CRS", "");
-            isArrivals = getArguments().getBoolean("IS_ARRIVALS", false);
+        if (getIntent().getExtras() != null) {
+            Bundle extras = getIntent().getExtras();
+            fromCrs = extras.getString("FROM_CRS", "");
+            toCrs = extras.getString("TO_CRS", "");
+            isArrivals = extras.getBoolean("IS_ARRIVALS", false);
         }
 
         pinKey = fromCrs + (toCrs.isEmpty() ? "" : ":" + toCrs);
 
-        tvDirectionHeading = view.findViewById(R.id.tvDirectionHeading);
-        tvStationTitle = view.findViewById(R.id.tvStationTitle);
-        tvStationSubtitle = view.findViewById(R.id.tvStationSubtitle);
-        btnPinStation = view.findViewById(R.id.btnPinStation);
-        swipeRefreshLayout = view.findViewById(R.id.swipeRefreshStation);
-        recyclerDepartures = view.findViewById(R.id.recyclerDepartures);
-        tvEmptyState = view.findViewById(R.id.tvEmptyState);
-        btnLaterServices = view.findViewById(R.id.btnLaterServices);
-        containerStationMessages = view.findViewById(R.id.containerStationMessages);
+        tvDirectionHeading = findViewById(R.id.tvDirectionHeading);
+        tvStationTitle = findViewById(R.id.tvStationTitle);
+        tvStationSubtitle = findViewById(R.id.tvStationSubtitle);
+        btnPinStation = findViewById(R.id.btnPinStation);
+        swipeRefreshLayout = findViewById(R.id.swipeRefreshStation);
+        recyclerDepartures = findViewById(R.id.recyclerDepartures);
+        tvEmptyState = findViewById(R.id.tvEmptyState);
+        btnLaterServices = findViewById(R.id.btnLaterServices);
+        containerStationMessages = findViewById(R.id.containerStationMessages);
 
-        pinnedDataManager = new PinnedDataManager(requireContext());
+        pinnedDataManager = new PinnedDataManager(this);
         api = APIClient.getClient().create(NationalRailAPI.class);
 
         setupHeader();
         setupPinButton();
 
-        recyclerDepartures.setLayoutManager(new LinearLayoutManager(requireContext()));
-        adapter = new DeparturesAdapter(requireContext(), new ArrayList<>());
+        recyclerDepartures.setLayoutManager(new LinearLayoutManager(this));
+        adapter = new DeparturesAdapter(this, new ArrayList<>());
         recyclerDepartures.setAdapter(adapter);
 
         swipeRefreshLayout.setOnRefreshListener(() -> {
@@ -184,7 +194,7 @@ public class StationFragment extends Fragment {
             updatePinIcon();
 
             boolean isNowPinned = pinnedDataManager.isStationPinned(pinKey);
-            Toast.makeText(requireContext(), isNowPinned ? "Station Pinned!" : "Pin Removed", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, isNowPinned ? "Station Pinned!" : "Pin Removed", Toast.LENGTH_SHORT).show();
         });
     }
 
@@ -204,7 +214,7 @@ public class StationFragment extends Fragment {
         api.getStationMessages(queryStations).enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<List<StationMessage>> call, @NonNull Response<List<StationMessage>> response) {
-                if (!isAdded()) return;
+                if (isFinishing() || isDestroyed()) return;
 
                 if (response.isSuccessful() && response.body() != null) {
                     displayStationMessages(response.body());
@@ -269,7 +279,7 @@ public class StationFragment extends Fragment {
         android.transition.AutoTransition transition = new android.transition.AutoTransition();
         transition.setDuration(200);
 
-        TransitionManager.beginDelayedTransition((ViewGroup) requireView(), transition);
+        TransitionManager.beginDelayedTransition((ViewGroup) rootView, transition);
 
         isMessagesExpanded = !isMessagesExpanded;
 
@@ -312,7 +322,7 @@ public class StationFragment extends Fragment {
         View.OnClickListener expandClickListener = v -> {
             android.transition.AutoTransition transition = new android.transition.AutoTransition();
             transition.setDuration(200);
-            TransitionManager.beginDelayedTransition((ViewGroup) requireView(), transition);
+            TransitionManager.beginDelayedTransition((ViewGroup) rootView, transition);
 
             isCardExpanded[0] = !isCardExpanded[0];
 
@@ -329,7 +339,7 @@ public class StationFragment extends Fragment {
     }
 
     private void setupToggleButton() {
-        btnToggleMessages = new TextView(requireContext());
+        btnToggleMessages = new TextView(this);
         btnToggleMessages.setText("Show " + (currentMessages.size() - 1) + " more alerts");
         btnToggleMessages.setTextColor(getResources().getColor(R.color.brand_primary, null));
 
@@ -370,7 +380,7 @@ public class StationFragment extends Fragment {
         networkCall.enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<StationDepartureResponse> call, @NonNull Response<StationDepartureResponse> response) {
-                if (!isAdded()) return;
+                if (isFinishing() || isDestroyed()) return;
 
                 if (response.isSuccessful() && response.body() != null) {
                     List<StationDepartureResponse.TrainService> allServices = response.body().trainServices;
@@ -410,7 +420,7 @@ public class StationFragment extends Fragment {
 
             @Override
             public void onFailure(@NonNull Call<StationDepartureResponse> call, @NonNull Throwable t) {
-                if (!isAdded()) return;
+                if (isFinishing() || isDestroyed()) return;
                 swipeRefreshLayout.setRefreshing(false);
 
                 if (btnLaterServices != null) {
@@ -438,7 +448,7 @@ public class StationFragment extends Fragment {
                 showEmptyState(isArrivals ? "No arrivals found within the next 2 hours." : "No direct trains found within the next 2 hours.");
             } else {
                 if (btnLaterServices != null) btnLaterServices.setVisibility(View.GONE);
-                Toast.makeText(requireContext(), "End of scheduled services.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "End of scheduled services.", Toast.LENGTH_SHORT).show();
             }
         } else {
             if (adapter.getItemCount() == 0) {
