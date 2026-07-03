@@ -26,13 +26,13 @@ import io.github.turtle358.callingpoint.api.APIClient;
 import io.github.turtle358.callingpoint.api.NationalRailAPI;
 import io.github.turtle358.callingpoint.models.DisruptionResponce;
 import io.github.turtle358.callingpoint.ui.adapters.DisruptionAdapter;
+import io.github.turtle358.callingpoint.utils.DisruptionSyncManager;
 
 public class DisruptionsFragment extends Fragment {
     private TextView liveIndicator, goodServiceSubtext;
     private SwipeRefreshLayout swipeRefreshLayout;
     private View cardTracked, cardOthers, cardEngineering, cardGoodService;
     private DisruptionAdapter adapterTracked, adapterOthers, adapterEngineering;
-    private NationalRailAPI api;
 
     @Nullable
     @Override
@@ -57,11 +57,9 @@ public class DisruptionsFragment extends Fragment {
         cardOthers = view.findViewById(R.id.cardOthers);
         cardEngineering = view.findViewById(R.id.cardEngineering);
         cardGoodService = view.findViewById(R.id.cardGoodService);
-
-        api = APIClient.getClient().create(NationalRailAPI.class);
         swipeRefreshLayout.setOnRefreshListener(() -> {
             swipeRefreshLayout.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK);
-            fetchRailData(api);
+            fetchRailData();
         });
         RecyclerView recyclerTracked = view.findViewById(R.id.recyclerTracked);
         recyclerTracked.setLayoutManager(new LinearLayoutManager(requireContext()));
@@ -135,46 +133,38 @@ public class DisruptionsFragment extends Fragment {
 
     private void checkCacheAndLoad() {
         SharedPreferences prefs = requireContext().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
-
         long lastSync = prefs.getLong("LAST_SYNC_TIME", 0);
-        long currentTime = System.currentTimeMillis();
+        String cachedJson = prefs.getString("CACHED_TOC_DATA_ALL", "");
 
-        if (currentTime - lastSync < 900000 && lastSync != 0) {
-            String cachedJson = prefs.getString("CACHED_TOC_DATA_ALL", null);
-            if (cachedJson != null) {
-                try {
-                    java.lang.reflect.Type type = new TypeToken<ArrayList<DisruptionResponce.ServiceIndicator>>(){}.getType();
-                    List<DisruptionResponce.ServiceIndicator> cachedData = new Gson().fromJson(cachedJson, type);
-                    List<DisruptionResponce.ServiceIndicator> t = new ArrayList<>();
-                    List<DisruptionResponce.ServiceIndicator> o = new ArrayList<>();
-                    List<DisruptionResponce.ServiceIndicator> e = new ArrayList<>();
-                    int currentList = 0;
+        if (System.currentTimeMillis() - lastSync < 15 * 60 * 1000 && !cachedJson.isEmpty()) {
+            try {
+                DisruptionSyncManager.CachedDisruptionData cachedData =
+                        new Gson().fromJson(cachedJson, DisruptionSyncManager.CachedDisruptionData.class);
 
-                    for (DisruptionResponce.ServiceIndicator si : cachedData) {
-                        if ("SEPARATOR".equals(si.tocCode)) {
-                            if ("OTHER OPERATORS".equals(si.tocName)) currentList = 1;
-                            else if ("ENGINEERING WORKS".equals(si.tocName)) currentList = 2;
-                            continue;
-                        }
-                        if (currentList == 0) t.add(si);
-                        else if (currentList == 1) o.add(si);
-                        else if (currentList == 2) e.add(si);
-                    }
+                if (cachedData != null) {
+                    List<DisruptionResponce.ServiceIndicator> t = cachedData.tracked != null ? cachedData.tracked : new ArrayList<>();
+                    List<DisruptionResponce.ServiceIndicator> o = cachedData.others != null ? cachedData.others : new ArrayList<>();
+                    List<DisruptionResponce.ServiceIndicator> e = cachedData.engineering != null ? cachedData.engineering : new ArrayList<>();
 
                     updateUI(t, o, e);
+
                     SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm", Locale.getDefault());
                     String syncTime = timeFormat.format(new Date(lastSync));
                     liveIndicator.setText("◉ Cached (" + syncTime + ")");
                     return;
-                } catch (Exception e) {
-                    e.printStackTrace();
                 }
+            } catch (Exception e) {
+                android.util.Log.e("DisruptionsFragment", "Cache parsing failed, clearing bad cache", e);
+
+                prefs.edit().remove("CACHED_TOC_DATA_ALL").apply();
             }
         }
-        fetchRailData(api);
+
+        swipeRefreshLayout.setRefreshing(true);
+        fetchRailData();
     }
 
-    private void fetchRailData(NationalRailAPI api) {
+    private void fetchRailData() {
         swipeRefreshLayout.setRefreshing(true);
         liveIndicator.setText("◉ Syncing Real-Time Delays...");
 

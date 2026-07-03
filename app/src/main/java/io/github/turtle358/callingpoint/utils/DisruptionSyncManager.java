@@ -13,7 +13,6 @@ import com.google.gson.Gson;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -30,6 +29,19 @@ import io.github.turtle358.callingpoint.widget.AppWidgetProvider;
 import retrofit2.Response;
 
 public class DisruptionSyncManager {
+    public static class CachedDisruptionData {
+        public List<DisruptionResponce.ServiceIndicator> tracked;
+        public List<DisruptionResponce.ServiceIndicator> others;
+        public List<DisruptionResponce.ServiceIndicator> engineering;
+
+        public CachedDisruptionData(List<DisruptionResponce.ServiceIndicator> tracked,
+                                    List<DisruptionResponce.ServiceIndicator> others,
+                                    List<DisruptionResponce.ServiceIndicator> engineering) {
+            this.tracked = tracked;
+            this.others = others;
+            this.engineering = engineering;
+        }
+    }
 
     public interface SyncCallback {
         void onSuccess(List<DisruptionResponce.ServiceIndicator> tracked,
@@ -85,8 +97,7 @@ public class DisruptionSyncManager {
                         String currentDesc = incident.description != null ? incident.description.toLowerCase() : "";
                         String simplifiedStatus = "Minor Disruption";
 
-                        boolean isEngineering = (currentSummary.contains("engineering work") || currentDesc.contains("engineering work"))
-                                && !currentSummary.contains("overrun") && !currentDesc.contains("overrun");
+                        boolean isEngineering = (currentSummary.contains("engineering work") || currentDesc.contains("engineering work"));
 
                         boolean isStrike = currentSummary.contains("industrial action") ||
                                 currentDesc.contains("industrial action");
@@ -172,26 +183,9 @@ public class DisruptionSyncManager {
                 trackedLive.sort((a, b) -> a.tocName.compareToIgnoreCase(b.tocName));
                 othersLive.sort((a, b) -> a.tocName.compareToIgnoreCase(b.tocName));
                 plannedWorks.sort((a, b) -> a.tocName.compareToIgnoreCase(b.tocName));
-
-                List<DisruptionResponce.ServiceIndicator> fullAppData = new ArrayList<>(trackedLive);
-                if (!trackedLive.isEmpty() && !othersLive.isEmpty()) {
-                    DisruptionResponce.ServiceIndicator sep = new DisruptionResponce.ServiceIndicator();
-                    sep.tocCode = "SEPARATOR";
-                    sep.tocName = "OTHER OPERATORS";
-                    fullAppData.add(sep);
-                }
-
-                fullAppData.addAll(othersLive);
-                if (!plannedWorks.isEmpty()) {
-                    DisruptionResponce.ServiceIndicator sep = new DisruptionResponce.ServiceIndicator();
-                    sep.tocCode = "SEPARATOR";
-                    sep.tocName = "ENGINEERING WORKS";
-                    fullAppData.add(sep);
-                    fullAppData.addAll(plannedWorks);
-                }
-
+                CachedDisruptionData cacheContainer = new CachedDisruptionData(trackedLive, othersLive, plannedWorks);
+                String appJson = new Gson().toJson(cacheContainer);
                 String widgetJson = new Gson().toJson(trackedLive);
-                String appJson = new Gson().toJson(fullAppData);
 
                 prefs.edit()
                         .putString("CACHED_TOC_DATA", widgetJson)
