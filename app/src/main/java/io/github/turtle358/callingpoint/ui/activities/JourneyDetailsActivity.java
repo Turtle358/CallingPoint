@@ -9,6 +9,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.ColorUtils;
 import androidx.core.view.WindowCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -37,9 +38,17 @@ public class JourneyDetailsActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView()).setAppearanceLightStatusBars(false);
         setContentView(R.layout.activity_journey_details);
+
+        View topHeaderBar = findViewById(R.id.topHeaderBar);
+        if (topHeaderBar != null) {
+            androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(topHeaderBar, (v, insets) -> {
+                int statusBarHeight = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.statusBars()).top;
+                v.getLayoutParams().height = statusBarHeight;
+                v.requestLayout();
+                return insets;
+            });
+        }
 
         JourneyOption journey = (JourneyOption) getIntent().getSerializableExtra("JOURNEY_OPTION");
 
@@ -48,14 +57,24 @@ public class JourneyDetailsActivity extends AppCompatActivity {
             return;
         }
 
-        View topHeaderBar = findViewById(R.id.topHeaderBar);
         TextView tvTitle = findViewById(R.id.tvDetailTitle);
         TextView tvSummary = findViewById(R.id.tvDetailSummary);
         RecyclerView recyclerJourneyLegs = findViewById(R.id.recyclerJourneyLegs);
 
+        View btnBack = findViewById(R.id.btnBack);
+        if (btnBack != null) {
+            btnBack.setOnClickListener(v -> finish());
+        }
+
         String firstOperator = journey.legs.get(0).operatorName;
         int brandColour = TOCBrandHelper.getColourForToc(firstOperator);
-        topHeaderBar.setBackgroundColor(brandColour);
+
+        if (topHeaderBar != null) {
+            topHeaderBar.setBackgroundColor(brandColour);
+        }
+
+        boolean isLightColour = ColorUtils.calculateLuminance(brandColour) > 0.5;
+        WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView()).setAppearanceLightStatusBars(isLightColour);
 
         String origin = journey.legs.get(0).fromStationName;
         String dest = journey.legs.get(journey.legs.size() - 1).toStationName;

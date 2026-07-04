@@ -9,7 +9,7 @@
     <View
         android:id="@+id/topHeaderBar"
         android:layout_width="match_parent"
-        android:layout_height="48dp"
+        android:layout_height="0dp"
         android:background="@color/bg_card" />
 
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
@@ -34,93 +34,99 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginHorizontal="12dp"
-                    android:layout_marginTop="12dp"
+                    android:layout_marginTop="4dp"
                     android:layout_marginBottom="4dp"
                     app:cardBackgroundColor="@color/bg_card"
                     app:cardCornerRadius="24dp"
                     app:cardElevation="2dp"
                     app:cardUseCompatPadding="true">
 
-                    <LinearLayout
+                    <androidx.constraintlayout.widget.ConstraintLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="20dp">
+                        android:paddingHorizontal="16dp"
+                        android:paddingVertical="20dp">
+
+                        <ImageButton
+                            android:id="@+id/btnBack"
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:src="@drawable/ic_chevron_down"
+                            android:rotation="90"
+                            app:tint="@color/text_primary"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toTopOf="parent"
+                            app:layout_constraintBottom_toBottomOf="parent" />
 
                         <LinearLayout
-                            android:layout_width="match_parent"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:gravity="top"
-                            android:orientation="horizontal">
+                            android:orientation="vertical"
+                            android:layout_marginStart="8dp"
+                            android:layout_marginEnd="8dp"
+                            app:layout_constraintEnd_toStartOf="@id/btnPinService"
+                            app:layout_constraintStart_toEndOf="@id/btnBack"
+                            app:layout_constraintTop_toTopOf="parent"
+                            app:layout_constraintBottom_toBottomOf="parent">
+
+                            <TextView
+                                android:id="@+id/tvHeaderOperator"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginBottom="2dp"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="14sp" />
 
                             <TextView
                                 android:id="@+id/tvHeaderDestination"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_marginEnd="16dp"
-                                android:layout_weight="1"
-                                android:letterSpacing="-0.02"
-                                android:text="Loading route..."
-                                android:textColor="@color/text_primary"
-                                android:textSize="22sp"
-                                android:textStyle="bold" />
-
-                            <ImageButton
-                                android:id="@+id/btnPinService"
-                                android:layout_width="32dp"
-                                android:layout_height="32dp"
-                                android:background="?attr/selectableItemBackgroundBorderless"
-                                android:src="@drawable/ic_bookmark_outline"
-                                app:tint="@color/text_primary" />
-                        </LinearLayout>
-
-                        <TextView
-                            android:id="@+id/tvHeaderOperator"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:textColor="@color/text_secondary"
-                            android:textSize="15sp" />
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="16dp"
-                            android:gravity="center_vertical"
-                            android:orientation="horizontal">
-
-                            <TextView
-                                android:id="@+id/tvHeaderTime"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:textColor="@color/text_primary"
-                                android:textSize="18sp"
-                                android:textStyle="bold" />
-
-                            <TextView
-                                android:id="@+id/tvHeaderStatus"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginStart="8dp"
-                                android:textColor="#00875A"
-                                android:textSize="16sp"
+                                android:textSize="24sp"
                                 android:textStyle="bold"
-                                android:visibility="gone" />
-
-                            <View
-                                android:layout_width="0dp"
-                                android:layout_height="0dp"
-                                android:layout_weight="1" />
-
-                            <TextView
-                                android:id="@+id/tvHeaderPlatform"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
                                 android:textColor="@color/text_primary"
-                                android:textSize="16sp"
-                                android:textStyle="bold" />
+                                android:letterSpacing="-0.02" />
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="6dp"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal">
+
+                                <TextView
+                                    android:id="@+id/tvHeaderTime"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:textColor="@color/text_primary"
+                                    android:textSize="16sp"
+                                    android:textStyle="bold" />
+
+                                <TextView
+                                    android:id="@+id/tvHeaderStatus"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="8dp"
+                                    android:textColor="#00875A"
+                                    android:textSize="15sp"
+                                    android:textStyle="bold"
+                                    android:visibility="gone" />
+
+
+                            </LinearLayout>
                         </LinearLayout>
-                    </LinearLayout>
+
+                        <ImageButton
+                            android:id="@+id/btnPinService"
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:src="@drawable/ic_bookmark_outline"
+                            app:tint="@color/text_primary"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintTop_toTopOf="parent"
+                            app:layout_constraintBottom_toBottomOf="parent" />
+                    </androidx.constraintlayout.widget.ConstraintLayout>
                 </androidx.cardview.widget.CardView>
 
                 <androidx.cardview.widget.CardView
@@ -189,15 +195,31 @@
                         android:paddingTop="20dp"
                         android:paddingBottom="12dp">
 
-                        <TextView
-                            android:layout_width="wrap_content"
+                        <LinearLayout
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
+                            android:orientation="horizontal"
                             android:layout_marginHorizontal="20dp"
                             android:layout_marginBottom="12dp"
-                            android:text="Calling points"
-                            android:textColor="@color/text_primary"
-                            android:textSize="18sp"
-                            android:textStyle="bold" />
+                            android:gravity="center_vertical">
+
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="Calling points"
+                                android:textColor="@color/text_primary"
+                                android:textSize="18sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/tvHeaderPlatform"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textColor="@color/text_primary"
+                                android:textSize="16sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
 
                         <androidx.recyclerview.widget.RecyclerView
                             android:id="@+id/recyclerTimeline"

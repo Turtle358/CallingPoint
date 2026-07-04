@@ -79,6 +79,13 @@ public class JourneySearchActivity extends AppCompatActivity {
 
         etFromCrs.requestFocus();
 
+        View btnBack = findViewById(R.id.btnBack);
+        if (btnBack != null) {
+            btnBack.setOnClickListener(v -> {
+                finish();
+            });
+        }
+
         recyclerSearchResults.setLayoutManager(new LinearLayoutManager(this));
         adapter = new JourneyAdapter(new ArrayList<>(), route -> {
             Intent intent = new Intent(this, JourneyDetailsActivity.class);

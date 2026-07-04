@@ -1,6 +1,5 @@
 package io.github.turtle358.callingpoint.ui.activities;
 
-import android.content.Context;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.view.View;
@@ -10,6 +9,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.ColorUtils;
 import androidx.core.view.WindowCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -46,11 +46,18 @@ public class ServiceDetailsActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView()).setAppearanceLightStatusBars(false);
         setContentView(R.layout.activity_service_details);
 
         topHeaderBar = findViewById(R.id.topHeaderBar);
+        if (topHeaderBar != null) {
+            androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(topHeaderBar, (v, insets) -> {
+                int statusBarHeight = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.statusBars()).top;
+                v.getLayoutParams().height = statusBarHeight;
+                v.requestLayout();
+                return insets;
+            });
+        }
+
         tvHeaderDestination = findViewById(R.id.tvHeaderDestination);
         tvHeaderTime = findViewById(R.id.tvHeaderTime);
         tvHeaderStatus = findViewById(R.id.tvHeaderStatus);
@@ -66,6 +73,11 @@ public class ServiceDetailsActivity extends AppCompatActivity {
 
         recyclerCoaches.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
         recyclerTimeline.setLayoutManager(new LinearLayoutManager(this));
+
+        View btnBack = findViewById(R.id.btnBack);
+        if (btnBack != null) {
+            btnBack.setOnClickListener(v -> finish());
+        }
 
         serviceId = getIntent().getStringExtra("SERVICE_ID");
         if (serviceId != null) {
@@ -109,9 +121,13 @@ public class ServiceDetailsActivity extends AppCompatActivity {
 
                     String operatorName = data.operator != null ? data.operator : "Unknown";
                     int brandColour = TOCBrandHelper.getColourForToc(operatorName);
+
                     if (topHeaderBar != null) {
                         topHeaderBar.setBackgroundColor(brandColour);
                     }
+
+                    boolean isLightColour = ColorUtils.calculateLuminance(brandColour) > 0.5;
+                    WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView()).setAppearanceLightStatusBars(isLightColour);
 
                     List<ServiceDetailsResponse.TimelinePoint> allPoints = new ArrayList<>();
                     if (data.previousCallingPoints != null && !data.previousCallingPoints.isEmpty()) {

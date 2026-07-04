@@ -88,21 +88,10 @@ public class StationActivity extends AppCompatActivity {
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        // Draw edge-to-edge and make the status bar transparent so it matches
-        // the activity's background, the same way the parent Activity used to
-        // handle it when this screen was a hosted Fragment.
         androidx.core.view.WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         getWindow().setStatusBarColor(android.graphics.Color.TRANSPARENT);
 
         setContentView(R.layout.activity_station);
-
-        // Use the actual inflated layout as our root, not the android.R.id.content
-        // wrapper around it. The wrapper has no background, so padding it for the
-        // status bar left a gap above our LinearLayout showing the window's
-        // default background instead of bg_screen. The inflated layout already
-        // fills the window and carries the right background, so insetting it
-        // directly lets that background paint all the way behind the status bar.
         rootView = ((ViewGroup) findViewById(android.R.id.content)).getChildAt(0);
 
         androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(rootView, (v, insets) -> {
@@ -110,6 +99,13 @@ public class StationActivity extends AppCompatActivity {
             v.setPadding(0, systemBars.top, 0, 0);
             return insets;
         });
+
+        View btnBack = findViewById(R.id.btnBack);
+        if (btnBack != null) {
+            btnBack.setOnClickListener(v -> {
+                finish();
+            });
+        }
 
         if (getIntent().getExtras() != null) {
             Bundle extras = getIntent().getExtras();

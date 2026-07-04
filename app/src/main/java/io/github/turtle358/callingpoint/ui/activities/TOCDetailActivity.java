@@ -47,25 +47,37 @@ public class TOCDetailActivity extends AppCompatActivity {
 
     int brandColour;
 
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         setContentView(R.layout.activity_toc_detail);
+
+        View topHeaderBar = findViewById(R.id.topHeaderBar);
+        if (topHeaderBar != null) {
+            androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(topHeaderBar, (v, insets) -> {
+                int statusBarHeight = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.statusBars()).top;
+                v.getLayoutParams().height = statusBarHeight;
+                v.requestLayout();
+                return insets;
+            });
+        }
 
         String tocName = getIntent().getStringExtra("TOC_NAME");
         currentTocCode = getIntent().getStringExtra("TOC_CODE");
         String tocStatus = getIntent().getStringExtra("TOC_STATUS");
 
         brandColour = TOCBrandHelper.getColourForToc(tocName);
+
+        if (topHeaderBar != null) {
+            topHeaderBar.setBackgroundColor(brandColour);
+        }
+
         isLightColour = ColorUtils.calculateLuminance(brandColour) > 0.5;
         WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView()).setAppearanceLightStatusBars(isLightColour);
 
         String activeJson = getIntent().getStringExtra("TOC_ACTIVE_JSON");
         String plannedJson = getIntent().getStringExtra("TOC_PLANNED_JSON");
 
-        View headerColourBar = findViewById(R.id.headerColorBar);
         TextView tvName = findViewById(R.id.detailTocName);
         TextView tvCode = findViewById(R.id.detailTocCode);
         ImageView tocIcon = findViewById(R.id.detailTocIcon);
@@ -76,6 +88,11 @@ public class TOCDetailActivity extends AppCompatActivity {
         View sectionPlannedWorks = findViewById(R.id.sectionPlannedWorks);
         LinearLayout layoutActiveIncidents = findViewById(R.id.layoutActiveIncidents);
         LinearLayout layoutPlannedWorks = findViewById(R.id.layoutPlannedWorks);
+
+        View btnBack = findViewById(R.id.btnBack);
+        if (btnBack != null) {
+            btnBack.setOnClickListener(v -> finish());
+        }
 
         tvName.setText(tocName != null ? tocName : "Unknown Operator");
         tvCode.setText(currentTocCode != null ? currentTocCode : "--");
@@ -110,7 +127,6 @@ public class TOCDetailActivity extends AppCompatActivity {
         });
 
         if (tocName != null) {
-            headerColourBar.setBackgroundColor(brandColour);
             tvCode.setBackgroundTintList(ColorStateList.valueOf(brandColour));
             tocIcon.setImageResource(TOCBrandHelper.getIconForToc(tocName));
 
@@ -349,7 +365,7 @@ public class TOCDetailActivity extends AppCompatActivity {
     private void saveTrackedTocs() {
         String joined = TextUtils.join(",", trackedTocs);
         prefs.edit()
-                .putString("WIDGET_TRACKED_TOCS", joined)
+                .putString("WIDGET_TRACKED_Tocs", joined)
                 .putLong("LAST_SYNC_TIME", 0)
                 .apply();
 
