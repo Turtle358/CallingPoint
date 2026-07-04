@@ -1,5 +1,6 @@
 package io.github.turtle358.callingpoint.ui.adapters;
 
+import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -7,6 +8,8 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.appcompat.widget.SwitchCompat;
+import androidx.core.content.ContextCompat;
+import androidx.core.graphics.ColorUtils;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.List;
@@ -44,25 +47,40 @@ public class TocSettingAdapter extends RecyclerView.Adapter<TocSettingAdapter.Vi
         Toc toc = tocs.get(position);
 
         holder.tvName.setText(toc.name);
+        int brandColor;
         try {
-            holder.colorBar.setBackgroundColor(Color.parseColor(toc.colour));
+            brandColor = Color.parseColor(toc.colour);
         } catch (Exception e) {
-            holder.colorBar.setBackgroundColor(Color.parseColor("#333333"));
+            brandColor = Color.parseColor("#333333");
         }
-
-        // Remove listener temporarily so we don't trigger saves while scrolling
+        holder.colorBar.setBackgroundColor(brandColor);
+        boolean isTracked = trackedCodes.contains(toc.code);
         holder.toggleSwitch.setOnCheckedChangeListener(null);
-        holder.toggleSwitch.setChecked(trackedCodes.contains(toc.code));
+        holder.toggleSwitch.setChecked(isTracked);
+        updateSwitchTrackColor(holder.toggleSwitch, isTracked, brandColor);
 
-        holder.toggleSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> listener.onToggled(toc.code, isChecked));
+        int finalBrandColor = brandColor;
+        holder.toggleSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            listener.onToggled(toc.code, isChecked);
+            updateSwitchTrackColor(holder.toggleSwitch, isChecked, finalBrandColor);
+        });
 
-        // Allow tapping anywhere on the row to flip the switch
         holder.itemView.setOnClickListener(v -> holder.toggleSwitch.toggle());
     }
 
     @Override
     public int getItemCount() {
         return tocs.size();
+    }
+
+    private void updateSwitchTrackColor(SwitchCompat switchCompat, boolean isChecked, int brandColor) {
+        if (isChecked) {
+            int trackColor = ColorUtils.setAlphaComponent(brandColor, 150);
+            switchCompat.setTrackTintList(ColorStateList.valueOf(trackColor));
+        } else {
+            int defaultColor = ContextCompat.getColor(switchCompat.getContext(), R.color.divider_color);
+            switchCompat.setTrackTintList(ColorStateList.valueOf(defaultColor));
+        }
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
