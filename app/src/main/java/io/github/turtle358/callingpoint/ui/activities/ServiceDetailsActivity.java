@@ -158,7 +158,13 @@ public class ServiceDetailsActivity extends AppCompatActivity {
                     if (originName.equals(destName)) {
                         tvHeaderDestination.setText(currentStation.locationName);
                     } else {
-                        tvHeaderDestination.setText(originName + " to " + destName);
+                        String titleText = originName + " to " + destName;
+                        tvHeaderDestination.setText(titleText);
+                        tvHeaderDestination.post(() -> {
+                            if (tvHeaderDestination.getLineCount() > 1) {
+                                tvHeaderDestination.setText(originName + "\nto " + destName);
+                            }
+                        });
                     }
 
                     int stopsCount = allPoints.size() - 1;

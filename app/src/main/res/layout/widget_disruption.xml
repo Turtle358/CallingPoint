@@ -112,15 +112,15 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:layout_marginEnd="8dp">
+            android:layout_marginEnd="6dp">
 
             <TextView
                 android:id="@+id/badge1_text"
                 android:layout_width="wrap_content"
                 android:layout_height="20dp"
                 android:minWidth="32dp"
-                android:layout_marginEnd="6dp"
-                android:paddingHorizontal="6dp"
+                android:layout_marginEnd="3dp"
+                android:paddingHorizontal="4dp"
                 android:background="@drawable/bg_pill_base"
                 android:gravity="center"
                 android:textColor="#FFFFFF"
@@ -134,7 +134,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="20dp"
                 android:minWidth="32dp"
-                android:paddingHorizontal="6dp"
+                android:paddingHorizontal="4dp"
                 android:background="@drawable/bg_pill_base"
                 android:gravity="center"
                 android:textColor="#FFFFFF"

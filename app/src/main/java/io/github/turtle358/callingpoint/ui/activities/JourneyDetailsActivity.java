@@ -78,7 +78,15 @@ public class JourneyDetailsActivity extends AppCompatActivity {
 
         String origin = journey.legs.get(0).fromStationName;
         String dest = journey.legs.get(journey.legs.size() - 1).toStationName;
-        tvTitle.setText(origin + " to " + dest);
+
+        String titleText = origin + " to " + dest;
+        tvTitle.setText(titleText);
+
+        tvTitle.post(() -> {
+            if (tvTitle.getLineCount() > 1) {
+                tvTitle.setText(origin + "\nto " + dest);
+            }
+        });
 
         String summary = journey.departTime + " — " + journey.arriveTime + "  •  " + journey.duration;
         tvSummary.setText(summary);
