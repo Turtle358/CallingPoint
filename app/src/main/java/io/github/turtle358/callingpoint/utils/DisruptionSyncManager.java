@@ -97,7 +97,7 @@ public class DisruptionSyncManager {
                         String currentDesc = incident.description != null ? incident.description.toLowerCase() : "";
                         String simplifiedStatus = "Minor Disruption";
 
-                        boolean isEngineering = (currentSummary.contains("engineering work") || currentDesc.contains("engineering work"));
+                        boolean isEngineering = (currentSummary.contains("engineering work") || currentDesc.contains("engineering work")) && !(currentDesc.contains("overrun") || currentSummary.contains("overrunning"));
 
                         boolean isStrike = currentSummary.contains("industrial action") ||
                                 currentDesc.contains("industrial action");
