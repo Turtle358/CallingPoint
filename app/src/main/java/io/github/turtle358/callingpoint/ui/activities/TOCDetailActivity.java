@@ -219,7 +219,9 @@ public class TOCDetailActivity extends AppCompatActivity {
 
                 for (io.github.turtle358.callingpoint.models.IncidentResponse.AffectedOperator op : incident.affectedOperators) {
                     TextView pill = new TextView(this);
-                    pill.setText(op.tocCode);
+                    String pillAcronym = TOCBrandHelper.getAcronymForCode(op.tocCode);
+                    pill.setText(pillAcronym != null ? pillAcronym : op.tocCode);
+
                     pill.setTextSize(10f);
                     pill.setTypeface(null, android.graphics.Typeface.BOLD);
                     pill.setPadding((int)(6 * density), (int)(2 * density), (int)(6 * density), (int)(2 * density));

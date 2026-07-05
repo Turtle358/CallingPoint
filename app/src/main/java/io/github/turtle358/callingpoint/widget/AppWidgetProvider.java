@@ -6,7 +6,9 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.ColorStateList;
 import android.graphics.Color;
+import android.os.Build;
 import android.view.View;
 import android.widget.RemoteViews;
 
@@ -18,19 +20,11 @@ import com.google.gson.reflect.TypeToken;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
 
 import io.github.turtle358.callingpoint.R;
-import io.github.turtle358.callingpoint.api.APIClient;
-import io.github.turtle358.callingpoint.api.NationalRailAPI;
 import io.github.turtle358.callingpoint.models.DisruptionResponce;
-import io.github.turtle358.callingpoint.models.IncidentResponse;
-import io.github.turtle358.callingpoint.models.IncidentSearchRequest;
 import io.github.turtle358.callingpoint.ui.activities.MainActivity;
 import io.github.turtle358.callingpoint.utils.TOCBrandHelper;
 
@@ -127,12 +121,13 @@ public class AppWidgetProvider extends android.appwidget.AppWidgetProvider {
             if (disruptedTocs.size() <= 2) {
                 views.setViewVisibility(R.id.layoutPills, View.VISIBLE);
                 views.setViewVisibility(R.id.layoutBars, View.GONE);
-                updatePill(views, R.id.badge1_container, R.id.badge1_bg, R.id.badge1_text, disruptedTocs.get(0));
+
+                updatePill(views, R.id.badge1_text, disruptedTocs.get(0));
 
                 if (disruptedTocs.size() == 2) {
-                    updatePill(views, R.id.badge2_container, R.id.badge2_bg, R.id.badge2_text, disruptedTocs.get(1));
+                    updatePill(views, R.id.badge2_text, disruptedTocs.get(1));
                 } else {
-                    views.setViewVisibility(R.id.badge2_container, View.GONE);
+                    views.setViewVisibility(R.id.badge2_text, View.GONE);
                 }
             } else {
                 views.setViewVisibility(R.id.layoutPills, View.GONE);
@@ -151,11 +146,16 @@ public class AppWidgetProvider extends android.appwidget.AppWidgetProvider {
         }
     }
 
-    private void updatePill(RemoteViews views, int containerId, int bgId, int textId, DisruptionResponce.ServiceIndicator toc) {
+    private void updatePill(RemoteViews views, int textId, DisruptionResponce.ServiceIndicator toc) {
         int colour = TOCBrandHelper.getColourForToc(toc.tocName);
-        views.setInt(bgId, "setColorFilter", colour);
-        views.setTextViewText(textId, toc.tocCode);
-        views.setViewVisibility(containerId, View.VISIBLE);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            views.setColorStateList(textId, "setBackgroundTintList", ColorStateList.valueOf(colour));
+        }
+
+        String acronym = TOCBrandHelper.getAcronymForCode(toc.tocCode);
+        views.setTextViewText(textId, acronym != null ? acronym : toc.tocCode);
+
+        views.setViewVisibility(textId, View.VISIBLE);
 
         boolean isLightColour = ColorUtils.calculateLuminance(colour) > 0.5;
         views.setTextColor(textId, isLightColour ? Color.BLACK : Color.WHITE);
@@ -186,5 +186,4 @@ public class AppWidgetProvider extends android.appwidget.AppWidgetProvider {
             }).start();
         }
     }
-
 }

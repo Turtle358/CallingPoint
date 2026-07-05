@@ -10,8 +10,10 @@
 
     <TextView
         android:id="@+id/tvTocCode"
-        android:layout_width="42dp"
+        android:layout_width="wrap_content"
         android:layout_height="24dp"
+        android:minWidth="42dp"
+        android:paddingHorizontal="6dp"
         android:gravity="center"
         android:textColor="#FFFFFF"
         android:textSize="12sp"

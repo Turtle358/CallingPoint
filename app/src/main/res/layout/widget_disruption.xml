@@ -114,52 +114,34 @@
             android:gravity="center_vertical"
             android:layout_marginEnd="8dp">
 
-            <RelativeLayout
-                android:id="@+id/badge1_container"
-                android:layout_width="32dp"
-                android:layout_height="18dp"
+            <TextView
+                android:id="@+id/badge1_text"
+                android:layout_width="wrap_content"
+                android:layout_height="20dp"
+                android:minWidth="32dp"
                 android:layout_marginEnd="6dp"
-                android:visibility="gone">
+                android:paddingHorizontal="6dp"
+                android:background="@drawable/bg_pill_base"
+                android:gravity="center"
+                android:textColor="#FFFFFF"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:visibility="gone"
+                android:includeFontPadding="false" />
 
-                <ImageView
-                    android:id="@+id/badge1_bg"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:src="@drawable/bg_pill_base" />
-
-                <TextView
-                    android:id="@+id/badge1_text"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:gravity="center"
-                    android:textColor="#FFFFFF"
-                    android:textSize="11sp"
-                    android:textStyle="bold"
-                    android:includeFontPadding="false" />
-            </RelativeLayout>
-
-            <RelativeLayout
-                android:id="@+id/badge2_container"
-                android:layout_width="32dp"
-                android:layout_height="18dp"
-                android:visibility="gone">
-
-                <ImageView
-                    android:id="@+id/badge2_bg"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:src="@drawable/bg_pill_base" />
-
-                <TextView
-                    android:id="@+id/badge2_text"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:gravity="center"
-                    android:textColor="#FFFFFF"
-                    android:textSize="11sp"
-                    android:textStyle="bold"
-                    android:includeFontPadding="false" />
-            </RelativeLayout>
+            <TextView
+                android:id="@+id/badge2_text"
+                android:layout_width="wrap_content"
+                android:layout_height="20dp"
+                android:minWidth="32dp"
+                android:paddingHorizontal="6dp"
+                android:background="@drawable/bg_pill_base"
+                android:gravity="center"
+                android:textColor="#FFFFFF"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:visibility="gone"
+                android:includeFontPadding="false" />
         </LinearLayout>
 
         <LinearLayout

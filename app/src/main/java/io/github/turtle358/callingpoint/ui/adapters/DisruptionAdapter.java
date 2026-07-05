@@ -58,7 +58,8 @@ public class DisruptionAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
         if (holder instanceof DisruptionViewHolder) {
             DisruptionViewHolder dHolder = (DisruptionViewHolder) holder;
             dHolder.tvTocName.setText(item.tocName);
-            dHolder.tvTocCode.setText(item.tocCode);
+            String acronym = TOCBrandHelper.getAcronymForCode(item.tocCode);
+            dHolder.tvTocCode.setText(acronym != null ? acronym : item.tocCode);
             dHolder.tvStatus.setText(item.status);
 
             int brandColour = TOCBrandHelper.getColourForToc(item.tocName);

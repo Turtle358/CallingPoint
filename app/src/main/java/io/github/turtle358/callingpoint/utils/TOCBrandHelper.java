@@ -47,6 +47,7 @@ public class TOCBrandHelper {
                 JSONObject obj = array.getJSONObject(i);
                 Toc t = new Toc();
                 t.code = obj.getString("code");
+                t.acronym = obj.optString("acronym", t.code);
                 t.name = obj.getString("name");
                 t.colour = obj.getString("colour");
                 t.manager = obj.getString("manager");
@@ -83,6 +84,16 @@ public class TOCBrandHelper {
         if (code == null) return "Unknown";
         for (Toc t : allTocs) {
             if (t.code.equalsIgnoreCase(code)) return t.name;
+        }
+        return code;
+    }
+
+    public static String getAcronymForCode(String code) {
+        if (code == null) return "??";
+        for (Toc t : allTocs) {
+            if (t.code.equalsIgnoreCase(code)) {
+                return t.acronym != null ? t.acronym : code;
+            }
         }
         return code;
     }

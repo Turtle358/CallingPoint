@@ -1,6 +1,7 @@
 [
   {
     "code": "TL",
+    "acronym": "TLK",
     "name": "Thameslink",
     "colour": "#FF5AA5",
     "manager": "gbr",
@@ -8,13 +9,15 @@
   },
   {
     "code": "SN",
+    "acronym": "SN",
     "name": "Southern",
-    "colour": "#8CC63F",
+    "colour": "#00402d",
     "manager": "gbr",
     "shown": 1
   },
   {
     "code": "GN",
+    "acronym": "GN",
     "name": "Great Northern",
     "colour": "#0099FF",
     "manager": "gbr",
@@ -22,6 +25,7 @@
   },
   {
     "code": "GX",
+    "acronym": "GX",
     "name": "Gatwick Express",
     "colour": "#EB1C24",
     "manager": "gbr",
@@ -29,6 +33,7 @@
   },
   {
     "code": "SW",
+    "acronym": "SWR",
     "name": "South Western Railway",
     "colour": "#243D8F",
     "manager": "gbr",
@@ -36,6 +41,7 @@
   },
   {
     "code": "SE",
+    "acronym": "SE",
     "name": "Southeastern",
     "colour": "#00AFEF",
     "manager": "gbr",
@@ -43,6 +49,7 @@
   },
   {
     "code": "GW",
+    "acronym": "GWR",
     "name": "Great Western Railway",
     "colour": "#0A493E",
     "manager": "national",
@@ -50,6 +57,7 @@
   },
   {
     "code": "VT",
+    "acronym": "AWC",
     "name": "Avanti West Coast",
     "colour": "#004354",
     "manager": "national",
@@ -57,20 +65,15 @@
   },
   {
     "code": "GR",
-    "name": "LNER",
+    "acronym": "LNER",
+    "name": "London North Eastern Railway",
     "colour": "#CE0F20",
     "manager": "gbr",
     "shown": 1
   },
   {
-    "code": "ZZ",
-    "name": "London North Eastern Railway",
-    "colour": "#CE0F20",
-    "manager": "gbr",
-    "shown": 0
-  },
-  {
     "code": "XC",
+    "acronym": "XC",
     "name": "CrossCountry",
     "colour": "#660F21",
     "manager": "national",
@@ -78,6 +81,7 @@
   },
   {
     "code": "EM",
+    "acronym": "EMR",
     "name": "East Midlands Railway",
     "colour": "#4C2F48",
     "manager": "national",
@@ -85,6 +89,7 @@
   },
   {
     "code": "CH",
+    "acronym": "CR",
     "name": "Chiltern Railways",
     "colour": "#00A8E0",
     "manager": "national",
@@ -92,6 +97,7 @@
   },
   {
     "code": "LE",
+    "acronym": "GA",
     "name": "Greater Anglia",
     "colour": "#D70428",
     "manager": "gbr",
@@ -99,6 +105,7 @@
   },
   {
     "code": "NT",
+    "acronym": "NT",
     "name": "Northern",
     "colour": "#0F0A5C",
     "manager": "gbr",
@@ -106,6 +113,7 @@
   },
   {
     "code": "TP",
+    "acronym": "TPE",
     "name": "TransPennine Express",
     "colour": "#05B2ED",
     "manager": "gbr",
@@ -113,6 +121,7 @@
   },
   {
     "code": "SR",
+    "acronym": "SR",
     "name": "ScotRail",
     "colour": "#002664",
     "manager": "national",
@@ -120,6 +129,7 @@
   },
   {
     "code": "AW",
+    "acronym": "TfW",
     "name": "Transport for Wales",
     "colour": "#FF0000",
     "manager": "national",
@@ -127,6 +137,7 @@
   },
   {
     "code": "ME",
+    "acronym": "MR",
     "name": "Merseyrail",
     "colour": "#FFF200",
     "manager": "national",
@@ -134,6 +145,7 @@
   },
   {
     "code": "CC",
+    "acronym": "c2c",
     "name": "c2c",
     "colour": "#B21082",
     "manager": "gbr",
@@ -141,6 +153,7 @@
   },
   {
     "code": "LO",
+    "acronym": "LO",
     "name": "London Overground",
     "colour": "#E86A10",
     "manager": "tfl",
@@ -148,13 +161,15 @@
   },
   {
     "code": "XR",
+    "acronym": "EL",
     "name": "Elizabeth line",
-    "colour": "#6950A1",
+    "colour": "#7c40c0",
     "manager": "tfl",
     "shown": 1
   },
   {
     "code": "HX",
+    "acronym": "HEX",
     "name": "Heathrow Express",
     "colour": "#532E63",
     "manager": "open-access",
@@ -162,6 +177,7 @@
   },
   {
     "code": "CS",
+    "acronym": "CS",
     "name": "Caledonian Sleeper",
     "colour": "#1A2F33",
     "manager": "national",
@@ -169,6 +185,7 @@
   },
   {
     "code": "GC",
+    "acronym": "GC",
     "name": "Grand Central",
     "colour": "#000000",
     "manager": "open-access",
@@ -176,6 +193,7 @@
   },
   {
     "code": "LF",
+    "acronym": "GC",
     "name": "Grand Central - North West",
     "colour": "#000000",
     "manager": "open-access",
@@ -183,6 +201,7 @@
   },
   {
     "code": "LD",
+    "acronym": "LU",
     "name": "Lumo",
     "colour": "#00B2E2",
     "manager": "open-access",
@@ -190,6 +209,7 @@
   },
   {
     "code": "ZX",
+    "acronym": "LU",
     "name": "Lumo Stirling",
     "colour": "#00B2E2",
     "manager": "open-access",
@@ -197,6 +217,7 @@
   },
   {
     "code": "SX",
+    "acronym": "STX",
     "name": "Stansted Express",
     "colour": "#E4002B",
     "manager": "gbr",
@@ -204,6 +225,7 @@
   },
   {
     "code": "ZN",
+    "acronym": "LU",
     "name": "London Underground",
     "colour": "#0019A8",
     "manager": "tfl",
@@ -211,6 +233,7 @@
   },
   {
     "code": "HT",
+    "acronym": "HT",
     "name": "Hull Trains",
     "colour": "#DE005C",
     "manager": "open-access",
@@ -218,13 +241,15 @@
   },
   {
     "code": "LN",
+    "acronym": "LNR",
     "name": "London Northwestern Railway",
-    "colour": "#00A91C",
+    "colour": "#006a60",
     "manager": "gbr",
     "shown": 1
   },
   {
     "code": "IL",
+    "acronym": "IL",
     "name": "Island Line - SWR",
     "colour": "#243D8F",
     "manager": "gbr",
@@ -232,13 +257,15 @@
   },
   {
     "code": "WM",
+    "acronym": "WMR",
     "name": "West Midlands Railway",
-    "colour": "#FF8200",
+    "colour": "#420b56",
     "manager": "gbr",
     "shown": 1
   },
   {
     "code": "ZZ",
+    "acronym": "LNW",
     "name": "LNR & WMR",
     "colour": "#FF8200",
     "manager": "gbr",
@@ -246,6 +273,7 @@
   },
   {
     "code": "ES",
+    "acronym": "ES",
     "name": "Eurostar",
     "colour": "#002055",
     "manager": "eurostar",
