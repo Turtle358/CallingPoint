@@ -22,6 +22,7 @@ import androidx.core.view.WindowCompat;
 import androidx.core.graphics.ColorUtils;
 import android.graphics.Color;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 
@@ -79,7 +80,6 @@ public class TOCDetailActivity extends AppCompatActivity {
         String plannedJson = getIntent().getStringExtra("TOC_PLANNED_JSON");
 
         TextView tvName = findViewById(R.id.detailTocName);
-        TextView tvCode = findViewById(R.id.detailTocCode);
         ImageView tocIcon = findViewById(R.id.detailTocIcon);
         TextView tvStatus = findViewById(R.id.detailTocStatus);
         btnPinTocWidget = findViewById(R.id.btnPinTocWidget);
@@ -95,7 +95,6 @@ public class TOCDetailActivity extends AppCompatActivity {
         }
 
         tvName.setText(tocName != null ? tocName : "Unknown Operator");
-        tvCode.setText(currentTocCode != null ? currentTocCode : "--");
         tvStatus.setText(tocStatus != null ? tocStatus : "Status Unavailable");
 
         prefs = getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
@@ -127,11 +126,7 @@ public class TOCDetailActivity extends AppCompatActivity {
         });
 
         if (tocName != null) {
-            tvCode.setBackgroundTintList(ColorStateList.valueOf(brandColour));
             tocIcon.setImageResource(TOCBrandHelper.getIconForToc(tocName));
-
-            isLightColour = ColorUtils.calculateLuminance(brandColour) > 0.5;
-            tvCode.setTextColor(isLightColour ? Color.BLACK : Color.WHITE);
         }
 
         Gson gson = new Gson();
@@ -365,7 +360,7 @@ public class TOCDetailActivity extends AppCompatActivity {
     private void saveTrackedTocs() {
         String joined = TextUtils.join(",", trackedTocs);
         prefs.edit()
-                .putString("WIDGET_TRACKED_Tocs", joined)
+                .putString("WIDGET_TRACKED_TOCS", joined)
                 .putLong("LAST_SYNC_TIME", 0)
                 .apply();
 

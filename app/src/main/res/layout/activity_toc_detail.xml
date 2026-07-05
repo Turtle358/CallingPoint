@@ -65,40 +65,19 @@
                         app:layout_constraintTop_toTopOf="parent"
                         app:layout_constraintBottom_toBottomOf="parent">
 
-                        <LinearLayout
+                        <ImageView
+                            android:id="@+id/detailTocIcon"
                             android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal"
-                            android:gravity="center_vertical"
-                            android:layout_marginBottom="4dp">
-
-                            <TextView
-                                android:id="@+id/detailTocCode"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:background="@drawable/bg_pill_base"
-                                android:includeFontPadding="false"
-                                android:paddingHorizontal="8dp"
-                                android:paddingVertical="2dp"
-                                android:text="TOC"
-                                android:textColor="#FFFFFF"
-                                android:textSize="12sp"
-                                android:textStyle="bold" />
-
-                            <ImageView
-                                android:id="@+id/detailTocIcon"
-                                android:layout_width="wrap_content"
-                                android:layout_height="20dp"
-                                android:layout_marginStart="8dp"
-                                android:adjustViewBounds="true"
-                                android:contentDescription="Operator Logo" />
-                        </LinearLayout>
+                            android:layout_height="28dp"
+                            android:layout_marginBottom="8dp"
+                            android:adjustViewBounds="true"
+                            android:contentDescription="Operator Logo" />
 
                         <TextView
                             android:id="@+id/detailTocName"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:textSize="24sp"
+                            android:textSize="28sp"
                             android:textStyle="bold"
                             android:textColor="@color/text_primary"
                             android:letterSpacing="-0.02" />
@@ -107,7 +86,7 @@
                             android:id="@+id/detailTocStatus"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
+                            android:layout_marginTop="4dp"
                             android:textSize="16sp"
                             android:textColor="@color/text_secondary" />
                     </LinearLayout>
