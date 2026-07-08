@@ -2,7 +2,6 @@ package io.github.turtle358.callingpoint.ui.activities;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.content.res.ColorStateList;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.text.method.LinkMovementMethod;
@@ -22,7 +21,6 @@ import androidx.core.view.WindowCompat;
 import androidx.core.graphics.ColorUtils;
 import android.graphics.Color;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 
@@ -38,7 +36,7 @@ import io.github.turtle358.callingpoint.R;
 import io.github.turtle358.callingpoint.models.IncidentResponse;
 import io.github.turtle358.callingpoint.utils.TOCBrandHelper;
 
-public class TOCDetailActivity extends AppCompatActivity {
+public class TOCDisruptionDetailActivity extends AppCompatActivity {
 
     private SharedPreferences prefs;
     private Set<String> trackedTocs;
@@ -51,7 +49,7 @@ public class TOCDetailActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_toc_detail);
+        setContentView(R.layout.activity_toc_disruption_detail);
 
         View topHeaderBar = findViewById(R.id.topHeaderBar);
         if (topHeaderBar != null) {

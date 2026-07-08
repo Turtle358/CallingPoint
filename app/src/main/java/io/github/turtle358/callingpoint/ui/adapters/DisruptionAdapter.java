@@ -16,7 +16,7 @@ import java.util.List;
 import io.github.turtle358.callingpoint.R;
 import io.github.turtle358.callingpoint.utils.TOCBrandHelper;
 import io.github.turtle358.callingpoint.models.DisruptionResponce;
-import io.github.turtle358.callingpoint.ui.activities.TOCDetailActivity;
+import io.github.turtle358.callingpoint.ui.activities.TOCDisruptionDetailActivity;
 
 public class DisruptionAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
@@ -69,7 +69,7 @@ public class DisruptionAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
             dHolder.tvTocCode.setTextColor(isLightColour ? Color.BLACK : Color.WHITE);
 
             dHolder.itemView.setOnClickListener(v -> {
-                Intent intent = new Intent(context, TOCDetailActivity.class);
+                Intent intent = new Intent(context, TOCDisruptionDetailActivity.class);
                 intent.putExtra("TOC_NAME", item.tocName);
                 intent.putExtra("TOC_CODE", item.tocCode);
                 intent.putExtra("TOC_STATUS", item.status);

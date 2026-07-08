@@ -52,7 +52,7 @@
             android:screenOrientation="portrait" />
 
         <activity
-            android:name="io.github.turtle358.callingpoint.ui.activities.TOCDetailActivity"
+            android:name="io.github.turtle358.callingpoint.ui.activities.TOCDisruptionDetailActivity"
             android:screenOrientation="portrait" />
 
         <activity
