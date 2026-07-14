@@ -53,6 +53,8 @@ public class TOCBrandHelper {
                 t.manager = obj.getString("manager");
                 t.shown = obj.optInt("shown", 1);
                 t.delayRepayUrl = obj.optString("delayRepayUrl", null);
+                t.delayRepayMinTime = obj.optInt("delayRepayMinTime", 15);
+                t.delayRepayMessage = obj.optString("delayRepayMessage", "");
 
                 allTocs.add(t);
             }
@@ -128,6 +130,22 @@ public class TOCBrandHelper {
         if (tocName == null) return null;
         for (Toc t : allTocs) {
             if (t.name.equalsIgnoreCase(tocName)) return t.delayRepayUrl;
+        }
+        return null;
+    }
+
+    public static int getDelayRepayMinTimeForName(String tocName) {
+        if (tocName == null) return 15;
+        for (Toc t : allTocs) {
+            if (t.name.equalsIgnoreCase(tocName)) return t.delayRepayMinTime;
+        }
+        return 15;
+    }
+
+    public static String getDelayRepayMessageForName(String tocName) {
+        if (tocName == null) return null;
+        for (Toc t : allTocs) {
+            if (t.name.equalsIgnoreCase(tocName)) return t.delayRepayMessage;
         }
         return null;
     }

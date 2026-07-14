@@ -276,7 +276,7 @@ public class ServiceDetailsActivity extends AppCompatActivity {
                 int diff = eMins - sMins;
                 if (diff < -720) diff += 1440;
 
-                if (diff >= 15) {
+                if (diff >= TOCBrandHelper.getDelayRepayMinTimeForName(operatorName)) {
                     isEligible = true;
                     tvDelayText.setText("This train is delayed by " + diff + " mins. \nYou may be able to create a delay-repay claim from " + operatorName + ".");
                 }

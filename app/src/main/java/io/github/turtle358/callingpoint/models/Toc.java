@@ -8,4 +8,6 @@ public class Toc {
     public String manager;
     public int shown;
     public String delayRepayUrl;
+    public int delayRepayMinTime;
+    public String delayRepayMessage;
 }

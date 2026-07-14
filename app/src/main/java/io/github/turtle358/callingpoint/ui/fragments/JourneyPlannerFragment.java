@@ -20,6 +20,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import io.github.turtle358.callingpoint.R;
 import io.github.turtle358.callingpoint.models.JourneyOption;
@@ -92,22 +93,28 @@ public class JourneyPlannerFragment extends Fragment {
 
                 tvName.setText(toc.name);
                 tvCode.setText(toc.acronym != null ? toc.acronym : toc.code);
-
-                if ("tfl".equalsIgnoreCase(toc.manager)) {
-                    tvStatus.setText("Handled via TfL refunds. Different rules apply.");
-                    tvStatus.setVisibility(View.VISIBLE);
-                } else if ("GC".equalsIgnoreCase(toc.code) || "LF".equalsIgnoreCase(toc.code)) {
-                    tvStatus.setText("Minimum delay of 60 minutes applies.");
-                    tvStatus.setVisibility(View.VISIBLE);
-                } else if ("ES".equalsIgnoreCase(toc.code)){
-                    tvStatus.setText("Minimum delay of 60 minutes applies.");
-                    tvStatus.setVisibility(View.VISIBLE);
-                } else if ("HX".equalsIgnoreCase(toc.code)){
-                    tvStatus.setText("Minimum delay of 30 minutes applies.");
+                System.out.println(toc.name+ " | " + toc.delayRepayMinTime + " | " + toc.delayRepayMessage);
+                if(!Objects.equals(toc.delayRepayMessage, "")) {
+                    tvStatus.setText(toc.delayRepayMessage);
                     tvStatus.setVisibility(View.VISIBLE);
                 } else {
                     tvStatus.setVisibility(View.GONE);
                 }
+//                if ("tfl".equalsIgnoreCase(toc.manager)) {
+//                    tvStatus.setText("Handled via TfL refunds. Different rules apply.");
+//                    tvStatus.setVisibility(View.VISIBLE);
+//                } else if ("GC".equalsIgnoreCase(toc.code) || "LF".equalsIgnoreCase(toc.code)) {
+//                    tvStatus.setText("Minimum delay of 60 minutes applies.");
+//                    tvStatus.setVisibility(View.VISIBLE);
+//                } else if ("ES".equalsIgnoreCase(toc.code)){
+//                    tvStatus.setText("Minimum delay of 60 minutes applies.");
+//                    tvStatus.setVisibility(View.VISIBLE);
+//                } else if ("HX".equalsIgnoreCase(toc.code)){
+//                    tvStatus.setText("Minimum delay of 30 minutes applies.");
+//                    tvStatus.setVisibility(View.VISIBLE);
+//                } else {
+//                    tvStatus.setVisibility(View.GONE);
+//                }
 
                 if (holder.itemView instanceof ViewGroup && ((ViewGroup) holder.itemView).getChildCount() > 2) {
                     ((ViewGroup) holder.itemView).getChildAt(2).setVisibility(View.GONE);
