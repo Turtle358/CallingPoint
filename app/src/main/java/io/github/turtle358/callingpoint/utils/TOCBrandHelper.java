@@ -159,6 +159,12 @@ public class TOCBrandHelper {
             return R.drawable.ic_national_rail;
         } else if (getManagerForToc(operatorName).equalsIgnoreCase("eurostar")) {
             return R.drawable.ic_eurostar;
+        } else if (getManagerForToc(operatorName).equalsIgnoreCase("scot")) {
+            return R.drawable.ic_scotrail;
+        } else if (getManagerForToc(operatorName).equalsIgnoreCase("wales")) {
+            return R.drawable.ic_tfw;
+        } else if (getManagerForToc(operatorName).equalsIgnoreCase("merseytravel")) {
+            return R.drawable.ic_merseyrail;
         } else {
             return R.drawable.ic_train;
         }
