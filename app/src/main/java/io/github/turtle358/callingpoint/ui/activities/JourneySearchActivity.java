@@ -25,6 +25,8 @@ import androidx.core.view.WindowCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.facebook.shimmer.ShimmerFrameLayout;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -47,6 +49,7 @@ public class JourneySearchActivity extends AppCompatActivity {
     private JourneyPlannerEngine plannerEngine;
 
     private StationAutoCompleteAdapter autoCompleteAdapter;
+    private ShimmerFrameLayout shimmerView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -62,6 +65,7 @@ public class JourneySearchActivity extends AppCompatActivity {
         recyclerSearchResults = findViewById(R.id.recyclerSearchResults);
         progressSearch = findViewById(R.id.progressSearch);
         tvStatusUpdate = findViewById(R.id.tvStatusUpdate);
+        shimmerView = findViewById(R.id.shimmer_journey_container);
 
 
         GraphManager graphManager = GraphManager.getInstance(this);
@@ -172,15 +176,18 @@ public class JourneySearchActivity extends AppCompatActivity {
 
     private void startInternalRouting(String fromCrs, String toCrs) {
         recyclerSearchResults.setVisibility(View.GONE);
-        progressSearch.setVisibility(View.VISIBLE);
         tvStatusUpdate.setVisibility(View.VISIBLE);
         tvStatusUpdate.setText("Initialising search...");
+
+        shimmerView.setVisibility(View.VISIBLE);
+        shimmerView.startShimmer();
 
         if (plannerEngine != null) {
             findRoutes(fromCrs, toCrs);
         } else {
             tvStatusUpdate.setText("Routing engine unavailable. Check your connection.");
-            progressSearch.setVisibility(View.GONE);
+            shimmerView.stopShimmer();
+            shimmerView.setVisibility(View.GONE);
         }
     }
 
@@ -189,8 +196,9 @@ public class JourneySearchActivity extends AppCompatActivity {
             @Override
             public void onJourneysFound(List<JourneyOption> journeys) {
                 if (isDestroyed()) return;
-                progressSearch.setVisibility(View.GONE);
                 tvStatusUpdate.setVisibility(View.GONE);
+                shimmerView.stopShimmer();
+                shimmerView.setVisibility(View.GONE);
 
                 if (journeys != null && !journeys.isEmpty()) {
                     adapter.updateData(journeys);
@@ -204,9 +212,10 @@ public class JourneySearchActivity extends AppCompatActivity {
             @Override
             public void onError(String message) {
                 if (isDestroyed()) return;
-                progressSearch.setVisibility(View.GONE);
                 tvStatusUpdate.setVisibility(View.VISIBLE);
                 tvStatusUpdate.setText(message);
+                shimmerView.stopShimmer();
+                shimmerView.setVisibility(View.GONE);
             }
 
             @Override

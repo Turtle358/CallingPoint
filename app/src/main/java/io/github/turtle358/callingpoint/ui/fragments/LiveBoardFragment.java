@@ -26,6 +26,8 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.facebook.shimmer.ShimmerFrameLayout;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -53,6 +55,7 @@ public class LiveBoardFragment extends Fragment {
     private RecyclerView recyclerPinnedServices;
     private View layoutEmptyPinnedStations;
     private View layoutEmptyPinnedServices;
+    private ShimmerFrameLayout shimmerPinnedServices;
     private PinnedDataManager pinnedDataManager;
     private PinnedStationAdapter stationAdapter;
     private PinnedServiceAdapter serviceAdapter;
@@ -82,6 +85,7 @@ public class LiveBoardFragment extends Fragment {
         recyclerPinnedServices = view.findViewById(R.id.recyclerPinnedServices);
         layoutEmptyPinnedStations = view.findViewById(R.id.layoutEmptyPinnedStations);
         layoutEmptyPinnedServices = view.findViewById(R.id.layoutEmptyPinnedServices);
+        shimmerPinnedServices = view.findViewById(R.id.shimmer_pinned_services_container);
 
         pinnedDataManager = new PinnedDataManager(requireContext());
 
@@ -227,14 +231,21 @@ public class LiveBoardFragment extends Fragment {
         layoutEmptyPinnedStations.setVisibility(pinnedStations.isEmpty() ? View.VISIBLE : View.GONE);
         recyclerPinnedStations.setVisibility(pinnedStations.isEmpty() ? View.GONE : View.VISIBLE);
 
-        layoutEmptyPinnedServices.setVisibility(pinnedServices.isEmpty() ? View.VISIBLE : View.GONE);
-        recyclerPinnedServices.setVisibility(pinnedServices.isEmpty() ? View.GONE : View.VISIBLE);
-
         currentPinnedStations.clear();
         currentPinnedStations.addAll(pinnedStations);
         stationAdapter.notifyDataSetChanged();
 
         if (!pinnedServices.isEmpty()) {
+            layoutEmptyPinnedServices.setVisibility(View.GONE);
+
+            if (liveServicesData.isEmpty()) {
+                recyclerPinnedServices.setVisibility(View.GONE);
+                if (shimmerPinnedServices != null) {
+                    shimmerPinnedServices.setVisibility(View.VISIBLE);
+                    shimmerPinnedServices.startShimmer();
+                }
+            }
+
             NationalRailAPI api = APIClient.getClient().create(NationalRailAPI.class);
 
             List<ServiceDetailsResponse> tempServicesData = new ArrayList<>();
@@ -270,6 +281,11 @@ public class LiveBoardFragment extends Fragment {
                 });
             }
         } else {
+            shimmerPinnedServices.stopShimmer();
+            shimmerPinnedServices.setVisibility(View.GONE);
+            recyclerPinnedServices.setVisibility(View.GONE);
+            layoutEmptyPinnedServices.setVisibility(View.VISIBLE);
+
             liveServicesData.clear();
             serviceAdapter.notifyDataSetChanged();
         }
@@ -286,6 +302,10 @@ public class LiveBoardFragment extends Fragment {
             liveServicesData.clear();
             liveServicesData.addAll(tempServices);
             serviceAdapter.notifyDataSetChanged();
+
+            shimmerPinnedServices.stopShimmer();
+            shimmerPinnedServices.setVisibility(View.GONE);
+            recyclerPinnedServices.setVisibility(View.VISIBLE);
         }
     }
 

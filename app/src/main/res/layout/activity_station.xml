@@ -89,6 +89,10 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
 
+                <include
+                    android:id="@+id/shimmer_view_container"
+                    layout="@layout/layout_shimmer_depatures_list" />
+
                 <LinearLayout
                     android:id="@+id/containerStationMessages"
                     android:layout_width="match_parent"

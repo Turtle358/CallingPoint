@@ -190,6 +190,14 @@
         android:layout_marginTop="32dp"
         android:visibility="gone"/>
 
+    <include
+        android:id="@+id/shimmer_journey_container"
+        layout="@layout/layout_shimmer_journey_list"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:visibility="gone" />
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerSearchResults"
         android:layout_width="match_parent"

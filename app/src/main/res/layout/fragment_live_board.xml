@@ -276,6 +276,10 @@
             android:clipToPadding="false"
             android:paddingBottom="8dp" />
 
+        <include
+            android:id="@+id/shimmer_pinned_services_container"
+            layout="@layout/layout_shimmer_pinned_services_list" />
+
         <LinearLayout
             android:id="@+id/layoutEmptyPinnedServices"
             android:layout_width="match_parent"

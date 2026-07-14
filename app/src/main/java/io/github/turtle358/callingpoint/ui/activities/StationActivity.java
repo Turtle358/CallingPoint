@@ -19,6 +19,8 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
+import com.facebook.shimmer.ShimmerFrameLayout;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -61,6 +63,8 @@ public class StationActivity extends AppCompatActivity {
     private boolean isMessagesExpanded = false;
     private List<UnifiedMessage> currentMessages = new ArrayList<>();
 
+    private ShimmerFrameLayout shimmerView;
+
     private static class UnifiedMessage implements Comparable<UnifiedMessage> {
         String text;
         String severity;
@@ -93,6 +97,7 @@ public class StationActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_station);
         rootView = ((ViewGroup) findViewById(android.R.id.content)).getChildAt(0);
+        shimmerView = findViewById(R.id.shimmer_view_container);
 
         androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(rootView, (v, insets) -> {
             androidx.core.graphics.Insets systemBars = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.statusBars());
@@ -355,9 +360,14 @@ public class StationActivity extends AppCompatActivity {
     private void fetchTrains(boolean isAppending) {
         if (!isAppending) {
             currentOffset = 0;
-            swipeRefreshLayout.setRefreshing(true);
             tvEmptyState.setVisibility(View.GONE);
             if (btnLaterServices != null) btnLaterServices.setVisibility(View.GONE);
+
+            if (adapter.getItemCount() == 0) {
+                showShimmer();
+            } else {
+                swipeRefreshLayout.setRefreshing(true);
+            }
         }
 
         String apiFilterCrs = toCrs.isEmpty() ? null : toCrs;
@@ -388,6 +398,7 @@ public class StationActivity extends AppCompatActivity {
                             handleEmptyOrOverlapResult(allServices, isAppending);
                         } else {
                             swipeRefreshLayout.setRefreshing(false);
+                            hideShimmer();
 
                             if (!isAppending) {
                                 adapter.updateData(allServices, isArrivals, fromCrs, toCrs);
@@ -409,6 +420,7 @@ public class StationActivity extends AppCompatActivity {
                     }
                 } else {
                     swipeRefreshLayout.setRefreshing(false);
+                    hideShimmer();
                     if (btnLaterServices != null) btnLaterServices.setVisibility(View.GONE);
                     if (!isAppending) showEmptyState("Connection Error: Please check your connection.");
                 }
@@ -418,6 +430,7 @@ public class StationActivity extends AppCompatActivity {
             public void onFailure(@NonNull Call<StationDepartureResponse> call, @NonNull Throwable t) {
                 if (isFinishing() || isDestroyed()) return;
                 swipeRefreshLayout.setRefreshing(false);
+                hideShimmer();
 
                 if (btnLaterServices != null) {
                     btnLaterServices.setText("View later services");
@@ -428,6 +441,18 @@ public class StationActivity extends AppCompatActivity {
         });
     }
 
+    private void showShimmer() {
+        recyclerDepartures.setVisibility(View.GONE);
+        tvEmptyState.setVisibility(View.GONE);
+        shimmerView.setVisibility(View.VISIBLE);
+        shimmerView.startShimmer();
+    }
+
+    private void hideShimmer() {
+        shimmerView.stopShimmer();
+        shimmerView.setVisibility(View.GONE);
+    }
+
     private void showEmptyState(String message) {
         adapter.updateData(new ArrayList<>(), isArrivals, fromCrs, toCrs);
         recyclerDepartures.setVisibility(View.GONE);
@@ -436,6 +461,8 @@ public class StationActivity extends AppCompatActivity {
     }
 
     private void handleEmptyOrOverlapResult(List<StationDepartureResponse.TrainService> fetchedServices, boolean isAppending) {
+        hideShimmer();
+
         if (currentOffset >= 119) {
             swipeRefreshLayout.setRefreshing(false);
 
