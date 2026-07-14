@@ -6,7 +6,9 @@ import android.view.View;
 import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.net.Uri;
 
+import androidx.browser.customtabs.CustomTabsIntent;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.ColorUtils;
@@ -137,11 +139,14 @@ public class ServiceDetailsActivity extends AppCompatActivity {
                     String schTime = data.std != null ? data.std : (data.sta != null ? data.sta : "");
                     String estTime = data.etd != null ? data.etd : (data.eta != null ? data.eta : "");
 
+                    boolean isCancelled = data.isCancelled || "Cancelled".equalsIgnoreCase(estTime);
+                    checkDelayRepayEligibility(schTime, estTime, operatorName, isCancelled);
+
                     ServiceDetailsResponse.TimelinePoint currentStation = new ServiceDetailsResponse.TimelinePoint();
                     currentStation.locationName = data.locationName != null ? data.locationName : "Current Station";
                     currentStation.scheduledTime = schTime;
                     currentStation.estimatedTime = estTime;
-                    currentStation.isCancelled = "Cancelled".equalsIgnoreCase(estTime);
+                    currentStation.isCancelled = isCancelled;
                     currentStation.platform = data.platform;
 
                     if (data.atd != null) currentStation.actualTime = data.atd;
@@ -183,8 +188,9 @@ public class ServiceDetailsActivity extends AppCompatActivity {
                     tvHeaderStatus.setVisibility(View.VISIBLE);
                     if ("On time".equalsIgnoreCase(estTime)) {
                         tvHeaderStatus.setTextColor(Color.parseColor("#00875A"));
-                    } else if ("Cancelled".equalsIgnoreCase(estTime)) {
+                    } else if (isCancelled) {
                         tvHeaderStatus.setTextColor(Color.parseColor("#DE350B"));
+                        tvHeaderStatus.setText("Cancelled");
                     } else {
                         tvHeaderStatus.setTextColor(Color.parseColor("#FF8C00"));
                     }
@@ -237,6 +243,55 @@ public class ServiceDetailsActivity extends AppCompatActivity {
             return m + "m";
         } catch (Exception e) {
             return "";
+        }
+    }
+
+    private void checkDelayRepayEligibility(String schTime, String estTime, String operatorName, boolean isCancelled) {
+        View cardDelayRepay = findViewById(R.id.cardContextualDelayRepay);
+        TextView tvDelayText = findViewById(R.id.tvDelayRepayContextText);
+
+        if (cardDelayRepay == null || schTime == null || estTime == null) return;
+
+        String delayRepayUrl = TOCBrandHelper.getDelayRepayUrlForName(operatorName);
+        if (delayRepayUrl == null || delayRepayUrl.isEmpty()) {
+            cardDelayRepay.setVisibility(View.GONE);
+            return;
+        }
+
+        boolean isEligible = false;
+
+        if (isCancelled) {
+            isEligible = true;
+            tvDelayText.setText("This train has been cancelled. Tap to claim from " + operatorName + ".");
+        } else if (estTime.equalsIgnoreCase("Delayed")) {
+            isEligible = true;
+            tvDelayText.setText("This train is heavily delayed. \nYou may be able to create a delay-repay claim from " + operatorName + ".");
+        } else if (estTime.contains(":")) {
+            try {
+                String[] sParts = schTime.split(":");
+                String[] eParts = estTime.split(":");
+                int sMins = Integer.parseInt(sParts[0]) * 60 + Integer.parseInt(sParts[1]);
+                int eMins = Integer.parseInt(eParts[0]) * 60 + Integer.parseInt(eParts[1]);
+
+                int diff = eMins - sMins;
+                if (diff < -720) diff += 1440;
+
+                if (diff >= 15) {
+                    isEligible = true;
+                    tvDelayText.setText("This train is delayed by " + diff + " mins. \nYou may be able to create a delay-repay claim from " + operatorName + ".");
+                }
+            } catch (Exception e) {
+            }
+        }
+
+        if (isEligible) {
+            cardDelayRepay.setVisibility(View.VISIBLE);
+            cardDelayRepay.setOnClickListener(v -> {
+                CustomTabsIntent customTabsIntent = new CustomTabsIntent.Builder().build();
+                customTabsIntent.launchUrl(this, Uri.parse(delayRepayUrl));
+            });
+        } else {
+            cardDelayRepay.setVisibility(View.GONE);
         }
     }
 }

@@ -52,6 +52,7 @@ public class TOCBrandHelper {
                 t.colour = obj.getString("colour");
                 t.manager = obj.getString("manager");
                 t.shown = obj.optInt("shown", 1);
+                t.delayRepayUrl = obj.optString("delayRepayUrl", null);
 
                 allTocs.add(t);
             }
@@ -121,6 +122,14 @@ public class TOCBrandHelper {
             }
         }
         return "other";
+    }
+
+    public static String getDelayRepayUrlForName(String tocName) {
+        if (tocName == null) return null;
+        for (Toc t : allTocs) {
+            if (t.name.equalsIgnoreCase(tocName)) return t.delayRepayUrl;
+        }
+        return null;
     }
 
     public static int getIconForToc(String operatorName) {

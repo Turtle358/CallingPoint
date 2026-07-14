@@ -7,4 +7,5 @@ public class Toc {
     public String colour;
     public String manager;
     public int shown;
+    public String delayRepayUrl;
 }
