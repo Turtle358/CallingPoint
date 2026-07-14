@@ -133,22 +133,36 @@ public class TOCDisruptionDetailActivity extends AppCompatActivity {
         List<io.github.turtle358.callingpoint.models.IncidentResponse> activeIncidents = gson.fromJson(activeJson, listType);
         List<io.github.turtle358.callingpoint.models.IncidentResponse> plannedIncidents = gson.fromJson(plannedJson, listType);
 
+        int totalValidItems = countValidIncidents(activeIncidents) + countValidIncidents(plannedIncidents);
+        boolean autoExpand = (totalValidItems == 1);
+
         if (activeIncidents != null && !activeIncidents.isEmpty()) {
-            populateIncidents(layoutActiveIncidents, activeIncidents);
+            populateIncidents(layoutActiveIncidents, activeIncidents, autoExpand);
             sectionActiveIncidents.setVisibility(View.VISIBLE);
         } else {
             sectionActiveIncidents.setVisibility(View.GONE);
         }
 
         if (plannedIncidents != null && !plannedIncidents.isEmpty()) {
-            populateIncidents(layoutPlannedWorks, plannedIncidents);
+            populateIncidents(layoutPlannedWorks, plannedIncidents, autoExpand);
             sectionPlannedWorks.setVisibility(View.VISIBLE);
         } else {
             sectionPlannedWorks.setVisibility(View.GONE);
         }
     }
 
-    private void populateIncidents(LinearLayout container, List<io.github.turtle358.callingpoint.models.IncidentResponse> incidents) {
+    private int countValidIncidents(List<io.github.turtle358.callingpoint.models.IncidentResponse> incidents) {
+        if (incidents == null) return 0;
+        int count = 0;
+        for (io.github.turtle358.callingpoint.models.IncidentResponse incident : incidents) {
+            if (incident.description != null && !incident.description.trim().isEmpty()) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    private void populateIncidents(LinearLayout container, List<io.github.turtle358.callingpoint.models.IncidentResponse> incidents, boolean autoExpand) {
         if (incidents == null || incidents.isEmpty()) return;
 
         float density = getResources().getDisplayMetrics().density;
@@ -289,13 +303,16 @@ public class TOCDisruptionDetailActivity extends AppCompatActivity {
             tv.setLineSpacing(0, 1.2f);
             tv.setMovementMethod(LinkMovementMethod.getInstance());
             tv.setText(HtmlCompat.fromHtml(chunk, HtmlCompat.FROM_HTML_MODE_COMPACT));
-            tv.setVisibility(View.GONE);
+            tv.setVisibility(autoExpand ? View.VISIBLE : View.GONE);
+            if (autoExpand) {
+                arrowIcon.setRotation(180f);
+            }
             innerLayout.addView(tv);
 
             card.addView(innerLayout);
             container.addView(card);
 
-            final boolean[] isExpanded = {false};
+            final boolean[] isExpanded = {autoExpand};
             View.OnClickListener toggleListener = v -> {
 
                 android.transition.TransitionSet transition = new android.transition.TransitionSet();
