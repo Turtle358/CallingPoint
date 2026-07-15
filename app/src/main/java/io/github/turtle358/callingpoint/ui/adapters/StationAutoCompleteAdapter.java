@@ -69,17 +69,8 @@ public class StationAutoCompleteAdapter extends ArrayAdapter<String> {
                 tv.setText(stationName);
             }
 
-            String type = StationHelper.getStationType(stationName);
 
-            if ("eurostar".equalsIgnoreCase(type)) {
-                ivLogo.setImageResource(R.drawable.ic_eurostar);
-            } else if ("other".equalsIgnoreCase(type)) {
-                ivLogo.setImageResource(R.drawable.ic_train);
-            } else if ("tfl".equalsIgnoreCase(type)) {
-                ivLogo.setImageResource(R.drawable.ic_tfl);
-             } else {
-                ivLogo.setImageResource(R.drawable.ic_national_rail);
-            }
+            ivLogo.setImageResource(StationHelper.getIconForStation(stationName));
         }
 
         return convertView;

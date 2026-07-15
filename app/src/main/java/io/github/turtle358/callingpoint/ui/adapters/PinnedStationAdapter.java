@@ -56,16 +56,7 @@ public class PinnedStationAdapter extends RecyclerView.Adapter<PinnedStationAdap
 
         holder.tvStationName.setText(fromName);
 
-        String type = StationHelper.getStationType(fromName);
-        if ("eurostar".equalsIgnoreCase(type)) {
-            holder.ivLogo.setImageResource(R.drawable.ic_eurostar);
-        } else if ("other".equalsIgnoreCase(type)) {
-            holder.ivLogo.setImageResource(R.drawable.ic_train);
-        } else if ("tfl".equalsIgnoreCase(type)) {
-            holder.ivLogo.setImageResource(R.drawable.ic_tfl);
-        } else {
-            holder.ivLogo.setImageResource(R.drawable.ic_national_rail);
-        }
+        holder.ivLogo.setImageResource(StationHelper.getIconForStation(fromName));
 
 
         if (!toCrs.isEmpty()) {

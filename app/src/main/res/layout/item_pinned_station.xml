@@ -30,8 +30,8 @@
 
             <ImageView
                 android:id="@+id/stationBranding"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
+                android:layout_width="32dp"
+                android:layout_height="match_parent"
                 android:layout_gravity="center"
                 android:src="@drawable/ic_train"/>
         </androidx.cardview.widget.CardView>

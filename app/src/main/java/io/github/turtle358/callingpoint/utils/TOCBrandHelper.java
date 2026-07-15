@@ -142,14 +142,6 @@ public class TOCBrandHelper {
         return 15;
     }
 
-    public static String getDelayRepayMessageForName(String tocName) {
-        if (tocName == null) return null;
-        for (Toc t : allTocs) {
-            if (t.name.equalsIgnoreCase(tocName)) return t.delayRepayMessage;
-        }
-        return null;
-    }
-
     public static int getIconForToc(String operatorName) {
         if (getManagerForToc(operatorName).equalsIgnoreCase("tfl")) {
             return R.drawable.ic_tfl;
