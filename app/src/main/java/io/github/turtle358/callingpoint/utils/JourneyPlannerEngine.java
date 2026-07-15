@@ -63,7 +63,7 @@ public class JourneyPlannerEngine {
                 }
 
                 if (foundJourneys.size() < 3) {
-                    mainHandler.post(() -> callback.onStatusUpdate("Checking cross-city Tube links..."));
+                    mainHandler.post(() -> callback.onStatusUpdate("Checking cross-city transfers..."));
                     findCrossCity(originCrs, destCrs, foundJourneys);
                 }
 
@@ -86,12 +86,25 @@ public class JourneyPlannerEngine {
         });
     }
 
+    private String getBestTime(String scheduled, String estimated) {
+        if (estimated == null || estimated.trim().isEmpty()) return scheduled;
+        if (estimated.equalsIgnoreCase("On time")) return scheduled;
+        if (estimated.equalsIgnoreCase("Delayed") || estimated.equalsIgnoreCase("Cancelled")) {
+            return null;
+        }
+        return estimated;
+    }
+
     private void findDirect(String originCrs, String destCrs, List<JourneyOption> results) {
         StationDepartureResponse directRes = getBoard(originCrs, 25, destCrs);
         if (directRes != null && directRes.trainServices != null) {
             for (StationDepartureResponse.TrainService service : directRes.trainServices) {
+
+                String depTime = getBestTime(service.std, service.etd);
+                if (depTime == null) continue;
+
                 String arrTime = getPreciseArrivalTime(service.serviceID, destCrs);
-                if (arrTime == null) arrTime = "00:00";
+                if (arrTime == null) continue;
 
                 String destName = (service.destination != null && !service.destination.isEmpty()) ? service.destination.get(0).locationName : destCrs;
                 List<JourneyLeg.Stop> intermediateStops = extractIntermediateStops(service.serviceID, originCrs, destCrs);
@@ -123,15 +136,21 @@ public class JourneyPlannerEngine {
                 for (StationDepartureResponse.TrainService t1 : allDepRes.trainServices) {
                     if (leg1Count++ >= 6) break;
 
+                    String t1Dep = getBestTime(t1.std, t1.etd);
+                    if (t1Dep == null) continue;
+
                     if (getPreciseArrivalTime(t1.serviceID, destCrs) != null) continue;
 
                     String t1ArrTime = getPreciseArrivalTime(t1.serviceID, hubCrs);
                     if (t1ArrTime == null) continue;
 
                     for (StationDepartureResponse.TrainService t2 : leg2Res.trainServices) {
-                        if (hasValidTransferTime(t1ArrTime, t2.std, 5, 180)) {
+                        String t2DepTime = getBestTime(t2.std, t2.etd);
+                        if (t2DepTime == null) continue;
+
+                        if (hasValidTransferTime(t1ArrTime, t2DepTime, 5, 180)) {
                             String t2ArrTime = getPreciseArrivalTime(t2.serviceID, destCrs);
-                            if (t2ArrTime == null) t2ArrTime = "00:00";
+                            if (t2ArrTime == null) continue;
 
                             String t1Dest = (t1.destination != null && !t1.destination.isEmpty()) ? t1.destination.get(0).locationName : hubCrs;
                             String t2Dest = (t2.destination != null && !t2.destination.isEmpty()) ? t2.destination.get(0).locationName : destCrs;
@@ -182,6 +201,7 @@ public class JourneyPlannerEngine {
                 if (hub2ToDest == null || hub2ToDest.trainServices == null || hub2ToDest.trainServices.isEmpty()) continue;
 
                 for (StationDepartureResponse.TrainService t1 : allOrigin.trainServices) {
+                    if (getBestTime(t1.std, t1.etd) == null) continue;
                     if (getPreciseArrivalTime(t1.serviceID, destCrs) != null) continue;
                     if (getPreciseArrivalTime(t1.serviceID, hub2) != null) continue;
 
@@ -189,17 +209,21 @@ public class JourneyPlannerEngine {
                     if (t1ArrTime == null) continue;
 
                     for (StationDepartureResponse.TrainService t2 : allHub1.trainServices) {
+                        String t2DepTime = getBestTime(t2.std, t2.etd);
+                        if (t2DepTime == null) continue;
                         if (getPreciseArrivalTime(t2.serviceID, destCrs) != null) continue;
 
-                        if (hasValidTransferTime(t1ArrTime, t2.std, 5, 120)) {
+                        if (hasValidTransferTime(t1ArrTime, t2DepTime, 5, 120)) {
                             String t2ArrTime = getPreciseArrivalTime(t2.serviceID, hub2);
                             if (t2ArrTime == null) continue;
 
                             for (StationDepartureResponse.TrainService t3 : hub2ToDest.trainServices) {
-                                if (hasValidTransferTime(t2ArrTime, t3.std, 5, 120)) {
+                                String t3DepTime = getBestTime(t3.std, t3.etd);
+                                if (t3DepTime == null) continue;
 
+                                if (hasValidTransferTime(t2ArrTime, t3DepTime, 5, 120)) {
                                     String t3ArrTime = getPreciseArrivalTime(t3.serviceID, destCrs);
-                                    if (t3ArrTime == null) t3ArrTime = "00:00";
+                                    if (t3ArrTime == null) continue;
 
                                     String t1Dest = (t1.destination != null && !t1.destination.isEmpty()) ? t1.destination.get(0).locationName : hub1;
                                     String t2Dest = (t2.destination != null && !t2.destination.isEmpty()) ? t2.destination.get(0).locationName : hub2;
@@ -235,38 +259,44 @@ public class JourneyPlannerEngine {
         StationDepartureResponse allOrigin = getBoard(originCrs, 20, null);
         if (allOrigin == null || allOrigin.trainServices == null) return;
 
-        Set<String> londonTerminalsReached = new HashSet<>();
+        Set<String> terminalsReached = new HashSet<>();
 
         for (StationDepartureResponse.TrainService t1 : allOrigin.trainServices) {
             String destCode = (t1.destination != null && !t1.destination.isEmpty()) ? t1.destination.get(0).crs : null;
             if (destCode != null && !CityTransferManager.getTransfersFrom(destCode).isEmpty()) {
-                londonTerminalsReached.add(destCode);
+                terminalsReached.add(destCode);
             }
         }
 
-        for (String terminal1 : londonTerminalsReached) {
-            Map<String, Integer> possibleTubeTransfers = CityTransferManager.getTransfersFrom(terminal1);
+        for (String terminal1 : terminalsReached) {
+            Map<String, CityTransferManager.TransferInfo> possibleTransfers = CityTransferManager.getTransfersFrom(terminal1);
 
-            for (Map.Entry<String, Integer> transfer : possibleTubeTransfers.entrySet()) {
+            for (Map.Entry<String, CityTransferManager.TransferInfo> transfer : possibleTransfers.entrySet()) {
                 String terminal2 = transfer.getKey();
-                int tubeTimeMins = transfer.getValue();
+                CityTransferManager.TransferInfo transferInfo = transfer.getValue();
 
                 StationDepartureResponse term2Board = getBoard(terminal2, 30, destCrs);
                 if (term2Board == null || term2Board.trainServices == null) continue;
 
                 for (StationDepartureResponse.TrainService t1 : allOrigin.trainServices) {
+                    if (getBestTime(t1.std, t1.etd) == null) continue;
                     if (getPreciseArrivalTime(t1.serviceID, destCrs) != null) continue;
 
                     String t1ArrTime = getPreciseArrivalTime(t1.serviceID, terminal1);
                     if (t1ArrTime == null) continue;
 
-                    String arrivedAtTerm2Time = addMinutesToTime(t1ArrTime, tubeTimeMins);
+                    String transferStartTime = addMinutesToTime(t1ArrTime, 3);
+
+                    String arrivedAtTerm2Time = addMinutesToTime(transferStartTime, transferInfo.timeMins);
 
                     for (StationDepartureResponse.TrainService t2 : term2Board.trainServices) {
-                        if (hasValidTransferTime(arrivedAtTerm2Time, t2.std, 10, 120)) {
+                        String t2DepTime = getBestTime(t2.std, t2.etd);
+                        if (t2DepTime == null) continue;
+
+                        if (hasValidTransferTime(arrivedAtTerm2Time, t2DepTime, 3, 120)) {
 
                             String t2ArrTime = getPreciseArrivalTime(t2.serviceID, destCrs);
-                            if (t2ArrTime == null) t2ArrTime = "00:00";
+                            if (t2ArrTime == null) continue;
 
                             String t1TrainDest = (t1.destination != null && !t1.destination.isEmpty()) ? t1.destination.get(0).locationName : terminal1;
                             String t2TrainDest = (t2.destination != null && !t2.destination.isEmpty()) ? t2.destination.get(0).locationName : destCrs;
@@ -276,7 +306,8 @@ public class JourneyPlannerEngine {
 
                             List<JourneyLeg> legs = new ArrayList<>();
                             legs.add(new JourneyLeg(originCrs, getStationName(originCrs), terminal1, getStationName(terminal1), t1TrainDest, t1.std, t1ArrTime, t1.operatorName, t1.serviceID, "TRAIN", stops1, getLiveLocationStatus(t1.serviceID), t1.etd));
-                            legs.add(new JourneyLeg(terminal1, getStationName(terminal1), terminal2, getStationName(terminal2), getStationName(terminal2), t1ArrTime, arrivedAtTerm2Time, "London Underground", "TUBE", "TUBE/WALK", new ArrayList<>(), null, null));
+                            legs.add(new JourneyLeg(terminal1, getStationName(terminal1), terminal2, getStationName(terminal2), getStationName(terminal2), transferStartTime, arrivedAtTerm2Time, transferInfo.operatorName, transferInfo.serviceId, "TRANSFER", new ArrayList<>(), null, null));
+
                             legs.add(new JourneyLeg(terminal2, getStationName(terminal2), destCrs, getStationName(destCrs), t2TrainDest, t2.std, t2ArrTime, t2.operatorName, t2.serviceID, "TRAIN", stops2, getLiveLocationStatus(t2.serviceID), t2.etd));
 
                             if (isLogicalJourney(legs)) {
@@ -290,13 +321,14 @@ public class JourneyPlannerEngine {
             }
         }
     }
+
     private boolean isLogicalJourney(List<JourneyLeg> legs) {
         Set<String> visitedStations = new HashSet<>();
         Set<String> usedServices = new HashSet<>();
         String lastStation = null;
 
         for (JourneyLeg leg : legs) {
-            if ("TUBE/WALK".equals(leg.transportMode)) {
+            if ("TRANSFER".equals(leg.transportMode) || "TUBE/WALK".equals(leg.transportMode)) {
                 lastStation = leg.toStationName;
                 continue;
             }
@@ -357,13 +389,13 @@ public class JourneyPlannerEngine {
                 for (ServiceDetailsResponse.TimelinePoint cp : details.subsequentCallingPoints.get(0).callingPoint) {
                     String cpCrs = cp.crs != null ? cp.crs : StationHelper.getCrsFromName(cp.locationName);
                     if (targetCrs.equalsIgnoreCase(cpCrs)) {
-                        return (cp.scheduledTime != null && !cp.scheduledTime.isEmpty()) ? cp.scheduledTime : cp.estimatedTime;
+                        return getBestTime(cp.scheduledTime, cp.estimatedTime);
                     }
                 }
             }
             String destCrs = details.crs != null ? details.crs : StationHelper.getCrsFromName(details.locationName);
             if (targetCrs.equalsIgnoreCase(destCrs)) {
-                return (details.sta != null && !details.sta.isEmpty()) ? details.sta : details.eta;
+                return getBestTime(details.sta, details.eta);
             }
         }
         return null;
@@ -384,6 +416,7 @@ public class JourneyPlannerEngine {
         currentStation.locationName = details.locationName;
         currentStation.crs = details.crs != null ? details.crs : StationHelper.getCrsFromName(details.locationName);
         currentStation.scheduledTime = details.std != null ? details.std : details.sta;
+        currentStation.estimatedTime = details.etd != null ? details.etd : details.eta;
         allPoints.add(currentStation);
 
         if (details.subsequentCallingPoints != null && !details.subsequentCallingPoints.isEmpty()) {
@@ -400,9 +433,8 @@ public class JourneyPlannerEngine {
             }
 
             if (isRecording) {
-                String time = cp.scheduledTime;
-                if (time == null || time.isEmpty()) time = cp.estimatedTime;
-                if (time == null || time.equalsIgnoreCase("On time")) time = "00:00";
+                String time = getBestTime(cp.scheduledTime, cp.estimatedTime);
+                if (time == null) time = "Cancelled";
                 stops.add(new JourneyLeg.Stop(cp.locationName, time));
             }
 
