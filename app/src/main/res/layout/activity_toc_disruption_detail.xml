@@ -40,7 +40,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:paddingHorizontal="16dp"
-                    android:paddingVertical="20dp">
+                    android:paddingTop="8dp"
+                    android:paddingBottom="20dp">
 
                     <ImageButton
                         android:id="@+id/btnBack"
@@ -68,10 +69,11 @@
                         <ImageView
                             android:id="@+id/detailTocIcon"
                             android:layout_width="wrap_content"
-                            android:layout_height="28dp"
-                            android:layout_marginTop="4dp"
+                            android:layout_height="30dp"
+                            android:layout_marginTop="6dp"
                             android:layout_marginBottom="0dp"
                             android:adjustViewBounds="true"
+                            android:scaleType="fitEnd"
                             android:contentDescription="Operator Logo" />
 
                         <TextView
