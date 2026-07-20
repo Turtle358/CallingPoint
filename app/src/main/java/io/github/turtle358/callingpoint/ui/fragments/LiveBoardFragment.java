@@ -27,6 +27,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.facebook.shimmer.ShimmerFrameLayout;
+import com.google.android.material.snackbar.Snackbar;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -241,6 +242,17 @@ public class LiveBoardFragment extends Fragment {
             if (liveServicesData.isEmpty()) {
                 recyclerPinnedServices.setVisibility(View.GONE);
                 if (shimmerPinnedServices != null) {
+
+                    android.widget.LinearLayout shimmerContainer = (android.widget.LinearLayout) shimmerPinnedServices.getChildAt(0);
+                    if (shimmerContainer != null) {
+                        shimmerContainer.removeAllViews();
+
+                        LayoutInflater inflater = LayoutInflater.from(requireContext());
+                        for (int i = 0; i < pinnedServices.size(); i++) {
+                            inflater.inflate(R.layout.layout_shimmer_depature, shimmerContainer, true);
+                        }
+                    }
+
                     shimmerPinnedServices.setVisibility(View.VISIBLE);
                     shimmerPinnedServices.startShimmer();
                 }
@@ -347,7 +359,8 @@ public class LiveBoardFragment extends Fragment {
     private void setupDragAndDrop() {
         androidx.recyclerview.widget.ItemTouchHelper stationTouchHelper = new androidx.recyclerview.widget.ItemTouchHelper(
                 new androidx.recyclerview.widget.ItemTouchHelper.SimpleCallback(
-                        androidx.recyclerview.widget.ItemTouchHelper.UP | androidx.recyclerview.widget.ItemTouchHelper.DOWN, 0) {
+                        androidx.recyclerview.widget.ItemTouchHelper.UP | androidx.recyclerview.widget.ItemTouchHelper.DOWN,
+                        androidx.recyclerview.widget.ItemTouchHelper.LEFT | androidx.recyclerview.widget.ItemTouchHelper.RIGHT) {
 
                     @Override
                     public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) {
@@ -362,12 +375,30 @@ public class LiveBoardFragment extends Fragment {
 
                     @Override
                     public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
+                        viewHolder.itemView.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS);
+
+                        int position = viewHolder.getBindingAdapterPosition();
+                        if (position == RecyclerView.NO_POSITION) return;
+
+                        String unpinnedStation = currentPinnedStations.get(position);
+                        currentPinnedStations.remove(position);
+                        stationAdapter.notifyItemRemoved(position);
+                        pinnedDataManager.saveAllPinnedStations(currentPinnedStations);
+
+                        com.google.android.material.snackbar.Snackbar.make(requireView(), "Station unpinned", com.google.android.material.snackbar.Snackbar.LENGTH_LONG)
+                                .setAction("Undo", v -> {
+                                    v.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY);
+                                    currentPinnedStations.add(position, unpinnedStation);
+                                    stationAdapter.notifyItemInserted(position);
+                                    recyclerPinnedStations.scrollToPosition(position);
+                                    pinnedDataManager.saveAllPinnedStations(currentPinnedStations);
+                                }).show();
                     }
 
                     @Override
                     public void onSelectedChanged(@androidx.annotation.Nullable RecyclerView.ViewHolder viewHolder, int actionState) {
                         super.onSelectedChanged(viewHolder, actionState);
-                        if (actionState == androidx.recyclerview.widget.ItemTouchHelper.ACTION_STATE_DRAG && viewHolder != null) {
+                        if (viewHolder != null && (actionState == androidx.recyclerview.widget.ItemTouchHelper.ACTION_STATE_DRAG || actionState == androidx.recyclerview.widget.ItemTouchHelper.ACTION_STATE_SWIPE)) {
                             viewHolder.itemView.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS);
                         }
                     }
@@ -377,12 +408,21 @@ public class LiveBoardFragment extends Fragment {
                         super.clearView(recyclerView, viewHolder);
                         pinnedDataManager.saveAllPinnedStations(currentPinnedStations);
                     }
+
+                    @Override
+                    public void onChildDraw(@NonNull android.graphics.Canvas c, @NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, float dX, float dY, int actionState, boolean isCurrentlyActive) {
+                        if (actionState == androidx.recyclerview.widget.ItemTouchHelper.ACTION_STATE_SWIPE) {
+                            drawSwipeBackground(c, viewHolder.itemView, dX);
+                        }
+                        super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
+                    }
                 });
         stationTouchHelper.attachToRecyclerView(recyclerPinnedStations);
 
         androidx.recyclerview.widget.ItemTouchHelper serviceTouchHelper = new androidx.recyclerview.widget.ItemTouchHelper(
                 new androidx.recyclerview.widget.ItemTouchHelper.SimpleCallback(
-                        androidx.recyclerview.widget.ItemTouchHelper.UP | androidx.recyclerview.widget.ItemTouchHelper.DOWN, 0) {
+                        androidx.recyclerview.widget.ItemTouchHelper.UP | androidx.recyclerview.widget.ItemTouchHelper.DOWN,
+                        androidx.recyclerview.widget.ItemTouchHelper.LEFT | androidx.recyclerview.widget.ItemTouchHelper.RIGHT) {
 
                     @Override
                     public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) {
@@ -396,12 +436,31 @@ public class LiveBoardFragment extends Fragment {
                     }
 
                     @Override
-                    public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {}
+                    public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
+                        viewHolder.itemView.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS);
+
+                        int position = viewHolder.getBindingAdapterPosition();
+                        if (position == RecyclerView.NO_POSITION) return;
+
+                        ServiceDetailsResponse unpinnedService = liveServicesData.get(position);
+                        liveServicesData.remove(position);
+                        serviceAdapter.notifyItemRemoved(position);
+                        saveServiceOrder();
+
+                        com.google.android.material.snackbar.Snackbar.make(requireView(), "Service unpinned", com.google.android.material.snackbar.Snackbar.LENGTH_LONG)
+                                .setAction("Undo", v -> {
+                                    v.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY);
+                                    liveServicesData.add(position, unpinnedService);
+                                    serviceAdapter.notifyItemInserted(position);
+                                    recyclerPinnedServices.scrollToPosition(position);
+                                    saveServiceOrder();
+                                }).show();
+                    }
 
                     @Override
                     public void onSelectedChanged(@androidx.annotation.Nullable RecyclerView.ViewHolder viewHolder, int actionState) {
                         super.onSelectedChanged(viewHolder, actionState);
-                        if (actionState == androidx.recyclerview.widget.ItemTouchHelper.ACTION_STATE_DRAG && viewHolder != null) {
+                        if (viewHolder != null && (actionState == androidx.recyclerview.widget.ItemTouchHelper.ACTION_STATE_DRAG || actionState == androidx.recyclerview.widget.ItemTouchHelper.ACTION_STATE_SWIPE)) {
                             viewHolder.itemView.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS);
                         }
                     }
@@ -409,13 +468,62 @@ public class LiveBoardFragment extends Fragment {
                     @Override
                     public void clearView(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
                         super.clearView(recyclerView, viewHolder);
-                        List<String> newServiceIdOrder = new ArrayList<>();
-                        for (io.github.turtle358.callingpoint.models.ServiceDetailsResponse service : liveServicesData) {
-                            newServiceIdOrder.add(service.customServiceID);
+                        saveServiceOrder();
+                    }
+
+                    @Override
+                    public void onChildDraw(@NonNull android.graphics.Canvas c, @NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, float dX, float dY, int actionState, boolean isCurrentlyActive) {
+                        if (actionState == androidx.recyclerview.widget.ItemTouchHelper.ACTION_STATE_SWIPE) {
+                            drawSwipeBackground(c, viewHolder.itemView, dX);
                         }
-                        pinnedDataManager.saveAllPinnedServices(newServiceIdOrder);
+                        super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
                     }
                 });
         serviceTouchHelper.attachToRecyclerView(recyclerPinnedServices);
+    }
+
+    private void drawSwipeBackground(android.graphics.Canvas c, View itemView, float dX) {
+        android.graphics.Paint paint = new android.graphics.Paint();
+        paint.setColor(android.graphics.Color.parseColor("#FFB4AB"));
+        paint.setAntiAlias(true);
+
+        float cornerRadius = itemView.getResources().getDisplayMetrics().density * 16;
+
+        android.graphics.RectF background = new android.graphics.RectF(
+                itemView.getLeft(),
+                itemView.getTop(),
+                itemView.getRight(),
+                itemView.getBottom()
+        );
+
+        c.drawRoundRect(background, cornerRadius, cornerRadius, paint);
+
+        android.graphics.drawable.Drawable icon = androidx.core.content.ContextCompat.getDrawable(requireContext(), android.R.drawable.ic_menu_delete);
+        if (icon != null) {
+            icon.setTint(android.graphics.Color.parseColor("#690005"));
+            int iconMargin = (itemView.getHeight() - icon.getIntrinsicHeight()) / 2;
+            int iconTop = itemView.getTop() + (itemView.getHeight() - icon.getIntrinsicHeight()) / 2;
+            int iconBottom = iconTop + icon.getIntrinsicHeight();
+
+            if (dX > 0) {
+                int iconLeft = itemView.getLeft() + iconMargin;
+                int iconRight = iconLeft + icon.getIntrinsicWidth();
+                icon.setBounds(iconLeft, iconTop, iconRight, iconBottom);
+                icon.draw(c);
+            } else if (dX < 0) {
+                int iconRight = itemView.getRight() - iconMargin;
+                int iconLeft = iconRight - icon.getIntrinsicWidth();
+                icon.setBounds(iconLeft, iconTop, iconRight, iconBottom);
+                icon.draw(c);
+            }
+        }
+    }
+
+    private void saveServiceOrder() {
+        List<String> newServiceIdOrder = new ArrayList<>();
+        for (ServiceDetailsResponse service : liveServicesData) {
+            newServiceIdOrder.add(service.customServiceID);
+        }
+        pinnedDataManager.saveAllPinnedServices(newServiceIdOrder);
     }
 }
