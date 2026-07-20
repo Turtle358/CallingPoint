@@ -161,4 +161,82 @@ public class TOCBrandHelper {
             return R.drawable.ic_train;
         }
     }
+
+    public static String getManagerDescription(String tocName) {
+        String manager = getManagerForToc(tocName);
+        switch (manager.toLowerCase()) {
+            case "tfl":
+                return "Transport for London operates this service. It is part of the integrated London public transport network.";
+            case "national":
+                return "This is a National Rail service, operating on the privatised UK railway network.";
+            case "gbr":
+                return "This service is currently operated by DfT Operator (DFTO) who will soon become Great British Railways, the publicly-owned railway.";
+            case "scot":
+                return "This service is operated by ScotRail, the national rail provider for Scotland.";
+            case "wales":
+                return "This service is operated by Transport for Wales, the national rail provider for Wales.";
+            case "merseytravel":
+                return "This service is part of the Merseyrail network, operating in the Liverpool City Region.";
+            case "eurostar":
+                return "This is a high-speed Eurostar service operating between the UK and mainland Europe.";
+            case "open-access":
+                return "This is an open access operator. A private for profit company not part of the national rail network";
+            default:
+                return "This is an independent train operator.";
+        }
+    }
+
+    public static String getManagerName(String tocName) {
+        String manager = getManagerForToc(tocName);
+        switch (manager.toLowerCase()) {
+            case "tfl":
+                return "Transport for London";
+            case "national":
+                return "National Rail - " + tocName;
+            case "gbr":
+                return "Great British Railways";
+            case "scot":
+                return "Scotrail";
+            case "wales":
+                return "Transport for Wales";
+            case "merseytravel":
+                return "Merseyrail";
+            case "eurostar":
+                return "Eurostar";
+            default:
+                return tocName;
+        }
+    }
+
+    public static void showTOCInfoDialog(android.content.Context context, String tocName) {
+        android.app.Dialog dialog = new android.app.Dialog(context);
+        dialog.requestWindowFeature(android.view.Window.FEATURE_NO_TITLE);
+        dialog.setContentView(R.layout.layout_toc_popup);
+
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+            dialog.getWindow().setLayout(
+                    android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                    android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+            );
+        }
+
+        android.widget.ImageView logo = dialog.findViewById(R.id.popupTocLogo);
+        android.widget.TextView name = dialog.findViewById(R.id.popupTocName);
+        android.widget.TextView desc = dialog.findViewById(R.id.popupTocDesc);
+        android.widget.Button btnClose = dialog.findViewById(R.id.popupCloseBtn);
+
+        if(getManagerForToc(tocName).equalsIgnoreCase("gbr")) {
+            logo.setImageResource(R.drawable.ic_national_rail);
+        } else {
+            logo.setImageResource(getIconForToc(tocName));
+        }
+
+        name.setText(getManagerName(tocName));
+        desc.setText(getManagerDescription(tocName));
+
+        btnClose.setOnClickListener(v -> dialog.dismiss());
+
+        dialog.show();
+    }
 }

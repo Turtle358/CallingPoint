@@ -125,6 +125,11 @@ public class TOCDisruptionDetailActivity extends AppCompatActivity {
 
         if (tocName != null) {
             tocIcon.setImageResource(TOCBrandHelper.getIconForToc(tocName));
+
+            // NEW POPUP DIALOG LOGIC
+            tocIcon.setOnClickListener(v ->
+                    TOCBrandHelper.showTOCInfoDialog(this, tocName)
+            );
         }
 
         Gson gson = new Gson();

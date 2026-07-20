@@ -72,6 +72,11 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
         int brandColour = TOCBrandHelper.getColourForToc(currentLeg.operatorName);
         holder.ivManagerLogo.setImageResource(TOCBrandHelper.getIconForToc(currentLeg.operatorName));
 
+        // NEW POPUP DIALOG LOGIC
+        holder.ivManagerLogo.setOnClickListener(v ->
+                TOCBrandHelper.showTOCInfoDialog(v.getContext(), currentLeg.operatorName)
+        );
+
         ServiceDetailsResponse liveDetails = liveDataMap.get(currentLeg.serviceId);
 
         if (liveDetails != null) {
@@ -95,7 +100,7 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
 
             for (ServiceDetailsResponse.TimelinePoint stop : previousStops) {
                 View node = createTimelineNode(inflater, holder.layoutTimeline, stop.locationName, stop.scheduledTime, stop, false, false, brandColour, previousPassed, false);
-                node.setVisibility(View.GONE); 
+                node.setVisibility(View.GONE);
                 holder.layoutTimeline.addView(node);
             }
         }
@@ -106,7 +111,7 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
 
         if (currentLeg.intermediateStops != null && !currentLeg.intermediateStops.isEmpty()) {
             addToggleBtn(inflater, holder.layoutTimeline, currentLeg.intermediateStops.size() + " stations", currentLeg.isExpanded, previousPassed[0], brandColour, currentLeg.intermediateStops.size(), () -> {
-                currentLeg.isExpanded = !currentLeg.isExpanded; 
+                currentLeg.isExpanded = !currentLeg.isExpanded;
             });
 
             for (JourneyLeg.Stop stop : currentLeg.intermediateStops) {
@@ -130,7 +135,7 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
                 ServiceDetailsResponse.TimelinePoint stop = subsequentStops.get(i);
                 boolean isFinalNode = (i == subsequentStops.size() - 1);
                 View node = createTimelineNode(inflater, holder.layoutTimeline, stop.locationName, stop.scheduledTime, stop, false, isFinalNode, brandColour, previousPassed, false);
-                node.setVisibility(View.GONE); 
+                node.setVisibility(View.GONE);
                 holder.layoutTimeline.addView(node);
             }
         }
