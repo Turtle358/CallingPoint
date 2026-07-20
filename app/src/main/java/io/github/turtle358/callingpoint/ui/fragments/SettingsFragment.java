@@ -45,6 +45,7 @@ import java.util.List;
 import java.util.Set;
 
 import io.github.turtle358.callingpoint.utils.StationHelper;
+import io.github.turtle358.callingpoint.utils.WidgetPromoHelper;
 import io.github.turtle358.callingpoint.widget.AppWidgetProvider;
 import io.github.turtle358.callingpoint.R;
 import io.github.turtle358.callingpoint.utils.TOCBrandHelper;
@@ -83,6 +84,13 @@ public class SettingsFragment extends Fragment {
         btnBuyCoffee.setEnabled(false);
         setupBillingClient(btnBuyCoffee);
 
+        Button btnSettingsAddWidget = view.findViewById(R.id.btnSettingsAddWidget);
+        btnSettingsAddWidget.setOnClickListener(v -> {
+            prefs.edit().putBoolean("PREF_HIDE_WIDGET_BANNER", true).apply();
+
+            WidgetPromoHelper.requestPinWidget(requireContext());
+        });
+
         btnBuyCoffee.setOnClickListener(v -> {
             if (coffeeProductDetails != null) {
                 launchPurchaseFlow();
@@ -118,7 +126,7 @@ public class SettingsFragment extends Fragment {
         Button btnManualSync = view.findViewById(R.id.btnManualSync);
         btnManualSync.setOnClickListener(v -> {
             btnManualSync.setEnabled(false);
-            btnManualSync.setText("Updating reference data...");
+            btnManualSync.setText("Updating...");
 
             OneTimeWorkRequest syncRequest = new OneTimeWorkRequest.Builder(DataSyncWorker.class)
                     .setConstraints(new Constraints.Builder()
@@ -138,11 +146,11 @@ public class SettingsFragment extends Fragment {
 
                                 Toast.makeText(requireContext(), "Reference data updated successfully!", Toast.LENGTH_SHORT).show();
                                 btnManualSync.setEnabled(true);
-                                btnManualSync.setText("Check for Reference Data Updates");
+                                btnManualSync.setText("Update");
                             } else if (workInfo.getState() == WorkInfo.State.FAILED) {
                                 Toast.makeText(requireContext(), "Update failed. Please try again later.", Toast.LENGTH_SHORT).show();
                                 btnManualSync.setEnabled(true);
-                                btnManualSync.setText("Check for Reference Data Updates");
+                                btnManualSync.setText("Update");
                             }
                         }
                     });
@@ -351,6 +359,8 @@ public class SettingsFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
+        checkWidgetStatus();
+
         if (adapter != null && prefs != null) {
             String savedTocs = prefs.getString("WIDGET_TRACKED_TOCS", "");
             trackedTocs.clear();
@@ -366,6 +376,31 @@ public class SettingsFragment extends Fragment {
         super.onDestroy();
         if (billingClient != null) {
             billingClient.endConnection();
+        }
+    }
+
+    private void checkWidgetStatus() {
+        if (getView() == null || getContext() == null) return;
+
+        AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(requireContext());
+        ComponentName provider = new ComponentName(requireContext(), AppWidgetProvider.class);
+
+        int[] activeWidgetIds = appWidgetManager.getAppWidgetIds(provider);
+        boolean hasWidget = activeWidgetIds != null && activeWidgetIds.length > 0;
+
+        Button btnSettingsAddWidget = getView().findViewById(R.id.btnSettingsAddWidget);
+        android.widget.TextView tvWidgetDescription = getView().findViewById(R.id.tvWidgetDescription);
+
+        if (hasWidget) {
+            tvWidgetDescription.setText("Active on home screen");
+            btnSettingsAddWidget.setText("Added");
+            btnSettingsAddWidget.setEnabled(false);
+            btnSettingsAddWidget.setAlpha(0.5f);
+        } else {
+            tvWidgetDescription.setText("Add to home screen");
+            btnSettingsAddWidget.setText("Add");
+            btnSettingsAddWidget.setEnabled(true);
+            btnSettingsAddWidget.setAlpha(1.0f);
         }
     }
 }

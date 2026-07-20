@@ -58,6 +58,68 @@
                 android:paddingBottom="24dp">
 
                 <androidx.cardview.widget.CardView
+                    android:id="@+id/cardWidgetPromo"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginHorizontal="12dp"
+                    android:layout_marginBottom="16dp"
+                    app:cardBackgroundColor="@color/bg_card"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="4dp"
+                    app:cardUseCompatPadding="true">
+
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:padding="20dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_toStartOf="@id/btnDismissWidgetPromo"
+                            android:orientation="vertical"
+                            android:layout_marginEnd="8dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Track Disruptions Faster"
+                                android:textColor="@color/text_primary"
+                                android:textSize="18sp"
+                                android:textStyle="bold"
+                                android:layout_marginBottom="8dp"/>
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="Add our widget to your home screen to see pinned operator updates without opening the app."
+                                android:textColor="@color/text_secondary"
+                                android:textSize="14sp"
+                                android:layout_marginBottom="16dp"/>
+
+                            <Button
+                                android:id="@+id/btnAddWidgetPromo"
+                                android:layout_width="match_parent"
+                                android:layout_height="50dp"
+                                android:text="Add to Home Screen"
+                                android:textSize="16sp"
+                                android:textStyle="bold"
+                                android:backgroundTint="@color/brand_primary"
+                                android:textColor="#FFFFFF"/>
+                        </LinearLayout>
+
+                        <ImageButton
+                            android:id="@+id/btnDismissWidgetPromo"
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
+                            android:layout_alignParentEnd="true"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:src="@android:drawable/ic_menu_close_clear_cancel"
+                            app:tint="@color/text_secondary" />
+                    </RelativeLayout>
+                </androidx.cardview.widget.CardView>
+
+                <androidx.cardview.widget.CardView
                     android:id="@+id/cardTracked"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"

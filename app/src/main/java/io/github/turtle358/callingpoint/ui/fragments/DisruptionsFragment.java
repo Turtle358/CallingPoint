@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -27,12 +28,14 @@ import io.github.turtle358.callingpoint.api.NationalRailAPI;
 import io.github.turtle358.callingpoint.models.DisruptionResponce;
 import io.github.turtle358.callingpoint.ui.adapters.DisruptionAdapter;
 import io.github.turtle358.callingpoint.utils.DisruptionSyncManager;
+import io.github.turtle358.callingpoint.utils.WidgetPromoHelper;
 
 public class DisruptionsFragment extends Fragment {
     private TextView liveIndicator, goodServiceSubtext;
     private SwipeRefreshLayout swipeRefreshLayout;
-    private View cardTracked, cardOthers, cardEngineering, cardGoodService;
+    private View cardTracked, cardOthers, cardEngineering, cardGoodService, cardWidgetPromo, btnDismissWidgetPromo;
     private DisruptionAdapter adapterTracked, adapterOthers, adapterEngineering;
+    Button btnAddWidgetPromo;
 
     @Nullable
     @Override
@@ -57,6 +60,10 @@ public class DisruptionsFragment extends Fragment {
         cardOthers = view.findViewById(R.id.cardOthers);
         cardEngineering = view.findViewById(R.id.cardEngineering);
         cardGoodService = view.findViewById(R.id.cardGoodService);
+
+        cardWidgetPromo = view.findViewById(R.id.cardWidgetPromo);
+        btnAddWidgetPromo = view.findViewById(R.id.btnAddWidgetPromo);
+        btnDismissWidgetPromo = view.findViewById(R.id.btnDismissWidgetPromo);
         swipeRefreshLayout.setOnRefreshListener(() -> {
             swipeRefreshLayout.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK);
             fetchRailData();
@@ -98,6 +105,32 @@ public class DisruptionsFragment extends Fragment {
                 cardEngineering,
                 "ENGINEERING_EXPANDED"
         );
+
+        SharedPreferences mainPrefs = requireContext().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
+        boolean hideBanner = mainPrefs.getBoolean("PREF_HIDE_WIDGET_BANNER", false);
+
+        if (hideBanner) {
+            cardWidgetPromo.setVisibility(View.GONE);
+        } else {
+            cardWidgetPromo.setVisibility(View.VISIBLE);
+
+            btnAddWidgetPromo.setOnClickListener(v -> {
+                mainPrefs.edit().putBoolean("PREF_HIDE_WIDGET_BANNER", true).apply();
+                cardWidgetPromo.setVisibility(View.GONE);
+
+                WidgetPromoHelper.requestPinWidget(requireContext());
+            });
+
+            btnDismissWidgetPromo.setOnClickListener(v -> {
+                mainPrefs.edit().putBoolean("PREF_HIDE_WIDGET_BANNER", true).apply();
+
+                cardWidgetPromo.animate()
+                        .alpha(0f)
+                        .setDuration(300)
+                        .withEndAction(() -> cardWidgetPromo.setVisibility(View.GONE))
+                        .start();
+            });
+        }
     }
 
     private void setupCollapsibleSection(View header, android.widget.ImageView icon, RecyclerView recycler, View cardView, String prefKey) {
