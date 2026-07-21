@@ -192,7 +192,7 @@ public class TOCBrandHelper {
             case "tfl":
                 return "Transport for London";
             case "national":
-                return "National Rail - " + tocName;
+                return "National Rail — " + tocName;
             case "gbr":
                 return "Great British Railways";
             case "scot":
