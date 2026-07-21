@@ -228,6 +228,8 @@ public class TOCBrandHelper {
 
         if(getManagerForToc(tocName).equalsIgnoreCase("gbr")) {
             logo.setImageResource(R.drawable.ic_national_rail);
+        } else if (getManagerForToc(tocName).equalsIgnoreCase("scot")) {
+            logo.setImageResource(R.drawable.ic_scotrail_small);
         } else {
             logo.setImageResource(getIconForToc(tocName));
         }
