@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginHorizontal="24dp"
+    android:layout_marginHorizontal="12dp"
     android:layout_marginBottom="12dp"
     app:cardBackgroundColor="@color/bg_card"
     app:cardCornerRadius="16dp"
@@ -20,58 +20,68 @@
             android:background="#E0E0E0" />
 
         <LinearLayout
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_weight="1"
             android:orientation="vertical"
             android:padding="16dp">
 
+            <!-- Top Row: Time and Status Shimmer -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:gravity="bottom"
                 android:orientation="horizontal">
 
                 <View
-                    android:layout_width="0dp"
-                    android:layout_weight="1"
-                    android:layout_height="16dp"
+                    android:layout_width="60dp"
+                    android:layout_height="22dp"
                     android:background="#E0E0E0" />
 
                 <View
-                    android:layout_width="48dp"
+                    android:layout_width="80dp"
                     android:layout_height="16dp"
-                    android:layout_marginStart="12dp"
+                    android:layout_marginStart="8dp"
                     android:background="#E0E0E0" />
             </LinearLayout>
 
-            <View
-                android:layout_width="120dp"
-                android:layout_height="13dp"
-                android:layout_marginTop="6dp"
-                android:background="#E0E0E0" />
-
+            <!-- Bottom Row: Route, Stops, Details, and Logo Shimmer -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
+                android:layout_marginTop="8dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
 
-                <View
-                    android:layout_width="28dp"
-                    android:layout_height="18dp"
-                    android:background="#E0E0E0" />
-
-                <View
+                <LinearLayout
                     android:layout_width="0dp"
+                    android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:layout_height="14dp"
-                    android:layout_marginStart="6dp"
-                    android:background="#E0E0E0" />
+                    android:orientation="vertical">
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="20dp"
+                        android:layout_marginEnd="24dp"
+                        android:background="#E0E0E0" />
+
+                    <View
+                        android:layout_width="150dp"
+                        android:layout_height="16dp"
+                        android:layout_marginTop="8dp"
+                        android:background="#E0E0E0" />
+
+                    <View
+                        android:layout_width="100dp"
+                        android:layout_height="14dp"
+                        android:layout_marginTop="4dp"
+                        android:background="#E0E0E0" />
+                </LinearLayout>
 
                 <View
-                    android:layout_width="40dp"
-                    android:layout_height="14dp"
-                    android:layout_marginStart="6dp"
+                    android:layout_width="48dp"
+                    android:layout_height="24dp"
+                    android:layout_marginStart="12dp"
                     android:background="#E0E0E0" />
             </LinearLayout>
         </LinearLayout>
