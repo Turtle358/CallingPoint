@@ -3,87 +3,149 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Privacy Policy for Calling Point</title>
+    <title>Privacy Policy | CallingPoint</title>
+
+    <link rel="icon" type="image/png" href="icon.png">
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            line-height: 1.6;
-            color: #333333;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 40px 20px;
-            background-color: #ffffff;
+        .hero-gradient {
+            background: linear-gradient(135deg, #2E2A74 0%, #1a1845 100%);
         }
-        h1 {
-            color: #1a1a1a;
-            border-bottom: 2px solid #eeeeee;
-            padding-bottom: 10px;
+
+        .custom-scrollbar::-webkit-scrollbar {
+            height: 8px;
+            width: 8px;
         }
-        h3 {
-            color: #2c3e50;
-            margin-top: 30px;
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
         }
-        p {
-            margin-bottom: 16px;
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
         }
-        ul {
-            margin-bottom: 16px;
-            padding-left: 20px;
-        }
-        li {
-            margin-bottom: 8px;
-        }
-        a {
-            color: #0066cc;
-            text-decoration: none;
-        }
-        a:hover {
-            text-decoration: underline;
+        @media (prefers-color-scheme: dark) {
+            .custom-scrollbar::-webkit-scrollbar-thumb {
+                background: #475569;
+            }
         }
     </style>
 </head>
-<body>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100 font-sans antialiased transition-colors duration-300 custom-scrollbar">
 
-    <h1>Privacy Policy for Calling Point</h1>
-    <p><strong>Effective Date:</strong> June 16, 2026</p>
+<!-- Header Section -->
+<header class="hero-gradient text-white pt-16 pb-24 px-6 lg:px-12 text-center relative">
+    <div class="max-w-4xl mx-auto relative z-10">
+        <!-- Back Button -->
+        <div class="absolute left-0 top-0 mt-2">
+            <a href="index.html" class="flex items-center gap-2 text-gray-300 hover:text-white transition-colors duration-300">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+                </svg>
+                <span class="font-semibold">Back to App</span>
+            </a>
+        </div>
 
-    <p>This Privacy Policy explains how Calling Point ("we", "us", or "our") handles information when you use our mobile application. Our core philosophy is that your commute is your business. We are committed to protecting your privacy and ensuring a transparent, secure experience.</p>
+        <h1 class="text-4xl md:text-5xl font-extrabold mb-4 tracking-tight drop-shadow-md mt-10 md:mt-0">Privacy Policy</h1>
+        <p class="text-lg text-gray-300">Effective Date: June 16, 2026</p>
+    </div>
+</header>
 
-    <h3>1. Information Collection and Use</h3>
-    <p><strong>We do not collect, store, or share any personal data.</strong></p>
-    <p>Calling Point does not require you to create an account, log in, or provide any personal information to use the app. We do not use any hidden tracking software, analytics frameworks, or advertising SDKs to monitor your behavior or device usage.</p>
+<!-- Main Content Area -->
+<main class="px-6 lg:px-12 pb-24 max-w-4xl mx-auto -mt-12 relative z-20">
+    <div class="bg-white dark:bg-gray-800 rounded-[2rem] shadow-xl border border-gray-200 dark:border-gray-700 p-8 md:p-12">
 
-    <h3>2. Train Queries and External APIs</h3>
-    <p>To provide you with live departure boards and journey information, Calling Point communicates directly with the National Rail API.</p>
-    <ul>
-        <li><strong>Search Requests:</strong> When you search for a station or track a specific route, that request is sent over a secure connection to retrieve the necessary data.</li>
-        <li><strong>No Tracking:</strong> These requests are processed ephemerally in real-time. We do not store your search history, location, or favorite routes on any external servers. Any saved preferences (such as pinned operators or favorite journeys) are stored locally and securely on your own device.</li>
-    </ul>
+        <p class="text-lg text-gray-600 dark:text-gray-300 mb-10 leading-relaxed">
+            This Privacy Policy explains how Calling Point ("we", "us", or "our") handles information when you use our mobile application. Our core philosophy is that your commute is your business. We are committed to protecting your privacy and ensuring a transparent, secure experience.
+        </p>
 
-    <h3>3. Financial Data and In-App Purchases</h3>
-    <p>Calling Point is a free application that includes an optional "Buy Me a Coffee" tip feature.</p>
-    <ul>
-        <li>All transactions are processed entirely through <strong>Google Play Billing</strong>.</li>
-        <li>At no point does the Calling Point app collect, intercept, or store your credit card information, bank details, or personal billing address.</li>
-        <li>We only receive an anonymous confirmation from Google Play that a purchase was successful so we can unlock features or display a thank-you message.</li>
-    </ul>
+        <div class="space-y-10">
+            <!-- Section 1 -->
+            <section>
+                <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">1. Information Collection and Use</h3>
+                <p class="text-xl font-semibold text-[#2E2A74] dark:text-blue-400 mb-3">We do not collect, store, or share any personal data.</p>
+                <p class="text-gray-600 dark:text-gray-400 leading-relaxed">
+                    Calling Point does not require you to create an account, log in, or provide any personal information to use the app. We do not use any hidden tracking software, analytics frameworks, or advertising SDKs to monitor your behavior or device usage.
+                </p>
+            </section>
 
-    <h3>4. Third-Party Services</h3>
-    <p>While we do not collect data, the app utilizes essential services provided by Google to function and process optional payments. These third-party services have their own privacy policies governing their use of data:</p>
-    <ul>
-        <li><strong>Google Play Services:</strong> <a href="https://policies.google.com/privacy" target="_blank">https://policies.google.com/privacy</a></li>
-        <li><strong>Google Play Billing:</strong> <a href="https://policies.google.com/privacy" target="_blank">https://policies.google.com/privacy</a></li>
-    </ul>
+            <!-- Section 2 -->
+            <section>
+                <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">2. Train Queries and External APIs</h3>
+                <p class="text-gray-600 dark:text-gray-400 leading-relaxed mb-4">
+                    To provide you with live departure boards and journey information, Calling Point communicates directly with the National Rail API.
+                </p>
+                <ul class="list-disc pl-6 space-y-3 text-gray-600 dark:text-gray-400 marker:text-gray-400">
+                    <li><strong class="text-gray-800 dark:text-gray-200">Search Requests:</strong> When you search for a station or track a specific route, that request is sent over a secure connection to retrieve the necessary data.</li>
+                    <li><strong class="text-gray-800 dark:text-gray-200">No Tracking:</strong> These requests are processed ephemerally in real-time. We do not store your search history, location, or favorite routes on any external servers. Any saved preferences (such as pinned operators or favorite journeys) are stored locally and securely on your own device.</li>
+                </ul>
+            </section>
 
-    <h3>5. Children's Privacy</h3>
-    <p>Because we do not collect any personal information from any users, we do not knowingly collect personally identifiable information from children under the age of 13.</p>
+            <!-- Section 3 -->
+            <section>
+                <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">3. Financial Data and In-App Purchases</h3>
+                <p class="text-gray-600 dark:text-gray-400 leading-relaxed mb-4">
+                    Calling Point is a free application that includes an optional "Buy Me a Coffee" tip feature.
+                </p>
+                <ul class="list-disc pl-6 space-y-3 text-gray-600 dark:text-gray-400 marker:text-gray-400">
+                    <li>All transactions are processed entirely through <strong class="text-gray-800 dark:text-gray-200">Google Play Billing</strong>.</li>
+                    <li>At no point does the Calling Point app collect, intercept, or store your credit card information, bank details, or personal billing address.</li>
+                    <li>We only receive an anonymous confirmation from Google Play that a purchase was successful so we can unlock features or display a thank-you message.</li>
+                </ul>
+            </section>
 
-    <h3>6. Changes to This Privacy Policy</h3>
-    <p>We may update our Privacy Policy from time to time. If we make significant changes to how the app operates, we will update the Effective Date at the top of this policy. You are advised to review this page periodically for any changes.</p>
+            <!-- Section 4 -->
+            <section>
+                <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">4. Third-Party Services</h3>
+                <p class="text-gray-600 dark:text-gray-400 leading-relaxed mb-4">
+                    While we do not collect data, the app utilizes essential services provided by Google to function and process optional payments. These third-party services have their own privacy policies governing their use of data:
+                </p>
+                <ul class="list-disc pl-6 space-y-3 text-gray-600 dark:text-gray-400 marker:text-gray-400">
+                    <li><strong class="text-gray-800 dark:text-gray-200">Google Play Services:</strong> <a href="https://policies.google.com/privacy" target="_blank" class="text-[#2E2A74] dark:text-blue-400 hover:underline">policies.google.com/privacy</a></li>
+                    <li><strong class="text-gray-800 dark:text-gray-200">Google Play Billing:</strong> <a href="https://policies.google.com/privacy" target="_blank" class="text-[#2E2A74] dark:text-blue-400 hover:underline">policies.google.com/privacy</a></li>
+                </ul>
+            </section>
 
-    <h3>7. Contact Us</h3>
-    <p>If you have any questions or suggestions about this Privacy Policy, please contact us at:<br>
-    <strong>Email:</strong> <a href="mailto: callingpoint@outlook.com">callingpoint@outlook.com</a></p>
+            <!-- Section 5 -->
+            <section>
+                <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">5. Children's Privacy</h3>
+                <p class="text-gray-600 dark:text-gray-400 leading-relaxed">
+                    Because we do not collect any personal information from any users, we do not knowingly collect personally identifiable information from children under the age of 13.
+                </p>
+            </section>
+
+            <!-- Section 6 -->
+            <section>
+                <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">6. Changes to This Privacy Policy</h3>
+                <p class="text-gray-600 dark:text-gray-400 leading-relaxed">
+                    We may update our Privacy Policy from time to time. If we make significant changes to how the app operates, we will update the Effective Date at the top of this policy. You are advised to review this page periodically for any changes.
+                </p>
+            </section>
+
+            <!-- Section 7 -->
+            <section class="bg-gray-50 dark:bg-gray-700/50 rounded-2xl p-6 border border-gray-100 dark:border-gray-700 mt-8">
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">7. Contact Us</h3>
+                <p class="text-gray-600 dark:text-gray-400">
+                    If you have any questions or suggestions about this Privacy Policy, please contact us at:<br>
+                    <strong class="text-gray-800 dark:text-gray-200">Email:</strong> <a href="mailto:callingpoint@outlook.com" class="text-[#2E2A74] dark:text-blue-400 hover:underline font-semibold">callingpoint@outlook.com</a>
+                </p>
+            </section>
+        </div>
+    </div>
+</main>
+
+<!-- Unified Footer -->
+<footer class="bg-gray-900 dark:bg-black text-gray-400 py-12 text-center border-t border-gray-800">
+    <div class="flex justify-center mb-6">
+        <img src="icon.png" alt="CallingPoint Icon" class="w-12 h-12 grayscale opacity-50">
+    </div>
+    <p>&copy; 2026 CallingPoint. Powered by the National Rail Data Portal.</p>
+
+    <!-- Grouped footer links side-by-side using flexbox -->
+    <div class="mt-4 flex justify-center gap-6">
+        <a href="privacy.html" class="text-gray-400 hover:text-white transition-colors duration-300 text-sm">Privacy Policy</a>
+        <a href="sitemap.xml" class="text-gray-400 hover:text-white transition-colors duration-300 text-sm">Sitemap</a>
+    </div>
+</footer>
 
 </body>
 </html>

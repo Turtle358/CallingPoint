@@ -48,15 +48,17 @@
             <!-- Optimized H1 Tag -->
             <h1 class="text-6xl font-extrabold mb-6 tracking-tight drop-shadow-md">CallingPoint: UK Train Tracker</h1>
             <p class="text-xl text-gray-200 mb-10 leading-relaxed max-w-lg mx-auto md:mx-0">
-                Your ultimate Android companion for the UK National Rail network. Live departure boards, intelligent routing, and proactive disruption alerts right in your pocket.
+                <strong>CallingPoint</strong> is your ultimate calling point for navigating the UK National Rail network. Get live departure boards, intelligent routing, and proactive disruption alerts right in your pocket.
             </p>
             <div class="flex flex-col sm:flex-row justify-center md:justify-start gap-4">
-                <a href="https://play.google.com/store/apps/details?id=io.github.turtle358.callingpoint" target="_blank" class="bg-white text-[#2E2A74] font-bold py-4 px-8 rounded-full shadow-xl hover:scale-105 transition-transform duration-300 text-center">
-                    Get it on Google Play
-                </a>
-                <a href="https://docs.google.com/forms/d/e/1FAIpQLSchOmnqODe6E8r1wa-mXT27pOYXIdxRnwbWoYAg0f7Uba3g5A/viewform?usp=sharing&ouid=104885425055942157899" target="_blank" class="bg-white/10 hover:bg-white/20 text-white border border-white/30 font-bold py-4 px-8 rounded-full shadow-xl hover:scale-105 transition-transform duration-300 text-center backdrop-blur-sm">
+                <!-- Main Button: Become a Tester -->
+                <a href="https://docs.google.com/forms/d/e/1FAIpQLSchOmnqODe6E8r1wa-mXT27pOYXIdxRnwbWoYAg0f7Uba3g5A/viewform?usp=sharing&ouid=104885425055942157899" target="_blank" class="bg-white text-[#2E2A74] font-bold py-4 px-8 rounded-full shadow-xl hover:scale-105 transition-transform duration-300 text-center">
                     Become a Tester
                 </a>
+                <!-- Greyed Out Button: Get it on Google Play (Completely Non-Clickable) -->
+                <div class="bg-white/5 text-gray-400 border border-white/10 font-bold py-4 px-8 rounded-full text-center cursor-not-allowed opacity-60 select-none">
+                    Get it on Google Play
+                </div>
             </div>
         </div>
 
@@ -205,8 +207,10 @@
     </div>
     <p>&copy; 2026 CallingPoint. Powered by the National Rail Data Portal.</p>
 
-    <div class="mt-4">
+    <!-- Grouped footer links side-by-side using flexbox -->
+    <div class="mt-4 flex justify-center gap-6">
         <a href="privacy.html" class="text-gray-400 hover:text-white transition-colors duration-300 text-sm">Privacy Policy</a>
+        <a href="sitemap.xml" class="text-gray-400 hover:text-white transition-colors duration-300 text-sm">Sitemap</a>
     </div>
 </footer>
 
