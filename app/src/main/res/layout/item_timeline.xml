@@ -45,6 +45,16 @@
         app:layout_constraintStart_toStartOf="@id/timeline_center"
         app:layout_constraintTop_toBottomOf="@id/dot" />
 
+    <View
+        android:id="@+id/lineBottomActive"
+        android:layout_width="4dp"
+        android:layout_height="0dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="@id/timeline_center"
+        app:layout_constraintStart_toStartOf="@id/timeline_center"
+        app:layout_constraintTop_toBottomOf="@id/iconTrainBetween" />
+
     <TextView
         android:id="@+id/tvTime"
         android:layout_width="60dp"
@@ -79,5 +89,39 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@id/timeline_center"
         app:layout_constraintTop_toTopOf="@id/dot" />
+
+    <ImageView
+        android:id="@+id/iconTrainAt"
+        android:layout_width="22dp"
+        android:layout_height="22dp"
+        android:src="@drawable/ic_train"
+        android:background="@drawable/bg_pill_base"
+        android:backgroundTint="?android:attr/colorBackground"
+        android:padding="3dp"
+        android:visibility="gone"
+        android:elevation="2dp"
+        app:layout_constraintTop_toTopOf="@id/dot"
+        app:layout_constraintBottom_toBottomOf="@id/dot"
+        app:layout_constraintEnd_toEndOf="@id/timeline_center"
+        app:layout_constraintStart_toStartOf="@id/timeline_center"
+        app:cardPreventCornerOverlap="false"
+        app:cardUseCompatPadding="true"/>
+
+    <ImageView
+        android:id="@+id/iconTrainBetween"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:src="@drawable/ic_train"
+        android:background="@drawable/bg_pill_base"
+        android:backgroundTint="?android:attr/colorBackground"
+        android:padding="4dp"
+        android:visibility="gone"
+        android:elevation="2dp"
+        app:layout_constraintTop_toBottomOf="@id/dot"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="@id/timeline_center"
+        app:layout_constraintStart_toStartOf="@id/timeline_center"
+        app:cardPreventCornerOverlap="false"
+        app:cardUseCompatPadding="true"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
