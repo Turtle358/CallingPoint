@@ -161,6 +161,23 @@ public class DeparturesAdapter extends RecyclerView.Adapter<DeparturesAdapter.Vi
         holder.itemView.setOnClickListener(v -> {
             Intent intent = new Intent(context, ServiceDetailsActivity.class);
             intent.putExtra("SERVICE_ID", service.serviceID);
+
+            String trainOrigin = (service.origin != null && !service.origin.isEmpty()) ? service.origin.get(0).locationName : "Unknown";
+            String trainDest = (service.destination != null && !service.destination.isEmpty()) ? service.destination.get(0).locationName : "Unknown";
+
+            String uOrigin;
+            String uDest;
+
+            if (isArrivals) {
+                uDest = userOriginStation;
+                uOrigin = (userArrivingStation != null && !userArrivingStation.isEmpty() && !userArrivingStation.equals("Unknown")) ? userArrivingStation : trainOrigin;
+            } else {
+                uOrigin = userOriginStation;
+                uDest = (userArrivingStation != null && !userArrivingStation.isEmpty() && !userArrivingStation.equals("Unknown")) ? userArrivingStation : trainDest;
+            }
+
+            intent.putExtra("USER_ORIGIN", uOrigin);
+            intent.putExtra("USER_DESTINATION", uDest);
             context.startActivity(intent);
         });
     }

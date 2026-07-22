@@ -52,11 +52,13 @@ public class PinnedServiceAdapter extends RecyclerView.Adapter<PinnedServiceAdap
             origin = service.previousCallingPoints.get(0).callingPoint.get(0).locationName;
         }
 
-        String destination = service.locationName;
+        String destination;
         if (service.subsequentCallingPoints != null && !service.subsequentCallingPoints.isEmpty()
                 && service.subsequentCallingPoints.get(0).callingPoint != null) {
             List<ServiceDetailsResponse.TimelinePoint> subsequent = service.subsequentCallingPoints.get(0).callingPoint;
             destination = subsequent.get(subsequent.size() - 1).locationName;
+        } else {
+            destination = service.locationName;
         }
 
         holder.tvServiceRoute.setText(origin + " to " + destination);
@@ -117,6 +119,8 @@ public class PinnedServiceAdapter extends RecyclerView.Adapter<PinnedServiceAdap
         holder.itemView.setOnClickListener(v -> {
             android.content.Intent intent = new android.content.Intent(context, ServiceDetailsActivity.class);
             intent.putExtra("SERVICE_ID", service.customServiceID);
+            intent.putExtra("USER_ORIGIN", service.locationName);
+            intent.putExtra("USER_DESTINATION", destination);
             context.startActivity(intent);
         });
     }

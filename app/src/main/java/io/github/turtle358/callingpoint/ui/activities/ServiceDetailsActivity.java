@@ -45,11 +45,16 @@ public class ServiceDetailsActivity extends AppCompatActivity {
 
     private View topHeaderBar, cardTrainDetails;
     private String serviceId = "";
+    private String userOrigin;
+    private String userDest;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_service_details);
+
+        userOrigin = getIntent().getStringExtra("USER_ORIGIN");
+        userDest = getIntent().getStringExtra("USER_DESTINATION");
 
         topHeaderBar = findViewById(R.id.topHeaderBar);
         if (topHeaderBar != null) {
@@ -205,7 +210,9 @@ public class ServiceDetailsActivity extends AppCompatActivity {
                         cardTrainDetails.setVisibility(View.GONE);
                     }
 
-                    TimelineAdapter adapter = new TimelineAdapter(allPoints, brandColour, data.locationName, crs -> {
+                    String originParam = userOrigin != null && !userOrigin.isEmpty() ? userOrigin : currentStation.locationName;
+
+                    TimelineAdapter adapter = new TimelineAdapter(allPoints, brandColour, originParam, userDest, crs -> {
                         android.content.Intent intent = new android.content.Intent(ServiceDetailsActivity.this, MainActivity.class);
                         intent.putExtra("OPEN_STATION_CRS", crs);
                         startActivity(intent);
