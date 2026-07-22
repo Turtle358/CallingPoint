@@ -13,7 +13,6 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -86,31 +85,65 @@ public class DeparturesAdapter extends RecyclerView.Adapter<DeparturesAdapter.Vi
         String durationStr = "";
         int stopsCount = 0;
 
+        boolean hasFilter = !Objects.equals(userArrivingStation, "Unknown") && userArrivingStation != null && !userArrivingStation.isEmpty();
+
         if (!isArrivals && service.subsequentCallingPoints != null && !service.subsequentCallingPoints.isEmpty()) {
             List<StationDepartureResponse.CallingPoint> pts = service.subsequentCallingPoints.get(0).callingPoint;
-            stopsCount = pts.size();
-            if (!Objects.equals(userArrivingStation, "Unknown")) {
+
+            if (hasFilter) {
                 holder.tvCallingAt.setText("Calling at " + userOriginStation + " and " + userArrivingStation);
+
+                int destIndex = -1;
+                for (int i = 0; i < pts.size(); i++) {
+                    if (pts.get(i).locationName.equalsIgnoreCase(userArrivingStation)) {
+                        destIndex = i;
+                        break;
+                    }
+                }
+
+                if (destIndex != -1) {
+                    stopsCount = destIndex + 1;
+                    durationStr = calculateDuration(schTime, pts.get(destIndex).st);
+                } else {
+                    stopsCount = pts.size();
+                    durationStr = calculateDuration(schTime, pts.get(pts.size() - 1).st);
+                }
             } else {
                 holder.tvCallingAt.setText("Calling at " + userOriginStation);
+                stopsCount = pts.size();
+                durationStr = calculateDuration(schTime, pts.get(pts.size() - 1).st);
             }
 
             holder.tvCallingAt.setVisibility(View.VISIBLE);
-
-            durationStr = calculateDuration(schTime, pts.get(pts.size() - 1).st);
 
         } else if (isArrivals && service.previousCallingPoints != null && !service.previousCallingPoints.isEmpty()) {
             List<StationDepartureResponse.CallingPoint> pts = service.previousCallingPoints.get(0).callingPoint;
-            stopsCount = pts.size();
-            if(userArrivingStation != "Unknown") {
+
+            if (hasFilter) {
                 holder.tvCallingAt.setText("Arriving at " + userOriginStation + " from " + userArrivingStation);
+
+                int originIndex = -1;
+                for (int i = 0; i < pts.size(); i++) {
+                    if (pts.get(i).locationName.equalsIgnoreCase(userArrivingStation)) {
+                        originIndex = i;
+                        break;
+                    }
+                }
+
+                if (originIndex != -1) {
+                    stopsCount = pts.size() - originIndex;
+                    durationStr = calculateDuration(pts.get(originIndex).st, schTime);
+                } else {
+                    stopsCount = pts.size();
+                    durationStr = calculateDuration(pts.get(0).st, schTime);
+                }
             } else {
                 holder.tvCallingAt.setText("Arriving at " + userOriginStation);
+                stopsCount = pts.size();
+                durationStr = calculateDuration(pts.get(0).st, schTime);
             }
 
             holder.tvCallingAt.setVisibility(View.VISIBLE);
-
-            durationStr = calculateDuration(pts.get(0).st, schTime);
 
         } else {
             holder.tvCallingAt.setVisibility(View.GONE);
