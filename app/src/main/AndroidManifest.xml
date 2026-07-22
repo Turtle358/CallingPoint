@@ -9,7 +9,7 @@
     <application
         android:name=".CallingPointApp"
         android:icon="@mipmap/ic_launcher"
-        android:label="Calling Point"
+        android:label="CallingPoint"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.callingpoint">

@@ -231,7 +231,7 @@ public class DisruptionsFragment extends Fragment {
         cardOthers.setVisibility(others.isEmpty() ? View.GONE : View.VISIBLE);
         cardEngineering.setVisibility(engineering.isEmpty() ? View.GONE : View.VISIBLE);
 
-        goodServiceSubtext.setText(tracked.isEmpty() ? "On all lines" : "All other lines");
+        goodServiceSubtext.setText(tracked.isEmpty() && others.isEmpty() ? "On all lines" : "All other lines");
         cardGoodService.setVisibility(View.VISIBLE);
     }
 }
