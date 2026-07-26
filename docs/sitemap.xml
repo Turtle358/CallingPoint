@@ -2,11 +2,11 @@
 <?xml-stylesheet type="text/xsl" href="sitemap.xsl"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
-        <loc>https://callingpoint.dpdns.org/</loc>
+        <loc>https://callingpoint.co.uk/</loc>
         <priority>1.0</priority>
     </url>
     <url>
-        <loc>https://callingpoint.dpdns.org/privacy.html</loc>
+        <loc>https://callingpoint.co.uk/privacy.html</loc>
         <priority>0.5</priority>
     </url>
 </urlset>
