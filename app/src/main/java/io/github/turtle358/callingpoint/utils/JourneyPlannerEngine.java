@@ -511,6 +511,10 @@ public class JourneyPlannerEngine {
         if (crs == null) return "";
         String upperCrs = crs.toUpperCase();
 
+        String directName = StationHelper.getNameFromCode(upperCrs);
+        if (directName != null && !directName.isEmpty()) {
+            return directName;
+        }
         if (crsToNameMap == null) {
             crsToNameMap = new HashMap<>();
             List<String> allNames = StationHelper.getStationNames();
@@ -518,7 +522,7 @@ public class JourneyPlannerEngine {
                 for (String name : allNames) {
                     String code = StationHelper.getCrsFromName(name);
                     if (code != null) {
-                        crsToNameMap.putIfAbsent(code.toUpperCase(), name);
+                        crsToNameMap.put(code.toUpperCase(), name);
                     }
                 }
             }
