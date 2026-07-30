@@ -61,33 +61,6 @@ public class DisruptionSyncManager {
         }).start();
     }
 
-    // Maps TfL's string IDs to your tocs.json 2-letter codes
-    private static String mapTflIdToTocCode(String tflId) {
-        switch (tflId.toLowerCase()) {
-            case "bakerloo": return "BK";
-            case "central": return "CE";
-            case "circle": return "CI";
-            case "district": return "DI";
-            case "hammersmith-city": return "HC";
-            case "jubilee": return "JU";
-            case "metropolitan": return "MT";
-            case "northern": return "NO";
-            case "piccadilly": return "PI";
-            case "victoria": return "VI";
-            case "waterloo-city": return "WC";
-            case "elizabeth": return "XR"; // Maps to Elizabeth line
-            case "dlr": return "DL";
-            case "tram": return "TR";
-            case "london-overground": return "LO";
-            case "mildmay": return "OM";
-            case "lioness": return "OL";
-            case "windrush": return "OW";
-            case "weaver": return "OV";
-            case "suffragette": return "OS";
-            case "liberty": return "OB";
-            default: return tflId;
-        }
-    }
 
     public static boolean syncSync(Context context, SyncCallback callback) {
         SharedPreferences prefs = context.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
@@ -124,7 +97,6 @@ public class DisruptionSyncManager {
 
                     for (IncidentResponse.AffectedOperator op : incident.affectedOperators) {
 
-                        // SKIP National Rail data for Overground and Elizabeth Line to prevent duplicates
                         if ("LO".equalsIgnoreCase(op.tocCode) || "XR".equalsIgnoreCase(op.tocCode)) {
                             continue;
                         }
@@ -213,9 +185,8 @@ public class DisruptionSyncManager {
 
                             TflLineStatusResponse.LineStatus status = line.lineStatuses.get(0);
 
-                            if (status.statusSeverity == 10) continue; // Skip Good Service
+                            if (status.statusSeverity == 10) continue;
 
-                            // Dynamically lookup the 2-letter TOC code from tocs.json using tflId!
                             String opCode = TOCBrandHelper.getTocCodeForTflId(line.id);
                             String opName = TOCBrandHelper.getNameForCode(opCode);
 

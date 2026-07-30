@@ -74,7 +74,6 @@ public class TOCBrandHelper {
         }
     }
 
-    // --- NEW HELPER METHOD FOR FUZZY MATCHING ---
     private static String cleanName(String name) {
         if (name == null) return "";
         return name.toLowerCase()
