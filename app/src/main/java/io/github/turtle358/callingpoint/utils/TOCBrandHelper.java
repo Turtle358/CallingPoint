@@ -177,7 +177,7 @@ public class TOCBrandHelper {
 
     public static int getIconForToc(String operatorName) {
         String manager = getManagerForToc(operatorName);
-        if (manager.equalsIgnoreCase("tfl")) {
+        if (manager.equalsIgnoreCase("tfl") || manager.equalsIgnoreCase("tfl-national")) {
             return R.drawable.ic_tfl;
         } else if (manager.equalsIgnoreCase("gbr")){
             return R.drawable.ic_gbr;

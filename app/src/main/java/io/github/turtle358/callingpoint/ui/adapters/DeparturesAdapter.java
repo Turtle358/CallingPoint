@@ -10,8 +10,12 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
+
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.google.android.gms.common.util.JsonUtils;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -186,11 +190,12 @@ public class DeparturesAdapter extends RecyclerView.Adapter<DeparturesAdapter.Vi
         setAnimation(holder.itemView, position);
 
         String manager = TOCBrandHelper.getManagerForToc(service.operatorName);
-
         if ("tfl".equalsIgnoreCase(manager)) {
             holder.itemView.setClickable(false);
             holder.itemView.setFocusable(false);
-            holder.itemView.setOnClickListener(null);
+            holder.itemView.setOnClickListener(v -> {
+                Toast.makeText(context, "Calling points are not available for underground services", Toast.LENGTH_LONG).show();
+            });
         } else {
             holder.itemView.setClickable(true);
             holder.itemView.setFocusable(true);

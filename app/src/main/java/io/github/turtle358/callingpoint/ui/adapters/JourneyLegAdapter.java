@@ -84,7 +84,6 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
         int brandColour = TOCBrandHelper.getColourForToc(currentLeg.operatorName);
         holder.ivManagerLogo.setImageResource(TOCBrandHelper.getIconForToc(currentLeg.operatorName));
 
-        // NEW POPUP DIALOG LOGIC
         holder.ivManagerLogo.setOnClickListener(v ->
                 TOCBrandHelper.showTOCInfoDialog(v.getContext(), currentLeg.operatorName)
         );

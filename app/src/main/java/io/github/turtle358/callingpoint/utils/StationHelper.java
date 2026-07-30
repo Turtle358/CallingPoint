@@ -100,7 +100,7 @@ public class StationHelper {
     }
 
     public static int getIconForStation(String name) {
-        if (getStationType(name).equalsIgnoreCase("tfl")) {
+        if (getStationType(name).equalsIgnoreCase("tfl") || getStationType(name).equalsIgnoreCase("tfl-national")) {
             return R.drawable.ic_tfl;
         } else if (getStationType(name).equalsIgnoreCase("gbr")){
             return R.drawable.ic_gbr;
