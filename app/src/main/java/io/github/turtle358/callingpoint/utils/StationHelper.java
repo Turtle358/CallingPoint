@@ -2,88 +2,101 @@ package io.github.turtle358.callingpoint.utils;
 
 import android.content.Context;
 import org.json.JSONObject;
-
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 import io.github.turtle358.callingpoint.R;
 
 public class StationHelper {
-    private static final Map<String, String> stationMap = new HashMap<>();
-    private static final Map<String, String> crsMap = new HashMap<>();
 
-    private static final Map<String, String> typeMap = new HashMap<>();
+    private static JSONObject stationsJson = null;
+    private static List<String> cachedStationNames = null;
 
     public static void init(Context context) {
-        String json = null;
-        try {
-            File file = new File(context.getFilesDir(), "stations_remote.json");
-            if (file.exists()) {
-                FileInputStream fis = context.openFileInput("stations_remote.json");
-                int size = fis.available();
-                byte[] buffer = new byte[size];
-                fis.read(buffer);
-                fis.close();
-                json = new String(buffer, StandardCharsets.UTF_8);
-            } else {
+        if (stationsJson == null) {
+            try {
                 InputStream is = context.getAssets().open("stations.json");
                 int size = is.available();
                 byte[] buffer = new byte[size];
                 is.read(buffer);
                 is.close();
-                json = new String(buffer, StandardCharsets.UTF_8);
+                String jsonStr = new String(buffer, "UTF-8");
+                stationsJson = new JSONObject(jsonStr);
+            } catch (Exception e) {
+                e.printStackTrace();
+                stationsJson = new JSONObject();
             }
-
-            JSONObject jsonObject = new JSONObject(json);
-            stationMap.clear();
-            crsMap.clear();
-            typeMap.clear();
-
-            Iterator<String> keys = jsonObject.keys();
-            while (keys.hasNext()) {
-                String stationName = keys.next();
-
-                JSONObject stationData = jsonObject.getJSONObject(stationName);
-                String crsCode = stationData.getString("crs");
-
-                String type = stationData.optString("type", "other");
-
-                stationMap.put(stationName, crsCode);
-                crsMap.put(crsCode, stationName);
-                typeMap.put(stationName, type);
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
         }
     }
 
     public static List<String> getStationNames() {
-        return new ArrayList<>(stationMap.keySet());
-    }
-
-    public static String getCrsFromName(String name) {
-        return stationMap.get(name);
-    }
-
-    public static String getNameFromCrs(String crs) {
-        if(crs == null)
-            return "Unknown";
-        return crsMap.getOrDefault(crs.toUpperCase(), "Unknown");
-    }
-
-    public static String getStationType(String name) {
-        if (name == null) {
-            return "national";
+        if (cachedStationNames == null) {
+            cachedStationNames = new ArrayList<>();
+            if (stationsJson != null) {
+                Iterator<String> keys = stationsJson.keys();
+                while (keys.hasNext()) {
+                    cachedStationNames.add(keys.next());
+                }
+                Collections.sort(cachedStationNames);
+            }
         }
-        return typeMap.getOrDefault(name, "national");
+        return cachedStationNames;
+    }
+
+    public static String getNameFromCode(String codeOrName) {
+        if (stationsJson == null || codeOrName == null || codeOrName.isEmpty()) return "";
+
+        if (stationsJson.has(codeOrName)) {
+            return codeOrName;
+        }
+
+        Iterator<String> keys = stationsJson.keys();
+        while (keys.hasNext()) {
+            String stationName = keys.next();
+            JSONObject stationData = stationsJson.optJSONObject(stationName);
+            if (stationData != null) {
+                String crs = stationData.optString("crs", "");
+                String naptan = stationData.optString("naptan", "");
+
+                if (codeOrName.equalsIgnoreCase(crs) || codeOrName.equalsIgnoreCase(naptan)) {
+                    return stationName;
+                }
+            }
+        }
+        return "";
+    }
+
+    public static String getCrsFromName(String stationName) {
+        if (stationsJson != null && stationName != null) {
+            JSONObject data = stationsJson.optJSONObject(stationName);
+            if (data != null) {
+                return data.optString("crs", "");
+            }
+        }
+        return "";
+    }
+
+    public static String getNaptanFromName(String stationName) {
+        if (stationsJson != null && stationName != null) {
+            JSONObject data = stationsJson.optJSONObject(stationName);
+            if (data != null) {
+                return data.optString("naptan", "");
+            }
+        }
+        return "";
+    }
+
+    public static String getStationType(String stationName) {
+        if (stationsJson != null && stationName != null) {
+            JSONObject data = stationsJson.optJSONObject(stationName);
+            if (data != null) {
+                return data.optString("type", "national");
+            }
+        }
+        return "national";
     }
 
     public static int getIconForStation(String name) {

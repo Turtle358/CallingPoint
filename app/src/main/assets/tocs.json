@@ -383,5 +383,137 @@
     "delayRepayUrl": "https://www.eurostar.com/uk-en/travel-info/service-information/claiming-compensation#Train-delayed",
     "delayRepayMinTime": 60,
     "delayRepayMessage": "A minimum delay of 60 minutes applies."
+  },
+  {
+    "code": "BK",
+    "acronym": "LU",
+    "name": "Bakerloo",
+    "colour": "#B36305",
+    "manager": "tfl",
+    "shown": 1,
+    "delayRepayUrl": "https://tfl.gov.uk/fares/refunds/apply-for-a-service-delay-refund",
+    "delayRepayMinTime": 15,
+    "delayRepayMessage": "Handled via TfL refunds."
+  },
+  {
+    "code": "CE",
+    "acronym": "LU",
+    "name": "Central",
+    "colour": "#E32017",
+    "manager": "tfl",
+    "shown": 1,
+    "delayRepayUrl": "https://tfl.gov.uk/fares/refunds/apply-for-a-service-delay-refund",
+    "delayRepayMinTime": 15,
+    "delayRepayMessage": "Handled via TfL refunds."
+  },
+  {
+    "code": "CI",
+    "acronym": "LU",
+    "name": "Circle",
+    "colour": "#FFD300",
+    "manager": "tfl",
+    "shown": 1,
+    "delayRepayUrl": "https://tfl.gov.uk/fares/refunds/apply-for-a-service-delay-refund",
+    "delayRepayMinTime": 15,
+    "delayRepayMessage": "Handled via TfL refunds."
+  },
+  {
+    "code": "DI",
+    "acronym": "LU",
+    "name": "District",
+    "colour": "#00782A",
+    "manager": "tfl",
+    "shown": 1,
+    "delayRepayUrl": "https://tfl.gov.uk/fares/refunds/apply-for-a-service-delay-refund",
+    "delayRepayMinTime": 15,
+    "delayRepayMessage": "Handled via TfL refunds."
+  },
+  {
+    "code": "HC",
+    "acronym": "LU",
+    "name": "Hammersmith & City",
+    "colour": "#F3A9BB",
+    "manager": "tfl",
+    "shown": 1,
+    "delayRepayUrl": "https://tfl.gov.uk/fares/refunds/apply-for-a-service-delay-refund",
+    "delayRepayMinTime": 15,
+    "delayRepayMessage": "Handled via TfL refunds."
+  },
+  {
+    "code": "JU",
+    "acronym": "LU",
+    "name": "Jubilee",
+    "colour": "#A0A5A9",
+    "manager": "tfl",
+    "shown": 1,
+    "delayRepayUrl": "https://tfl.gov.uk/fares/refunds/apply-for-a-service-delay-refund",
+    "delayRepayMinTime": 15,
+    "delayRepayMessage": "Handled via TfL refunds."
+  },
+  {
+    "code": "MT",
+    "acronym": "LU",
+    "name": "Metropolitan",
+    "colour": "#9B0056",
+    "manager": "tfl",
+    "shown": 1,
+    "delayRepayUrl": "https://tfl.gov.uk/fares/refunds/apply-for-a-service-delay-refund",
+    "delayRepayMinTime": 15,
+    "delayRepayMessage": "Handled via TfL refunds."
+  },
+  {
+    "code": "NO",
+    "acronym": "LU",
+    "name": "Northern",
+    "colour": "#000000",
+    "manager": "tfl",
+    "shown": 1,
+    "delayRepayUrl": "https://tfl.gov.uk/fares/refunds/apply-for-a-service-delay-refund",
+    "delayRepayMinTime": 15,
+    "delayRepayMessage": "Handled via TfL refunds."
+  },
+  {
+    "code": "PI",
+    "acronym": "LU",
+    "name": "Piccadilly",
+    "colour": "#003688",
+    "manager": "tfl",
+    "shown": 1,
+    "delayRepayUrl": "https://tfl.gov.uk/fares/refunds/apply-for-a-service-delay-refund",
+    "delayRepayMinTime": 15,
+    "delayRepayMessage": "Handled via TfL refunds."
+  },
+  {
+    "code": "VI",
+    "acronym": "LU",
+    "name": "Victoria",
+    "colour": "#0098D4",
+    "manager": "tfl",
+    "shown": 1,
+    "delayRepayUrl": "https://tfl.gov.uk/fares/refunds/apply-for-a-service-delay-refund",
+    "delayRepayMinTime": 15,
+    "delayRepayMessage": "Handled via TfL refunds."
+  },
+  {
+    "code": "WC",
+    "acronym": "LU",
+    "name": "Waterloo & City",
+    "colour": "#95CDBA",
+    "manager": "tfl",
+    "shown": 1,
+    "delayRepayUrl": "https://tfl.gov.uk/fares/refunds/apply-for-a-service-delay-refund",
+    "delayRepayMinTime": 15,
+    "delayRepayMessage": "Handled via TfL refunds."
+  },
+  {
+    "code": "DL",
+    "acronym": "DLR",
+    "name": "DLR",
+    "colour": "#00A4A7",
+    "manager": "tfl",
+    "shown": 1,
+    "delayRepayUrl": "https://tfl.gov.uk/fares/refunds/apply-for-a-service-delay-refund",
+    "delayRepayMinTime": 15,
+    "delayRepayMessage": "Handled via TfL refunds."
   }
 ]

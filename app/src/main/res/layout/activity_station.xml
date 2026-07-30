@@ -89,10 +89,36 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
 
-                <include
-                    android:id="@+id/shimmer_view_container"
-                    layout="@layout/layout_shimmer_depatures_list" />
+                <!-- 1. Moved Toggle to the top -->
+                <com.google.android.material.button.MaterialButtonToggleGroup
+                    android:id="@+id/toggleServiceType"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginHorizontal="16dp"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginBottom="8dp"
+                    android:visibility="gone"
+                    app:singleSelection="true"
+                    app:checkedButton="@+id/btnNationalRail">
 
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnNationalRail"
+                        style="?attr/materialButtonOutlinedStyle"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="National Rail" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnTfl"
+                        style="?attr/materialButtonOutlinedStyle"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="TfL Services" />
+                </com.google.android.material.button.MaterialButtonToggleGroup>
+
+                <!-- 2. Moved Station Messages above the shimmer -->
                 <LinearLayout
                     android:id="@+id/containerStationMessages"
                     android:layout_width="match_parent"
@@ -101,6 +127,11 @@
                     android:layout_marginHorizontal="12dp"
                     android:layout_marginTop="16dp"
                     android:visibility="gone" />
+
+                <!-- 3. Shimmer is now in its proper place, right above the RecyclerView -->
+                <include
+                    android:id="@+id/shimmer_view_container"
+                    layout="@layout/layout_shimmer_depatures_list" />
 
                 <TextView
                     android:id="@+id/tvEmptyState"

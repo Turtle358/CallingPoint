@@ -287,10 +287,19 @@ public class TimelineAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                 h.tvTime.setPaintFlags(h.tvTime.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
                 h.tvTime.setTextColor(Color.parseColor("#9E9E9E"));
             } else if (isPassed) {
-                h.tvLiveStatus.setText("Dep " + point.actualTime);
-                h.tvLiveStatus.setTextColor(Color.parseColor("#00875A"));
-                h.tvTime.setPaintFlags(h.tvTime.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
-            } else if (point.estimatedTime != null && !point.estimatedTime.equals("On time")) {
+                String actual = point.actualTime != null ? point.actualTime : point.scheduledTime;
+                boolean isLate = !actual.equals(point.scheduledTime);
+
+                h.tvLiveStatus.setText("Dep " + actual);
+                if (isLate) {
+                    h.tvLiveStatus.setTextColor(Color.parseColor("#FF8C00"));
+                    h.tvTime.setPaintFlags(h.tvTime.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+                    h.tvTime.setTextColor(Color.parseColor("#9E9E9E"));
+                } else {
+                    h.tvLiveStatus.setTextColor(Color.parseColor("#00875A"));
+                    h.tvTime.setPaintFlags(h.tvTime.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
+                }
+            } else if (point.estimatedTime != null && !point.estimatedTime.equalsIgnoreCase("On time")) {
                 h.tvLiveStatus.setText("Exp " + point.estimatedTime);
                 h.tvLiveStatus.setTextColor(Color.parseColor("#FF8C00"));
                 h.tvTime.setPaintFlags(h.tvTime.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);

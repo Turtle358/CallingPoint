@@ -73,6 +73,16 @@ public class TOCBrandHelper {
         }
     }
 
+    // --- NEW HELPER METHOD FOR FUZZY MATCHING ---
+    private static String cleanName(String name) {
+        if (name == null) return "";
+        return name.toLowerCase()
+                .replace(" line", "")
+                .replace(" underground", "")
+                .replace(" station", "")
+                .trim();
+    }
+
     public static List<Toc> getVisibleTocs() {
         List<Toc> visibleTocs = new ArrayList<>();
         for (Toc t : allTocs) {
@@ -106,8 +116,12 @@ public class TOCBrandHelper {
             if (userColoursJson != null && userColoursJson.has(tocName)) {
                 return Color.parseColor(userColoursJson.getString(tocName));
             }
+            String cleanInput = cleanName(tocName);
             for (Toc t : allTocs) {
-                if (t.name.equalsIgnoreCase(tocName)) {
+                String cleanToc = cleanName(t.name);
+                System.out.println("cleaned: " + cleanToc);
+                if (cleanToc.equalsIgnoreCase(cleanInput) || cleanInput.contains(cleanToc)) {
+                    System.out.println("true");
                     return Color.parseColor(t.colour);
                 }
             }
@@ -117,9 +131,11 @@ public class TOCBrandHelper {
         return Color.parseColor("#333333");
     }
 
-    public static String getManagerForToc(String tocname) {
+    public static String getManagerForToc(String tocName) {
+        String cleanInput = cleanName(tocName);
         for (Toc t : allTocs) {
-            if(t.name.equalsIgnoreCase(tocname)) {
+            String cleanToc = cleanName(t.name);
+            if (cleanToc.equalsIgnoreCase(cleanInput) || cleanInput.contains(cleanToc)) {
                 return t.manager;
             }
         }
@@ -128,16 +144,18 @@ public class TOCBrandHelper {
 
     public static String getDelayRepayUrlForName(String tocName) {
         if (tocName == null) return null;
+        String cleanInput = cleanName(tocName);
         for (Toc t : allTocs) {
-            if (t.name.equalsIgnoreCase(tocName)) return t.delayRepayUrl;
+            if (cleanName(t.name).equalsIgnoreCase(cleanInput)) return t.delayRepayUrl;
         }
         return null;
     }
 
     public static int getDelayRepayMinTimeForName(String tocName) {
         if (tocName == null) return 15;
+        String cleanInput = cleanName(tocName);
         for (Toc t : allTocs) {
-            if (t.name.equalsIgnoreCase(tocName)) return t.delayRepayMinTime;
+            if (cleanName(t.name).equalsIgnoreCase(cleanInput)) return t.delayRepayMinTime;
         }
         return 15;
     }

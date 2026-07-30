@@ -221,16 +221,156 @@ public class ServiceDetailsActivity extends AppCompatActivity {
                     recyclerTimeline.setAdapter(adapter);
 
                 } else {
-                    Toast.makeText(ServiceDetailsActivity.this, "Failed to load details.", Toast.LENGTH_SHORT).show();
+                    fetchTflServiceDetails(serviceId);
                 }
             }
 
             @Override
             public void onFailure(@NonNull Call<ServiceDetailsResponse> call, @NonNull Throwable t) {
                 swipeRefreshLayout.setRefreshing(false);
-                Toast.makeText(ServiceDetailsActivity.this, "Network error", Toast.LENGTH_SHORT).show();
+                fetchTflServiceDetails(serviceId);
             }
         });
+    }
+
+    private void fetchTflServiceDetails(String vehicleId) {
+        android.util.Log.d("TfL_API", "Fetching TfL vehicle arrivals for ID: " + vehicleId);
+
+        io.github.turtle358.callingpoint.api.TflAPI tflApi = APIClient.getClient().create(io.github.turtle358.callingpoint.api.TflAPI.class);
+
+        tflApi.getVehicleArrivals(vehicleId).enqueue(new Callback<>() {
+            @Override
+            public void onResponse(@NonNull Call<List<io.github.turtle358.callingpoint.models.TflVehicleArrival>> call, @NonNull Response<List<io.github.turtle358.callingpoint.models.TflVehicleArrival>> response) {
+                if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
+                    List<io.github.turtle358.callingpoint.models.TflVehicleArrival> tflArrivals = response.body();
+                    tflArrivals.sort((a, b) -> Integer.compare(a.timeToStation, b.timeToStation));
+                    List<ServiceDetailsResponse.TimelinePoint> allPoints = new ArrayList<>();
+
+                    java.text.SimpleDateFormat displayFormat = new java.text.SimpleDateFormat("HH:mm", java.util.Locale.UK);
+                    displayFormat.setTimeZone(java.util.TimeZone.getTimeZone("Europe/London"));
+
+                    String operatorName = tflArrivals.get(0).lineName;
+
+                    for (io.github.turtle358.callingpoint.models.TflVehicleArrival tflPoint : tflArrivals) {
+                        ServiceDetailsResponse.TimelinePoint tp = new ServiceDetailsResponse.TimelinePoint();
+                        tp.locationName = tflPoint.stationName.replace(" Underground Station", "").replace(" DLR Station", "");
+                        tp.platform = tflPoint.platformName;
+                        tp.isCancelled = false;
+
+                        try {
+                            String arrivalString = tflPoint.expectedArrival;
+                            java.text.SimpleDateFormat tflFormat;
+                            if (arrivalString != null && arrivalString.contains(".")) {
+                                tflFormat = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.UK);
+                            } else {
+                                tflFormat = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", java.util.Locale.UK);
+                            }
+                            tflFormat.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
+
+                            java.util.Date date = tflFormat.parse(arrivalString);
+                            if (date != null) {
+                                tp.scheduledTime = displayFormat.format(date);
+                                tp.estimatedTime = tp.scheduledTime;
+                            }
+                        } catch (Exception e) {
+                            tp.scheduledTime = "";
+                            tp.estimatedTime = "";
+                        }
+                        allPoints.add(tp);
+                    }
+
+                    int brandColour = TOCBrandHelper.getColourForToc(operatorName);
+                    if (topHeaderBar != null) {
+                        topHeaderBar.setBackgroundColor(brandColour);
+                        boolean isLightColour = ColorUtils.calculateLuminance(brandColour) > 0.5;
+                        WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView()).setAppearanceLightStatusBars(isLightColour);
+                    }
+
+                    String originName = userOrigin != null && !userOrigin.isEmpty() ? userOrigin : allPoints.get(0).locationName;
+                    String destName = allPoints.get(allPoints.size() - 1).locationName;
+
+                    if (originName.equals(destName)) {
+                        tvHeaderDestination.setText(originName);
+                    } else {
+                        tvHeaderDestination.setText(originName + " to " + destName);
+                        tvHeaderDestination.post(() -> {
+                            if (tvHeaderDestination.getLineCount() > 1) {
+                                tvHeaderDestination.setText(originName + "\nto " + destName);
+                            }
+                        });
+                    }
+
+                    int stopsCount = allPoints.size() - 1;
+                    String durationStr = calculateDuration(allPoints.get(0).scheduledTime, allPoints.get(allPoints.size() - 1).scheduledTime);
+                    String subInfoText = (!durationStr.isEmpty() ? durationStr + " • " : "") +
+                            stopsCount + (stopsCount == 1 ? " stop • " : " stops • ") + operatorName;
+
+                    tvHeaderOperator.setText(subInfoText);
+                    tvHeaderTime.setText(allPoints.get(0).scheduledTime);
+
+                    String rawPlatform = allPoints.get(0).platform != null ? allPoints.get(0).platform : "";
+                    if (rawPlatform.contains(" - ")) {
+                        String[] parts = rawPlatform.split(" - ");
+                        tvHeaderPlatform.setText(parts[parts.length - 1]);
+                    } else {
+                        tvHeaderPlatform.setText(rawPlatform);
+                    }
+
+                    tvHeaderStatus.setText("Live");
+                    tvHeaderStatus.setTextColor(Color.parseColor("#00875A"));
+                    tvHeaderStatus.setVisibility(View.VISIBLE);
+                    cardTrainDetails.setVisibility(View.GONE);
+
+                    String originParam = userOrigin != null && !userOrigin.isEmpty() ? userOrigin : allPoints.get(0).locationName;
+                    TimelineAdapter adapter = new TimelineAdapter(allPoints, brandColour, originParam, userDest, crs -> {
+                        android.content.Intent intent = new android.content.Intent(ServiceDetailsActivity.this, MainActivity.class);
+                        intent.putExtra("OPEN_STATION_CRS", crs);
+                        startActivity(intent);
+                    });
+
+                    recyclerTimeline.setAdapter(adapter);
+
+                } else {
+                    android.util.Log.e("TfL_API", "TfL Response Unsuccessful or Empty. HTTP Code: " + response.code());
+                    showTrueFallback();
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<List<io.github.turtle358.callingpoint.models.TflVehicleArrival>> call, @NonNull Throwable t) {
+                android.util.Log.e("TfL_API", "Network error fetching TfL Vehicle", t);
+                showTrueFallback();
+            }
+        });
+    }
+
+    private void showTrueFallback() {
+        if (userOrigin != null && userDest != null && !userDest.isEmpty()) {
+            tvHeaderDestination.setText(userOrigin + " to " + userDest);
+        } else if (userOrigin != null) {
+            tvHeaderDestination.setText(userOrigin + " Departures");
+        } else {
+            tvHeaderDestination.setText("London Underground");
+        }
+
+        tvHeaderOperator.setText("Transport for London");
+        tvHeaderTime.setText("Live Tracker");
+        tvHeaderPlatform.setText("");
+
+        tvHeaderStatus.setText("Good Service");
+        tvHeaderStatus.setTextColor(Color.parseColor("#00875A"));
+        tvHeaderStatus.setVisibility(View.VISIBLE);
+
+        recyclerTimeline.setVisibility(View.GONE);
+
+        cardTrainDetails.setVisibility(View.VISIBLE);
+        TextView tvCardTitle = findViewById(R.id.tvCoachCapacity);
+
+        tvCardTitle.setText("Live calling points are not broadcast for Underground services. Please refer to station maps for routing.");
+        tvCardTitle.setTextSize(14f);
+        tvCardTitle.setTextColor(Color.parseColor("#666666"));
+
+        recyclerCoaches.setVisibility(View.GONE);
     }
 
     private String calculateDuration(String start, String end) {

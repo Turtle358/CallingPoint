@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
+import android.graphics.Paint;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,9 +13,14 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
+import java.util.TimeZone;
 
 import io.github.turtle358.callingpoint.R;
 import io.github.turtle358.callingpoint.utils.StationHelper;
@@ -39,8 +45,8 @@ public class DeparturesAdapter extends RecyclerView.Adapter<DeparturesAdapter.Vi
     public void updateData(List<StationDepartureResponse.TrainService> newServices, boolean isArrivals, String departingCrs, String arrivingCrs) {
         this.services = newServices;
         this.isArrivals = isArrivals;
-        this.userOriginStation = StationHelper.getNameFromCrs(departingCrs);
-        this.userArrivingStation = StationHelper.getNameFromCrs(arrivingCrs);
+        this.userOriginStation = StationHelper.getNameFromCode(departingCrs);
+        this.userArrivingStation = StationHelper.getNameFromCode(arrivingCrs);
         this.lastPosition = -1;
         notifyDataSetChanged();
     }
@@ -56,21 +62,44 @@ public class DeparturesAdapter extends RecyclerView.Adapter<DeparturesAdapter.Vi
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         StationDepartureResponse.TrainService service = services.get(position);
-
         holder.tocColourBar.setBackgroundColor(TOCBrandHelper.getColourForToc(service.operatorName));
         holder.ivManagerLogo.setImageResource(TOCBrandHelper.getIconForToc(service.operatorName));
 
         String schTime = service.std != null ? service.std : (service.sta != null ? service.sta : "--:--");
         String estTime = service.etd != null ? service.etd : (service.eta != null ? service.eta : "Unknown");
 
-        holder.tvSchTime.setText(schTime);
-        holder.tvLiveStatus.setText(estTime);
+        String countdownText = calculateCountdown(schTime, estTime);
 
-        if ("On time".equalsIgnoreCase(estTime)) {
-            holder.tvLiveStatus.setTextColor(Color.parseColor("#00875A"));
-        } else if ("Cancelled".equalsIgnoreCase(estTime)) {
+        holder.tvSchTime.setPaintFlags(holder.tvSchTime.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
+        holder.tvSchTime.setTextColor(holder.defaultSchColour);
+        holder.tvSchTime.setVisibility(View.VISIBLE);
+        holder.tvLiveStatus.setVisibility(View.VISIBLE);
+
+        if ("Cancelled".equalsIgnoreCase(estTime)) {
+            holder.tvSchTime.setText(schTime);
+            holder.tvSchTime.setPaintFlags(holder.tvSchTime.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+
+            holder.tvLiveStatus.setText("Cancelled");
             holder.tvLiveStatus.setTextColor(Color.parseColor("#DE350B"));
+
+        } else if ("Delayed".equalsIgnoreCase(estTime)) {
+            holder.tvSchTime.setText(schTime);
+            holder.tvSchTime.setPaintFlags(holder.tvSchTime.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+
+            holder.tvLiveStatus.setText("Delayed");
+            holder.tvLiveStatus.setTextColor(Color.parseColor("#FF8C00"));
+
+        } else if ("On time".equalsIgnoreCase(estTime)) {
+            holder.tvSchTime.setText(countdownText);
+            holder.tvSchTime.setTextColor(Color.parseColor("#00875A"));
+
+            holder.tvLiveStatus.setVisibility(View.GONE);
+
         } else {
+            holder.tvSchTime.setText(schTime);
+            holder.tvSchTime.setPaintFlags(holder.tvSchTime.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+
+            holder.tvLiveStatus.setText("Exp " + estTime + " (" + countdownText + ")");
             holder.tvLiveStatus.setTextColor(Color.parseColor("#FF8C00"));
         }
 
@@ -113,7 +142,6 @@ public class DeparturesAdapter extends RecyclerView.Adapter<DeparturesAdapter.Vi
                 stopsCount = pts.size();
                 durationStr = calculateDuration(schTime, pts.get(pts.size() - 1).st);
             }
-
             holder.tvCallingAt.setVisibility(View.VISIBLE);
 
         } else if (isArrivals && service.previousCallingPoints != null && !service.previousCallingPoints.isEmpty()) {
@@ -142,7 +170,6 @@ public class DeparturesAdapter extends RecyclerView.Adapter<DeparturesAdapter.Vi
                 stopsCount = pts.size();
                 durationStr = calculateDuration(pts.get(0).st, schTime);
             }
-
             holder.tvCallingAt.setVisibility(View.VISIBLE);
 
         } else {
@@ -158,28 +185,86 @@ public class DeparturesAdapter extends RecyclerView.Adapter<DeparturesAdapter.Vi
 
         setAnimation(holder.itemView, position);
 
-        holder.itemView.setOnClickListener(v -> {
-            Intent intent = new Intent(context, ServiceDetailsActivity.class);
-            intent.putExtra("SERVICE_ID", service.serviceID);
+        String manager = TOCBrandHelper.getManagerForToc(service.operatorName);
 
-            String trainOrigin = (service.origin != null && !service.origin.isEmpty()) ? service.origin.get(0).locationName : "Unknown";
-            String trainDest = (service.destination != null && !service.destination.isEmpty()) ? service.destination.get(0).locationName : "Unknown";
+        if ("tfl".equalsIgnoreCase(manager)) {
+            holder.itemView.setClickable(false);
+            holder.itemView.setFocusable(false);
+            holder.itemView.setOnClickListener(null);
+        } else {
+            holder.itemView.setClickable(true);
+            holder.itemView.setFocusable(true);
 
-            String uOrigin;
-            String uDest;
+            holder.itemView.setOnClickListener(v -> {
+                Intent intent = new Intent(context, ServiceDetailsActivity.class);
+                intent.putExtra("SERVICE_ID", service.serviceID);
 
-            if (isArrivals) {
-                uDest = userOriginStation;
-                uOrigin = (userArrivingStation != null && !userArrivingStation.isEmpty() && !userArrivingStation.equals("Unknown")) ? userArrivingStation : trainOrigin;
-            } else {
-                uOrigin = userOriginStation;
-                uDest = (userArrivingStation != null && !userArrivingStation.isEmpty() && !userArrivingStation.equals("Unknown")) ? userArrivingStation : trainDest;
+                String trainOrigin = (service.origin != null && !service.origin.isEmpty()) ? service.origin.get(0).locationName : "Unknown";
+                String trainDest = (service.destination != null && !service.destination.isEmpty()) ? service.destination.get(0).locationName : "Unknown";
+
+                String uOrigin;
+                String uDest;
+
+                if (isArrivals) {
+                    uDest = userOriginStation;
+                    uOrigin = (userArrivingStation != null && !userArrivingStation.isEmpty() && !userArrivingStation.equals("Unknown")) ? userArrivingStation : trainOrigin;
+                } else {
+                    uOrigin = userOriginStation;
+                    uDest = (userArrivingStation != null && !userArrivingStation.isEmpty() && !userArrivingStation.equals("Unknown")) ? userArrivingStation : trainDest;
+                }
+
+                intent.putExtra("USER_ORIGIN", uOrigin);
+                intent.putExtra("USER_DESTINATION", uDest);
+                context.startActivity(intent);
+            });
+        }
+    }
+
+    private String calculateCountdown(String scheduledTime, String estimatedTime) {
+        if ("Cancelled".equalsIgnoreCase(estimatedTime)) return "Cancelled";
+        if ("Delayed".equalsIgnoreCase(estimatedTime)) return "Delayed";
+
+        String timeToUse = scheduledTime;
+        if (estimatedTime != null && estimatedTime.contains(":") && !estimatedTime.equalsIgnoreCase("On time")) {
+            timeToUse = estimatedTime;
+        }
+
+        if (timeToUse == null || !timeToUse.contains(":")) {
+            return estimatedTime != null ? estimatedTime : "--";
+        }
+
+        try {
+            SimpleDateFormat sdf = new SimpleDateFormat("HH:mm", Locale.UK);
+            sdf.setTimeZone(TimeZone.getTimeZone("Europe/London"));
+
+            Calendar now = Calendar.getInstance(TimeZone.getTimeZone("Europe/London"));
+            int currentMins = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE);
+
+            Date targetDate = sdf.parse(timeToUse);
+            if (targetDate == null) return estimatedTime != null ? estimatedTime : scheduledTime;
+
+            Calendar target = Calendar.getInstance(TimeZone.getTimeZone("Europe/London"));
+            target.setTime(targetDate);
+            int targetMins = target.get(Calendar.HOUR_OF_DAY) * 60 + target.get(Calendar.MINUTE);
+
+            if (targetMins < currentMins && (currentMins - targetMins) > 720) {
+                targetMins += 1440;
             }
 
-            intent.putExtra("USER_ORIGIN", uOrigin);
-            intent.putExtra("USER_DESTINATION", uDest);
-            context.startActivity(intent);
-        });
+            int diffMins = targetMins - currentMins;
+
+            if (diffMins <= 0) {
+                return "Due";
+            } else if (diffMins < 60) {
+                return diffMins + " min";
+            } else {
+                int h = diffMins / 60;
+                int m = diffMins % 60;
+                return m > 0 ? h + "h " + m + "m" : h + "h";
+            }
+        } catch (Exception e) {
+            return estimatedTime != null ? estimatedTime : scheduledTime;
+        }
     }
 
     private void setAnimation(View viewToAnimate, int position) {
@@ -226,6 +311,7 @@ public class DeparturesAdapter extends RecyclerView.Adapter<DeparturesAdapter.Vi
         View tocColourBar;
         ImageView ivManagerLogo;
         TextView tvSchTime, tvLiveStatus, tvPlatform, tvRoute, tvCallingAt, tvServiceDetails;
+        int defaultSchColour;
 
         public ViewHolder(View v) {
             super(v);
@@ -237,6 +323,7 @@ public class DeparturesAdapter extends RecyclerView.Adapter<DeparturesAdapter.Vi
             tvRoute = v.findViewById(R.id.tvRoute);
             tvCallingAt = v.findViewById(R.id.tvCallingAt);
             tvServiceDetails = v.findViewById(R.id.tvServiceDetails);
+            defaultSchColour = tvSchTime.getCurrentTextColor();
         }
     }
 
@@ -244,13 +331,11 @@ public class DeparturesAdapter extends RecyclerView.Adapter<DeparturesAdapter.Vi
         if (this.services == null) {
             this.services = new ArrayList<>();
         }
-
         int addedCount = 0;
-
         for (StationDepartureResponse.TrainService newService : newServices) {
             boolean exists = false;
             for (StationDepartureResponse.TrainService existingService : this.services) {
-                if (java.util.Objects.equals(existingService.serviceID, newService.serviceID)) {
+                if (Objects.equals(existingService.serviceID, newService.serviceID)) {
                     exists = true;
                     break;
                 }
@@ -260,12 +345,10 @@ public class DeparturesAdapter extends RecyclerView.Adapter<DeparturesAdapter.Vi
                 addedCount++;
             }
         }
-
         if (addedCount > 0) {
             this.lastPosition = this.services.size();
             notifyDataSetChanged();
         }
-
         return addedCount;
     }
 }

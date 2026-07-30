@@ -43,30 +43,33 @@ public class PinnedStationAdapter extends RecyclerView.Adapter<PinnedStationAdap
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         String key = pinnedKeys.get(position);
 
-        String fromCrs = key.contains(":") ? key.split(":")[0] : key;
-        String toCrs = key.contains(":") ? key.split(":")[1] : "";
+        // Extract the raw codes (these could be CRS or Naptan IDs)
+        String fromCode = key.contains(":") ? key.split(":")[0] : key;
+        String toCode = key.contains(":") ? key.split(":")[1] : "";
 
-        String fromName = fromCrs;
-        String toName = toCrs;
+        // Resolve names using your helper, which handles both CRS and Naptan seamlessly
+        String fromName = StationHelper.getNameFromCode(fromCode);
+        if (fromName.isEmpty()) fromName = fromCode; // Fallback just in case
 
-        for (String name : StationHelper.getStationNames()) {
-            if (fromCrs.equalsIgnoreCase(StationHelper.getCrsFromName(name))) fromName = name;
-            if (toCrs.equalsIgnoreCase(StationHelper.getCrsFromName(name))) toName = name;
+        String toName = "";
+        if (!toCode.isEmpty()) {
+            toName = StationHelper.getNameFromCode(toCode);
+            if (toName.isEmpty()) toName = toCode;
         }
 
         holder.tvStationName.setText(fromName);
 
+        // Fetch the correct icon (National Rail vs TfL roundel)
         holder.ivLogo.setImageResource(StationHelper.getIconForStation(fromName));
 
-
-        if (!toCrs.isEmpty()) {
+        if (!toCode.isEmpty()) {
             holder.tvDestinationName.setText("to " + toName);
             holder.tvDestinationName.setVisibility(View.VISIBLE);
         } else {
             holder.tvDestinationName.setVisibility(View.GONE);
         }
 
-        holder.itemView.setOnClickListener(v -> listener.onPinClick(fromCrs, toCrs));
+        holder.itemView.setOnClickListener(v -> listener.onPinClick(fromCode, toCode));
     }
 
     @Override
@@ -90,5 +93,4 @@ public class PinnedStationAdapter extends RecyclerView.Adapter<PinnedStationAdap
             ivLogo = v.findViewById(R.id.stationBranding);
         }
     }
-
 }

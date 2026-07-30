@@ -20,6 +20,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.facebook.shimmer.ShimmerFrameLayout;
+import com.google.android.material.button.MaterialButtonToggleGroup;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -28,9 +29,11 @@ import java.util.List;
 import io.github.turtle358.callingpoint.R;
 import io.github.turtle358.callingpoint.api.APIClient;
 import io.github.turtle358.callingpoint.api.NationalRailAPI;
+import io.github.turtle358.callingpoint.api.TflAPI;
 import io.github.turtle358.callingpoint.data.PinnedDataManager;
 import io.github.turtle358.callingpoint.models.StationDepartureResponse;
 import io.github.turtle358.callingpoint.models.StationMessage;
+import io.github.turtle358.callingpoint.models.TflArrivalPrediction;
 import io.github.turtle358.callingpoint.ui.adapters.DeparturesAdapter;
 import io.github.turtle358.callingpoint.utils.StationHelper;
 import retrofit2.Call;
@@ -39,11 +42,16 @@ import retrofit2.Response;
 
 public class StationActivity extends AppCompatActivity {
 
-    private String fromCrs = "";
+    private String passedCode = ""; // Could be CRS or Naptan depending on intent
+    private String resolvedStationName = "";
+    private String activeCrs = "";
+    private String activeNaptan = "";
+
     private String toCrs = "";
     private String pinKey = "";
     private boolean isArrivals = false;
     private int currentOffset = 0;
+    private boolean isShowingTfl = false;
 
     private View rootView;
 
@@ -52,12 +60,14 @@ public class StationActivity extends AppCompatActivity {
     private SwipeRefreshLayout swipeRefreshLayout;
     private RecyclerView recyclerDepartures;
     private Button btnLaterServices;
+    private MaterialButtonToggleGroup toggleServiceType;
 
     private LinearLayout containerStationMessages;
     private TextView btnToggleMessages;
 
     private DeparturesAdapter adapter;
     private NationalRailAPI api;
+    private TflAPI tflApi;
     private PinnedDataManager pinnedDataManager;
 
     private boolean isMessagesExpanded = false;
@@ -107,19 +117,24 @@ public class StationActivity extends AppCompatActivity {
 
         View btnBack = findViewById(R.id.btnBack);
         if (btnBack != null) {
-            btnBack.setOnClickListener(v -> {
-                finish();
-            });
+            btnBack.setOnClickListener(v -> finish());
         }
 
         if (getIntent().getExtras() != null) {
             Bundle extras = getIntent().getExtras();
-            fromCrs = extras.getString("FROM_CRS", "");
+            passedCode = extras.getString("FROM_CRS", "");
             toCrs = extras.getString("TO_CRS", "");
             isArrivals = extras.getBoolean("IS_ARRIVALS", false);
         }
 
-        pinKey = fromCrs + (toCrs.isEmpty() ? "" : ":" + toCrs);
+        // Resolve station identities
+        resolvedStationName = StationHelper.getNameFromCode(passedCode);
+        if (resolvedStationName.isEmpty()) resolvedStationName = passedCode; // Fallback
+
+        activeCrs = StationHelper.getCrsFromName(resolvedStationName);
+        activeNaptan = StationHelper.getNaptanFromName(resolvedStationName);
+
+        pinKey = passedCode + (toCrs.isEmpty() ? "" : ":" + toCrs);
 
         tvDirectionHeading = findViewById(R.id.tvDirectionHeading);
         tvStationTitle = findViewById(R.id.tvStationTitle);
@@ -130,12 +145,15 @@ public class StationActivity extends AppCompatActivity {
         tvEmptyState = findViewById(R.id.tvEmptyState);
         btnLaterServices = findViewById(R.id.btnLaterServices);
         containerStationMessages = findViewById(R.id.containerStationMessages);
+        toggleServiceType = findViewById(R.id.toggleServiceType);
 
         pinnedDataManager = new PinnedDataManager(this);
         api = APIClient.getClient().create(NationalRailAPI.class);
+        tflApi = APIClient.getClient().create(TflAPI.class);
 
         setupHeader();
         setupPinButton();
+        setupToggle();
 
         recyclerDepartures.setLayoutManager(new LinearLayoutManager(this));
         adapter = new DeparturesAdapter(this, new ArrayList<>());
@@ -143,8 +161,14 @@ public class StationActivity extends AppCompatActivity {
 
         swipeRefreshLayout.setOnRefreshListener(() -> {
             swipeRefreshLayout.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK);
-            fetchTrains(false);
-            fetchStationMessages();
+            if (isShowingTfl) {
+                fetchTflTrains();
+            } else {
+                fetchTrains(false);
+            }
+            if (activeCrs != null && !activeCrs.isEmpty()) {
+                fetchStationMessages();
+            }
         });
 
         btnLaterServices.setOnClickListener(v -> {
@@ -153,8 +177,39 @@ public class StationActivity extends AppCompatActivity {
             fetchTrains(true);
         });
 
-        fetchTrains(false);
-        fetchStationMessages();
+        // Initial Data Load based on availability
+        if (activeCrs != null && !activeCrs.isEmpty()) {
+            fetchTrains(false);
+            fetchStationMessages();
+        } else if (activeNaptan != null && !activeNaptan.isEmpty()) {
+            isShowingTfl = true;
+            fetchTflTrains();
+        } else {
+            showEmptyState("Station not found.");
+        }
+    }
+
+    private void setupToggle() {
+        boolean hasNr = activeCrs != null && !activeCrs.isEmpty();
+        boolean hasTfl = activeNaptan != null && !activeNaptan.isEmpty();
+
+        if (hasNr && hasTfl) {
+            toggleServiceType.setVisibility(View.VISIBLE);
+        } else {
+            toggleServiceType.setVisibility(View.GONE);
+        }
+
+        toggleServiceType.addOnButtonCheckedListener((group, checkedId, isChecked) -> {
+            if (isChecked) {
+                if (checkedId == R.id.btnNationalRail) {
+                    isShowingTfl = false;
+                    fetchTrains(false);
+                } else if (checkedId == R.id.btnTfl) {
+                    isShowingTfl = true;
+                    fetchTflTrains();
+                }
+            }
+        });
     }
 
     private void setupHeader() {
@@ -164,22 +219,11 @@ public class StationActivity extends AppCompatActivity {
             tvDirectionHeading.setText("Trains departing from");
         }
 
-        tvStationTitle.setText(fromCrs);
-        for (String name : StationHelper.getStationNames()) {
-            if (fromCrs.equalsIgnoreCase(StationHelper.getCrsFromName(name))) {
-                tvStationTitle.setText(name);
-                break;
-            }
-        }
+        tvStationTitle.setText(resolvedStationName);
 
         if (!toCrs.isEmpty()) {
-            String toName = toCrs;
-            for (String name : StationHelper.getStationNames()) {
-                if (toCrs.equalsIgnoreCase(StationHelper.getCrsFromName(name))) {
-                    toName = name;
-                    break;
-                }
-            }
+            String toName = StationHelper.getNameFromCode(toCrs);
+            if (toName.isEmpty()) toName = toCrs;
 
             String prefix = isArrivals ? "from " : "to ";
             tvStationSubtitle.setText(prefix + toName);
@@ -189,11 +233,9 @@ public class StationActivity extends AppCompatActivity {
 
     private void setupPinButton() {
         updatePinIcon();
-
         btnPinStation.setOnClickListener(v -> {
             pinnedDataManager.toggleStationPin(pinKey);
             updatePinIcon();
-
             boolean isNowPinned = pinnedDataManager.isStationPinned(pinKey);
             Toast.makeText(this, isNowPinned ? "Station Pinned!" : "Pin Removed", Toast.LENGTH_SHORT).show();
         });
@@ -204,38 +246,37 @@ public class StationActivity extends AppCompatActivity {
         btnPinStation.setImageResource(isPinned ? R.drawable.ic_bookmark : R.drawable.ic_bookmark_outline);
     }
 
-
     private void fetchStationMessages() {
+        if (activeCrs == null || activeCrs.isEmpty()) return;
+
         List<String> queryStations = new ArrayList<>();
-        queryStations.add(fromCrs);
+        queryStations.add(activeCrs);
         if (!toCrs.isEmpty()) {
-            queryStations.add(toCrs);
+            String toResolvedCrs = StationHelper.getCrsFromName(StationHelper.getNameFromCode(toCrs));
+            if (toResolvedCrs != null && !toResolvedCrs.isEmpty()) {
+                queryStations.add(toResolvedCrs);
+            }
         }
 
         api.getStationMessages(queryStations).enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<List<StationMessage>> call, @NonNull Response<List<StationMessage>> response) {
                 if (isFinishing() || isDestroyed()) return;
-
                 if (response.isSuccessful() && response.body() != null) {
                     displayStationMessages(response.body());
                 }
             }
-
             @Override
-            public void onFailure(@NonNull Call<List<StationMessage>> call, @NonNull Throwable t) {
-            }
+            public void onFailure(@NonNull Call<List<StationMessage>> call, @NonNull Throwable t) { }
         });
     }
 
     private void displayStationMessages(List<StationMessage> messages) {
         currentMessages.clear();
-
         for (StationMessage msg : messages) {
             if (msg.stationAlerts != null && !msg.stationAlerts.trim().isEmpty()) {
                 currentMessages.add(new UnifiedMessage(msg.stationAlerts, "Information", "Station Alert"));
             }
-
             if (msg.stationDisruptions != null) {
                 for (StationMessage.StationDisruption disruption : msg.stationDisruptions) {
                     if (disruption.summary != null && !disruption.summary.trim().isEmpty()) {
@@ -244,7 +285,6 @@ public class StationActivity extends AppCompatActivity {
                 }
             }
         }
-
         Collections.sort(currentMessages);
         buildMessageViews();
     }
@@ -257,16 +297,11 @@ public class StationActivity extends AppCompatActivity {
             containerStationMessages.setVisibility(View.GONE);
             return;
         }
-
         containerStationMessages.setVisibility(View.VISIBLE);
 
         for (int i = 0; i < currentMessages.size(); i++) {
             View view = createMessageView(currentMessages.get(i));
-
-            if (i > 0) {
-                view.setVisibility(View.GONE);
-            }
-
+            if (i > 0) view.setVisibility(View.GONE);
             containerStationMessages.addView(view);
         }
 
@@ -279,7 +314,6 @@ public class StationActivity extends AppCompatActivity {
     private void toggleMessagesExpansion() {
         android.transition.AutoTransition transition = new android.transition.AutoTransition();
         transition.setDuration(200);
-
         TransitionManager.beginDelayedTransition((ViewGroup) rootView, transition);
 
         isMessagesExpanded = !isMessagesExpanded;
@@ -299,13 +333,11 @@ public class StationActivity extends AppCompatActivity {
 
     private View createMessageView(UnifiedMessage msg) {
         View view = getLayoutInflater().inflate(R.layout.item_station_message, containerStationMessages, false);
-
         View colorBar = view.findViewById(R.id.severityColourBar);
         TextView tvSeverity = view.findViewById(R.id.tvSeverityLabel);
         TextView tvContent = view.findViewById(R.id.tvMessageContent);
 
         tvSeverity.setText(msg.category + " • " + msg.severity);
-
         String cleanHtml = msg.text.replace("\\n", "<br/>");
         tvContent.setText(HtmlCompat.fromHtml(cleanHtml, HtmlCompat.FROM_HTML_MODE_COMPACT));
         tvContent.setMovementMethod(LinkMovementMethod.getInstance());
@@ -326,7 +358,6 @@ public class StationActivity extends AppCompatActivity {
             TransitionManager.beginDelayedTransition((ViewGroup) rootView, transition);
 
             isCardExpanded[0] = !isCardExpanded[0];
-
             if (isCardExpanded[0]) {
                 tvContent.setMaxLines(Integer.MAX_VALUE);
             } else {
@@ -356,7 +387,88 @@ public class StationActivity extends AppCompatActivity {
         btnToggleMessages.setOnClickListener(v -> toggleMessagesExpansion());
     }
 
+    // --- TFL FETCH LOGIC ---
+    private void fetchTflTrains() {
+        showShimmer();
+        if (btnLaterServices != null) btnLaterServices.setVisibility(View.GONE);
 
+        tflApi.getStopPointArrivals(activeNaptan).enqueue(new Callback<>() {
+            @Override
+            public void onResponse(@NonNull Call<List<TflArrivalPrediction>> call, @NonNull Response<List<TflArrivalPrediction>> response) {
+                if (isFinishing() || isDestroyed()) return;
+                hideShimmer();
+                swipeRefreshLayout.setRefreshing(false);
+
+                if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
+                    List<TflArrivalPrediction> predictions = response.body();
+
+                    // Sort by closest arrival time
+                    Collections.sort(predictions, (p1, p2) -> Integer.compare(p1.timeToStation, p2.timeToStation));
+
+                    List<StationDepartureResponse.TrainService> mappedServices = new ArrayList<>();
+                    java.text.SimpleDateFormat isoFormat = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", java.util.Locale.UK);
+                    isoFormat.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
+                    java.text.SimpleDateFormat timeFormat = new java.text.SimpleDateFormat("HH:mm", java.util.Locale.UK);
+                    timeFormat.setTimeZone(java.util.TimeZone.getTimeZone("Europe/London"));
+
+                    for (TflArrivalPrediction pred : predictions) {
+                        StationDepartureResponse.TrainService tService = new StationDepartureResponse.TrainService();
+
+                        tService.serviceID = pred.id;
+                        tService.operatorName = pred.lineName != null ? pred.lineName : "TfL Service";
+
+                        try {
+                            java.util.Date expectedDate = isoFormat.parse(pred.expectedArrival);
+                            if (expectedDate != null) {
+                                tService.std = timeFormat.format(expectedDate);
+                                tService.etd = "On time"; // Forces adapter to render the countdown
+                            }
+                        } catch (Exception e) {
+                            tService.std = "--:--";
+                            tService.etd = "Unknown";
+                        }
+
+                        if (pred.platformName != null) {
+                            tService.platform = pred.platformName.replace("Platform ", "")
+                                    .replace("Northbound - ", "")
+                                    .replace("Southbound - ", "")
+                                    .replace("Eastbound - ", "")
+                                    .replace("Westbound - ", "");
+                        } else {
+                            tService.platform = "-";
+                        }
+
+                        StationDepartureResponse.Location dest = new StationDepartureResponse.Location();
+                        dest.locationName = pred.destinationName != null ? pred.destinationName : "Check Front of Train";
+                        tService.destination = new ArrayList<>();
+                        tService.destination.add(dest);
+
+                        StationDepartureResponse.Location origin = new StationDepartureResponse.Location();
+                        origin.locationName = resolvedStationName;
+                        tService.origin = new ArrayList<>();
+                        tService.origin.add(origin);
+
+                        mappedServices.add(tService);
+                    }
+
+                    adapter.updateData(mappedServices, false, activeCrs, toCrs);
+                    recyclerDepartures.setVisibility(View.VISIBLE);
+                } else {
+                    showEmptyState("No TfL services currently expected.");
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<List<TflArrivalPrediction>> call, @NonNull Throwable t) {
+                if (isFinishing() || isDestroyed()) return;
+                hideShimmer();
+                swipeRefreshLayout.setRefreshing(false);
+                showEmptyState("Failed to connect to TfL API.");
+            }
+        });
+    }
+
+    // --- NATIONAL RAIL FETCH LOGIC ---
     private void fetchTrains(boolean isAppending) {
         if (!isAppending) {
             currentOffset = 0;
@@ -370,7 +482,12 @@ public class StationActivity extends AppCompatActivity {
             }
         }
 
-        String apiFilterCrs = toCrs.isEmpty() ? null : toCrs;
+        String apiFilterCrs = null;
+        String toResolvedCrs = StationHelper.getCrsFromName(StationHelper.getNameFromCode(toCrs));
+        if (toResolvedCrs != null && !toResolvedCrs.isEmpty()) {
+            apiFilterCrs = toResolvedCrs;
+        }
+
         String apiFilterType = null;
         if (apiFilterCrs != null) {
             apiFilterType = isArrivals ? "from" : "to";
@@ -378,9 +495,9 @@ public class StationActivity extends AppCompatActivity {
 
         Call<StationDepartureResponse> networkCall;
         if (isArrivals) {
-            networkCall = api.getStationArrivals(fromCrs, 10, apiFilterCrs, apiFilterType, currentOffset, 120);
+            networkCall = api.getStationArrivals(activeCrs, 10, apiFilterCrs, apiFilterType, currentOffset, 120);
         } else {
-            networkCall = api.getStationDepartures(fromCrs, 10, apiFilterCrs, apiFilterType, currentOffset, 120);
+            networkCall = api.getStationDepartures(activeCrs, 10, apiFilterCrs, apiFilterType, currentOffset, 120);
         }
 
         networkCall.enqueue(new Callback<>() {
@@ -401,7 +518,7 @@ public class StationActivity extends AppCompatActivity {
                             hideShimmer();
 
                             if (!isAppending) {
-                                adapter.updateData(allServices, isArrivals, fromCrs, toCrs);
+                                adapter.updateData(allServices, isArrivals, activeCrs, toResolvedCrs);
                                 recyclerDepartures.setVisibility(View.VISIBLE);
                             }
 
@@ -454,7 +571,7 @@ public class StationActivity extends AppCompatActivity {
     }
 
     private void showEmptyState(String message) {
-        adapter.updateData(new ArrayList<>(), isArrivals, fromCrs, toCrs);
+        adapter.updateData(new ArrayList<>(), isArrivals, activeCrs, toCrs);
         recyclerDepartures.setVisibility(View.GONE);
         tvEmptyState.setText(message);
         tvEmptyState.setVisibility(View.VISIBLE);

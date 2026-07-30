@@ -110,7 +110,6 @@ public class LiveBoardFragment extends Fragment {
         recyclerPinnedServices.setAdapter(serviceAdapter);
 
         setupDragAndDrop();
-
         setupToggleAnimation();
 
         btnSwap.setOnClickListener(v -> {
@@ -121,19 +120,36 @@ public class LiveBoardFragment extends Fragment {
             etToCrs.dismissDropDown();
         });
 
+        // --- UPDATED SEARCH VALIDATION LOGIC ---
         btnSearch.setOnClickListener(v -> {
             String fromName = etFromCrs.getText().toString().trim();
             String toName = etToCrs.getText().toString().trim();
-            String fromCrs = StationHelper.getCrsFromName(fromName);
-            String toCrs = toName.isEmpty() ? "" : StationHelper.getCrsFromName(toName);
 
-            if (fromCrs == null && fromName.length() == 3) fromCrs = fromName.toUpperCase();
-            if (toCrs == null && toName.length() == 3) toCrs = toName.toUpperCase();
+            String resolvedFromName = StationHelper.getNameFromCode(fromName);
+            if (resolvedFromName.isEmpty()) resolvedFromName = fromName;
 
-            if (fromCrs != null && fromCrs.length() == 3) {
+            String fromCrs = StationHelper.getCrsFromName(resolvedFromName);
+            String fromNaptan = StationHelper.getNaptanFromName(resolvedFromName);
+
+            String resolvedToName = StationHelper.getNameFromCode(toName);
+            if (resolvedToName.isEmpty()) resolvedToName = toName;
+
+            String toCrs = StationHelper.getCrsFromName(resolvedToName);
+            String toNaptan = StationHelper.getNaptanFromName(resolvedToName);
+
+            boolean isValidFrom = (fromCrs != null && !fromCrs.isEmpty()) || (fromNaptan != null && !fromNaptan.isEmpty());
+
+            if (isValidFrom) {
                 hideKeyboard();
                 boolean isArrivals = toggleBoardType.getCheckedRadioButtonId() == R.id.radioArrivals;
-                launchStationActivity(fromCrs, toCrs, isArrivals);
+
+                String fromCodeToPass = (fromCrs != null && !fromCrs.isEmpty()) ? fromCrs : fromNaptan;
+                String toCodeToPass = "";
+                if (!toName.isEmpty()) {
+                    toCodeToPass = (toCrs != null && !toCrs.isEmpty()) ? toCrs : toNaptan;
+                }
+
+                launchStationActivity(fromCodeToPass, toCodeToPass, isArrivals);
             } else {
                 Toast.makeText(requireContext(), "Please select a valid departing station", Toast.LENGTH_SHORT).show();
             }
