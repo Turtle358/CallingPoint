@@ -47,6 +47,7 @@ public class TOCBrandHelper {
                 JSONObject obj = array.getJSONObject(i);
                 Toc t = new Toc();
                 t.code = obj.getString("code");
+                t.tflId = obj.optString("tflId", t.code);
                 t.acronym = obj.optString("acronym", t.code);
                 t.name = obj.getString("name");
                 t.colour = obj.getString("colour");
@@ -258,5 +259,15 @@ public class TOCBrandHelper {
         btnClose.setOnClickListener(v -> dialog.dismiss());
 
         dialog.show();
+    }
+
+    public static String getTocCodeForTflId(String tflId) {
+        if (tflId == null) return null;
+        for (Toc t : allTocs) {
+            if (tflId.equalsIgnoreCase(t.tflId) || tflId.equalsIgnoreCase(t.code)) {
+                return t.code;
+            }
+        }
+        return tflId;
     }
 }

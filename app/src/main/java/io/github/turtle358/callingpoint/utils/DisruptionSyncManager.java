@@ -22,9 +22,11 @@ import java.util.Set;
 
 import io.github.turtle358.callingpoint.api.APIClient;
 import io.github.turtle358.callingpoint.api.NationalRailAPI;
+import io.github.turtle358.callingpoint.api.TflAPI;
 import io.github.turtle358.callingpoint.models.DisruptionResponce;
 import io.github.turtle358.callingpoint.models.IncidentResponse;
 import io.github.turtle358.callingpoint.models.IncidentSearchRequest;
+import io.github.turtle358.callingpoint.models.TflLineStatusResponse;
 import io.github.turtle358.callingpoint.widget.AppWidgetProvider;
 import retrofit2.Response;
 
@@ -57,6 +59,34 @@ public class DisruptionSyncManager {
                 new Handler(Looper.getMainLooper()).post(() -> callback.onFailure("Sync failed"));
             }
         }).start();
+    }
+
+    // Maps TfL's string IDs to your tocs.json 2-letter codes
+    private static String mapTflIdToTocCode(String tflId) {
+        switch (tflId.toLowerCase()) {
+            case "bakerloo": return "BK";
+            case "central": return "CE";
+            case "circle": return "CI";
+            case "district": return "DI";
+            case "hammersmith-city": return "HC";
+            case "jubilee": return "JU";
+            case "metropolitan": return "MT";
+            case "northern": return "NO";
+            case "piccadilly": return "PI";
+            case "victoria": return "VI";
+            case "waterloo-city": return "WC";
+            case "elizabeth": return "XR"; // Maps to Elizabeth line
+            case "dlr": return "DL";
+            case "tram": return "TR";
+            case "london-overground": return "LO";
+            case "mildmay": return "OM";
+            case "lioness": return "OL";
+            case "windrush": return "OW";
+            case "weaver": return "OV";
+            case "suffragette": return "OS";
+            case "liberty": return "OB";
+            default: return tflId;
+        }
     }
 
     public static boolean syncSync(Context context, SyncCallback callback) {
@@ -93,6 +123,12 @@ public class DisruptionSyncManager {
                     if (incident.affectedOperators == null || "Cleared".equalsIgnoreCase(incident.status)) continue;
 
                     for (IncidentResponse.AffectedOperator op : incident.affectedOperators) {
+
+                        // SKIP National Rail data for Overground and Elizabeth Line to prevent duplicates
+                        if ("LO".equalsIgnoreCase(op.tocCode) || "XR".equalsIgnoreCase(op.tocCode)) {
+                            continue;
+                        }
+
                         String currentSummary = incident.summary != null ? incident.summary.toLowerCase() : "";
                         String currentDesc = incident.description != null ? incident.description.toLowerCase() : "";
                         String simplifiedStatus = "Minor Disruption";
@@ -167,22 +203,83 @@ public class DisruptionSyncManager {
                     }
                 }
 
+                TflAPI tflApi = APIClient.getClient().create(TflAPI.class);
+                try {
+                    Response<List<TflLineStatusResponse>> tflResponse = tflApi.getLineStatus("tube,overground,dlr,elizabeth-line,tram").execute();
+
+                    if (tflResponse.isSuccessful() && tflResponse.body() != null) {
+                        for (TflLineStatusResponse line : tflResponse.body()) {
+                            if (line.lineStatuses == null || line.lineStatuses.isEmpty()) continue;
+
+                            TflLineStatusResponse.LineStatus status = line.lineStatuses.get(0);
+
+                            if (status.statusSeverity == 10) continue; // Skip Good Service
+
+                            // Dynamically lookup the 2-letter TOC code from tocs.json using tflId!
+                            String opCode = TOCBrandHelper.getTocCodeForTflId(line.id);
+                            String opName = TOCBrandHelper.getNameForCode(opCode);
+
+                            Map<String, DisruptionResponce.ServiceIndicator> targetMap =
+                                    (trackedSet.isEmpty() || trackedSet.contains(opCode)) ? trackedMap : othersMap;
+
+                            DisruptionResponce.ServiceIndicator si = targetMap.get(opCode);
+                            if (si == null) {
+                                si = new DisruptionResponce.ServiceIndicator();
+                                si.tocCode = opCode;
+                                si.tocName = opName.isEmpty() ? line.name : opName;
+                                si.status = status.statusSeverityDescription;
+                                targetMap.put(opCode, si);
+                            } else {
+                                si.status = status.statusSeverityDescription;
+                            }
+
+                            IncidentResponse incident = new IncidentResponse();
+                            incident.summary = status.statusSeverityDescription;
+                            incident.description = status.reason != null ? status.reason : "No further details available.";
+                            incident.status = "Active";
+                            incident.affectedOperators = new ArrayList<>();
+
+                            IncidentResponse.AffectedOperator op = new IncidentResponse.AffectedOperator();
+                            op.tocCode = opCode;
+                            incident.affectedOperators.add(op);
+
+                            boolean isPlanned = (status.statusSeverity == 4 || status.statusSeverity == 5 || status.statusSeverity == 11);
+
+                            if (isPlanned) {
+                                si.plannedIncidents.add(incident);
+                            } else {
+                                si.activeIncidents.add(incident);
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
                 List<DisruptionResponce.ServiceIndicator> trackedLive = new ArrayList<>();
                 List<DisruptionResponce.ServiceIndicator> othersLive = new ArrayList<>();
                 List<DisruptionResponce.ServiceIndicator> plannedWorks = new ArrayList<>();
 
                 for (DisruptionResponce.ServiceIndicator si : trackedMap.values()) {
-                    if (si.status.equals("Planned Engineering Works")) plannedWorks.add(si);
-                    else trackedLive.add(si);
+                    if (si.activeIncidents.isEmpty() && !si.plannedIncidents.isEmpty()) {
+                        plannedWorks.add(si);
+                    } else {
+                        trackedLive.add(si);
+                    }
                 }
+
                 for (DisruptionResponce.ServiceIndicator si : othersMap.values()) {
-                    if (si.status.equals("Planned Engineering Works")) plannedWorks.add(si);
-                    else othersLive.add(si);
+                    if (si.activeIncidents.isEmpty() && !si.plannedIncidents.isEmpty()) {
+                        plannedWorks.add(si);
+                    } else {
+                        othersLive.add(si);
+                    }
                 }
 
                 trackedLive.sort((a, b) -> a.tocName.compareToIgnoreCase(b.tocName));
                 othersLive.sort((a, b) -> a.tocName.compareToIgnoreCase(b.tocName));
                 plannedWorks.sort((a, b) -> a.tocName.compareToIgnoreCase(b.tocName));
+
                 CachedDisruptionData cacheContainer = new CachedDisruptionData(trackedLive, othersLive, plannedWorks);
                 String appJson = new Gson().toJson(cacheContainer);
                 String widgetJson = new Gson().toJson(trackedLive);

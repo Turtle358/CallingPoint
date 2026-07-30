@@ -3,6 +3,7 @@ package io.github.turtle358.callingpoint.api;
 import java.util.List;
 
 import io.github.turtle358.callingpoint.models.TflArrivalPrediction;
+import io.github.turtle358.callingpoint.models.TflLineStatusResponse;
 import io.github.turtle358.callingpoint.models.TflVehicleArrival;
 import retrofit2.Call;
 import retrofit2.http.GET;
@@ -15,8 +16,9 @@ public interface TflAPI {
     Call<List<TflArrivalPrediction>> getStopPointArrivals(
             @Path("naptanId") String naptanId
     );
+
     @GET("tfl/Line/Mode/{modes}/Status")
-    Call<List<Object>> getLineStatus(
+    Call<List<TflLineStatusResponse>> getLineStatus(
             @Path("modes") String modes
     );
 
