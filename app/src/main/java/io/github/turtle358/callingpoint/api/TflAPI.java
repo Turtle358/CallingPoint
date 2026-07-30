@@ -9,7 +9,7 @@ import retrofit2.Call;
 import retrofit2.http.GET;
 import retrofit2.http.Path;
 import retrofit2.http.Query;
-
+import com.google.gson.JsonObject;
 public interface TflAPI {
 
     @GET("tfl/StopPoint/{naptanId}/Arrivals")
@@ -23,7 +23,7 @@ public interface TflAPI {
     );
 
     @GET("tfl/Journey/JourneyResults/{from}/to/{to}")
-    Call<Object> getJourneyResults(
+    Call<JsonObject> getJourneyResults(
             @Path("from") String fromId,
             @Path("to") String toId,
             @Query("nationalSearch") boolean nationalSearch

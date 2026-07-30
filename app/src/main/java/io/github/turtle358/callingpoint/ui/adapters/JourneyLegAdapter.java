@@ -10,6 +10,7 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.cardview.widget.CardView;
@@ -57,9 +58,20 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
             holder.headerOperator.setVisibility(View.GONE);
             holder.layoutTimeline.setVisibility(View.GONE);
             holder.cardTransfer.setVisibility(View.VISIBLE);
-            holder.tvTransferTitle.setText("Underground / Walk to " + currentLeg.toStationName);
-            holder.tvTransferDuration.setText(currentLeg.durationMinutes + " min transfer");
+            holder.tvTransferTitle.setText("Walking / Transfer to " + currentLeg.toStationName);
+            holder.tvTransferDuration.setText(currentLeg.durationMinutes + " min walk (Tap for Google Maps)");
             holder.ivTransferIcon.setImageResource(R.drawable.ic_tfl);
+
+            holder.cardTransfer.setOnClickListener(v -> {
+                try {
+                    String destQuery = java.net.URLEncoder.encode(currentLeg.toStationName + " Station, London", "UTF-8");
+                    String uriString = "https://www.google.com/maps/dir/?api=1&destination=" + destQuery + "&travelmode=walking";
+                    android.content.Intent intent = new android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(uriString));
+                    v.getContext().startActivity(intent);
+                } catch (Exception e) {
+                    Toast.makeText(v.getContext(), "Unable to open Google Maps", Toast.LENGTH_SHORT).show();
+                }
+            });
             return;
         }
 

@@ -83,6 +83,44 @@ public class TOCBrandHelper {
                 .trim();
     }
 
+    public static Toc getTocByName(String operatorName) {
+        if (operatorName == null) return null;
+
+        // 1. Strict Exact Match (Uncleaned)
+        for (Toc t : allTocs) {
+            if (operatorName.equalsIgnoreCase(t.name) || operatorName.equalsIgnoreCase(t.code)) {
+                return t;
+            }
+        }
+
+        String cleanInput = cleanName(operatorName);
+
+        // 2. Exact Match (Cleaned)
+        for (Toc t : allTocs) {
+            if (cleanInput.equalsIgnoreCase(cleanName(t.name))) {
+                return t;
+            }
+        }
+
+        // 3. Fuzzy Match Fallback (Handles live board names like "Circle" matching "Circle Line")
+        for (Toc t : allTocs) {
+            String cleanToc = cleanName(t.name);
+            // Prevent National Rail "Northern" from accidentally grabbing "Northern Line"
+            if (cleanInput.equals("northern") && cleanToc.equals("northern")) {
+                return t;
+            }
+            if (cleanInput.equals("northern") && cleanToc.contains("line")) {
+                continue;
+            }
+
+            if (cleanInput.contains(cleanToc) || cleanToc.contains(cleanInput)) {
+                return t;
+            }
+        }
+
+        return null;
+    }
+
     public static List<Toc> getVisibleTocs() {
         List<Toc> visibleTocs = new ArrayList<>();
         for (Toc t : allTocs) {
@@ -116,14 +154,9 @@ public class TOCBrandHelper {
             if (userColoursJson != null && userColoursJson.has(tocName)) {
                 return Color.parseColor(userColoursJson.getString(tocName));
             }
-            String cleanInput = cleanName(tocName);
-            for (Toc t : allTocs) {
-                String cleanToc = cleanName(t.name);
-                System.out.println("cleaned: " + cleanToc);
-                if (cleanToc.equalsIgnoreCase(cleanInput) || cleanInput.contains(cleanToc)) {
-                    System.out.println("true");
-                    return Color.parseColor(t.colour);
-                }
+            Toc t = getTocByName(tocName);
+            if (t != null) {
+                return Color.parseColor(t.colour);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -132,48 +165,35 @@ public class TOCBrandHelper {
     }
 
     public static String getManagerForToc(String tocName) {
-        String cleanInput = cleanName(tocName);
-        for (Toc t : allTocs) {
-            String cleanToc = cleanName(t.name);
-            if (cleanToc.equalsIgnoreCase(cleanInput) || cleanInput.contains(cleanToc)) {
-                return t.manager;
-            }
-        }
-        return "other";
+        Toc t = getTocByName(tocName);
+        return t != null ? t.manager : "other";
     }
 
     public static String getDelayRepayUrlForName(String tocName) {
-        if (tocName == null) return null;
-        String cleanInput = cleanName(tocName);
-        for (Toc t : allTocs) {
-            if (cleanName(t.name).equalsIgnoreCase(cleanInput)) return t.delayRepayUrl;
-        }
-        return null;
+        Toc t = getTocByName(tocName);
+        return t != null ? t.delayRepayUrl : null;
     }
 
     public static int getDelayRepayMinTimeForName(String tocName) {
-        if (tocName == null) return 15;
-        String cleanInput = cleanName(tocName);
-        for (Toc t : allTocs) {
-            if (cleanName(t.name).equalsIgnoreCase(cleanInput)) return t.delayRepayMinTime;
-        }
-        return 15;
+        Toc t = getTocByName(tocName);
+        return t != null ? t.delayRepayMinTime : 15;
     }
 
     public static int getIconForToc(String operatorName) {
-        if (getManagerForToc(operatorName).equalsIgnoreCase("tfl")) {
+        String manager = getManagerForToc(operatorName);
+        if (manager.equalsIgnoreCase("tfl")) {
             return R.drawable.ic_tfl;
-        } else if (getManagerForToc(operatorName).equalsIgnoreCase("gbr")){
+        } else if (manager.equalsIgnoreCase("gbr")){
             return R.drawable.ic_gbr;
-        } else if (getManagerForToc(operatorName).equalsIgnoreCase("national")) {
+        } else if (manager.equalsIgnoreCase("national")) {
             return R.drawable.ic_national_rail;
-        } else if (getManagerForToc(operatorName).equalsIgnoreCase("eurostar")) {
+        } else if (manager.equalsIgnoreCase("eurostar")) {
             return R.drawable.ic_eurostar;
-        } else if (getManagerForToc(operatorName).equalsIgnoreCase("scot")) {
+        } else if (manager.equalsIgnoreCase("scot")) {
             return R.drawable.ic_scotrail;
-        } else if (getManagerForToc(operatorName).equalsIgnoreCase("wales")) {
+        } else if (manager.equalsIgnoreCase("wales")) {
             return R.drawable.ic_tfw;
-        } else if (getManagerForToc(operatorName).equalsIgnoreCase("merseytravel")) {
+        } else if (manager.equalsIgnoreCase("merseytravel")) {
             return R.drawable.ic_merseyrail;
         } else {
             return R.drawable.ic_train;
@@ -244,9 +264,10 @@ public class TOCBrandHelper {
         android.widget.TextView desc = dialog.findViewById(R.id.popupTocDesc);
         android.widget.Button btnClose = dialog.findViewById(R.id.popupCloseBtn);
 
-        if(getManagerForToc(tocName).equalsIgnoreCase("gbr")) {
+        String manager = getManagerForToc(tocName);
+        if(manager.equalsIgnoreCase("gbr")) {
             logo.setImageResource(R.drawable.ic_national_rail);
-        } else if (getManagerForToc(tocName).equalsIgnoreCase("scot")) {
+        } else if (manager.equalsIgnoreCase("scot")) {
             logo.setImageResource(R.drawable.ic_scotrail_small);
         } else {
             logo.setImageResource(getIconForToc(tocName));

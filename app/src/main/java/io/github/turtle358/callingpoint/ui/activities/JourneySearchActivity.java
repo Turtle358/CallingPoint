@@ -37,6 +37,7 @@ import io.github.turtle358.callingpoint.ui.adapters.StationAutoCompleteAdapter;
 import io.github.turtle358.callingpoint.utils.GraphManager;
 import io.github.turtle358.callingpoint.utils.JourneyPlannerEngine;
 import io.github.turtle358.callingpoint.utils.StationHelper;
+import io.github.turtle358.callingpoint.utils.TflJourneyPlannerEngine;
 
 public class JourneySearchActivity extends AppCompatActivity {
 
@@ -47,6 +48,7 @@ public class JourneySearchActivity extends AppCompatActivity {
 
     private JourneyAdapter adapter;
     private JourneyPlannerEngine plannerEngine;
+    private TflJourneyPlannerEngine tflPlannerEngine;
 
     private StationAutoCompleteAdapter autoCompleteAdapter;
     private ShimmerFrameLayout shimmerView;
@@ -71,6 +73,7 @@ public class JourneySearchActivity extends AppCompatActivity {
         GraphManager graphManager = GraphManager.getInstance(this);
 
         plannerEngine = new JourneyPlannerEngine(graphManager);
+        tflPlannerEngine = new TflJourneyPlannerEngine();
 
         List<String> stations = StationHelper.getStationNames();
         autoCompleteAdapter = new StationAutoCompleteAdapter(this, stations);
@@ -125,15 +128,18 @@ public class JourneySearchActivity extends AppCompatActivity {
         String fromCrs = StationHelper.getCrsFromName(fromName);
         String toCrs = StationHelper.getCrsFromName(toName);
 
+        String fromNaptan = StationHelper.getNaptanFromName(fromName);
+        String toNaptan = StationHelper.getNaptanFromName(toName);
+
         if (fromCrs == null && fromName.length() == 3) fromCrs = fromName.toUpperCase();
         if (toCrs == null && toName.length() == 3) toCrs = toName.toUpperCase();
 
-        if (fromCrs == null || fromCrs.length() != 3 || toCrs == null || toCrs.length() != 3) {
+        if ((fromCrs == null && fromNaptan == null) || (toCrs == null && toNaptan == null)) {
             Toast.makeText(this, "Please select valid stations", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        if (fromCrs.equals(toCrs)) {
+        if (fromName.equals(toName) || (fromCrs != null && fromCrs.equals(toCrs))) {
             Toast.makeText(this, "Origin and Destination cannot be the same", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -141,9 +147,15 @@ public class JourneySearchActivity extends AppCompatActivity {
         hideKeyboard();
 
         if (useGoogleMaps) {
-            launchMapsRouting(fromName, toName, fromCrs, toCrs);
+            launchMapsRouting(fromName, toName, fromCrs != null ? fromCrs : fromNaptan, toCrs != null ? toCrs : toNaptan);
         } else {
-            startInternalRouting(fromCrs, toCrs);
+            if (fromNaptan != null && !fromNaptan.isEmpty() && toNaptan != null && !toNaptan.isEmpty()) {
+                startTflRouting(fromNaptan, toNaptan, fromCrs, toCrs);
+            } else if (fromCrs != null && toCrs != null) {
+                startInternalRouting(fromCrs, toCrs);
+            } else {
+                Toast.makeText(this, "Invalid station routing combination.", Toast.LENGTH_SHORT).show();
+            }
         }
     }
 
@@ -188,6 +200,56 @@ public class JourneySearchActivity extends AppCompatActivity {
             tvStatusUpdate.setText("Routing engine unavailable. Check your connection.");
             shimmerView.stopShimmer();
             shimmerView.setVisibility(View.GONE);
+        }
+    }
+
+    private void startTflRouting(String fromNaptan, String toNaptan, String fromCrs, String toCrs) {
+        recyclerSearchResults.setVisibility(View.GONE);
+        tvStatusUpdate.setVisibility(View.VISIBLE);
+        tvStatusUpdate.setText("Initialising TfL search...");
+
+        shimmerView.setVisibility(View.VISIBLE);
+        shimmerView.startShimmer();
+
+        if (tflPlannerEngine != null) {
+            tflPlannerEngine.findRoutes(fromNaptan, toNaptan, new JourneyPlannerEngine.JourneyCallback() {
+                @Override
+                public void onJourneysFound(List<JourneyOption> journeys) {
+                    if (isDestroyed()) return;
+                    tvStatusUpdate.setVisibility(View.GONE);
+                    shimmerView.stopShimmer();
+                    shimmerView.setVisibility(View.GONE);
+
+                    if (journeys != null && !journeys.isEmpty()) {
+                        adapter.updateData(journeys);
+                        recyclerSearchResults.setVisibility(View.VISIBLE);
+                    } else {
+                        // Fallback to National Rail if TfL fails to find routes
+                        if (fromCrs != null && toCrs != null) {
+                            startInternalRouting(fromCrs, toCrs);
+                        }
+                    }
+                }
+
+                @Override
+                public void onError(String message) {
+                    if (isDestroyed()) return;
+                    if (fromCrs != null && toCrs != null) {
+                        startInternalRouting(fromCrs, toCrs);
+                    } else {
+                        tvStatusUpdate.setVisibility(View.VISIBLE);
+                        tvStatusUpdate.setText(message);
+                        shimmerView.stopShimmer();
+                        shimmerView.setVisibility(View.GONE);
+                    }
+                }
+
+                @Override
+                public void onStatusUpdate(String message) {
+                    if (isDestroyed()) return;
+                    tvStatusUpdate.setText(message);
+                }
+            });
         }
     }
 
