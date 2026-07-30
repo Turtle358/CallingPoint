@@ -146,6 +146,12 @@ public class TOCBrandHelper {
     }
 
     public static int getColourForToc(String tocName) {
+        String lowerName = tocName.toLowerCase();
+        if (lowerName.contains("bus")) {
+            return Color.parseColor("#DC241F");
+        } else if (lowerName.contains("walk")) {
+            return Color.parseColor("#4285F4");
+        }
         try {
             if (userColoursJson != null && userColoursJson.has(tocName)) {
                 return Color.parseColor(userColoursJson.getString(tocName));
@@ -176,6 +182,12 @@ public class TOCBrandHelper {
     }
 
     public static int getIconForToc(String operatorName) {
+        String lowerName = operatorName.toLowerCase();
+        if (lowerName.contains("bus")) {
+            return R.drawable.ic_bus;
+        } else if (lowerName.contains("walk")) {
+            return R.drawable.ic_walk;
+        }
         String manager = getManagerForToc(operatorName);
         if (manager.equalsIgnoreCase("tfl") || manager.equalsIgnoreCase("tfl-national")) {
             return R.drawable.ic_tfl;
@@ -221,6 +233,12 @@ public class TOCBrandHelper {
     }
 
     public static String getManagerName(String tocName) {
+        String lowerName = tocName.toLowerCase();
+        if (lowerName.contains("bus")) {
+            return "London Buses";
+        } else if (lowerName.contains("walk")) {
+            return "Walking";
+        }
         String manager = getManagerForToc(tocName);
         switch (manager.toLowerCase()) {
             case "tfl":

@@ -110,9 +110,20 @@ public class DeparturesAdapter extends RecyclerView.Adapter<DeparturesAdapter.Vi
         holder.tvPlatform.setText(service.platform != null ? "Platform " + service.platform : "Platform -");
 
         String originName = (service.origin != null && !service.origin.isEmpty()) ? service.origin.get(0).locationName : "Unknown";
-        String destName = (service.destination != null && !service.destination.isEmpty()) ? service.destination.get(0).locationName : "Unknown";
+        String rawDest = (service.destination != null && !service.destination.isEmpty()) ? service.destination.get(0).locationName : "Unknown";
 
-        String routeHtml = "<b>" + originName + "</b> to <b>" + destName + "</b>";
+        String extractedVia = "";
+        if (rawDest.contains(" via ")) {
+            extractedVia = rawDest.substring(rawDest.indexOf(" via ") + 5);
+            rawDest = rawDest.substring(0, rawDest.indexOf(" via "));
+        }
+
+        String cleanDest = rawDest.replaceAll(" \\(.*?\\)", "")
+                .replace(" Underground Station", "")
+                .replace(" Station", "")
+                .trim();
+
+        String routeHtml = "<b>" + cleanDest + "</b>";
         holder.tvRoute.setText(android.text.Html.fromHtml(routeHtml, android.text.Html.FROM_HTML_MODE_COMPACT));
 
         String durationStr = "";
@@ -180,12 +191,39 @@ public class DeparturesAdapter extends RecyclerView.Adapter<DeparturesAdapter.Vi
             holder.tvCallingAt.setVisibility(View.GONE);
         }
 
-        String detailsText = "";
-        if (!durationStr.isEmpty()) detailsText += durationStr + " • ";
-        detailsText += stopsCount + (stopsCount == 1 ? " stop • " : " stops • ");
-        detailsText += service.operatorName;
+        boolean isTflService = "tfl".equalsIgnoreCase(TOCBrandHelper.getManagerForToc(service.operatorName));
 
-        holder.tvServiceDetails.setText(detailsText);
+        if (isTflService || stopsCount == 0) {
+            String subtitle = service.operatorName; // Fallback
+
+            // Extract Line name from parentheses (e.g., "(Circle Line)")
+            java.util.regex.Matcher m = java.util.regex.Pattern.compile("\\((.*?)\\)").matcher(rawDest);
+            if (m.find()) {
+                subtitle = m.group(1);
+            }
+
+            // Figure out the correct "via" text
+            String finalVia = "";
+            if (service.destination != null && !service.destination.isEmpty() && service.destination.get(0).via != null) {
+                finalVia = service.destination.get(0).via;
+            } else if (!extractedVia.isEmpty()) {
+                finalVia = extractedVia;
+            }
+
+            // Append via to subtitle
+            if (!finalVia.isEmpty()) {
+                subtitle += " via " + finalVia;
+            }
+
+            holder.tvServiceDetails.setText(subtitle);
+        } else {
+            // Standard National Rail formatting
+            String detailsText = "";
+            if (!durationStr.isEmpty()) detailsText += durationStr + " • ";
+            detailsText += stopsCount + (stopsCount == 1 ? " stop • " : " stops • ");
+            detailsText += service.operatorName;
+            holder.tvServiceDetails.setText(detailsText);
+        }
 
         setAnimation(holder.itemView, position);
 

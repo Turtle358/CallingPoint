@@ -42,7 +42,7 @@ import retrofit2.Response;
 
 public class StationActivity extends AppCompatActivity {
 
-    private String passedCode = ""; // Could be CRS or Naptan depending on intent
+    private String passedCode = "";
     private String resolvedStationName = "";
     private String activeCrs = "";
     private String activeNaptan = "";
@@ -127,9 +127,8 @@ public class StationActivity extends AppCompatActivity {
             isArrivals = extras.getBoolean("IS_ARRIVALS", false);
         }
 
-        // Resolve station identities
         resolvedStationName = StationHelper.getNameFromCode(passedCode);
-        if (resolvedStationName.isEmpty()) resolvedStationName = passedCode; // Fallback
+        if (resolvedStationName.isEmpty()) resolvedStationName = passedCode;
 
         activeCrs = StationHelper.getCrsFromName(resolvedStationName);
         activeNaptan = StationHelper.getNaptanFromName(resolvedStationName);
@@ -177,7 +176,6 @@ public class StationActivity extends AppCompatActivity {
             fetchTrains(true);
         });
 
-        // Initial Data Load based on availability
         if (activeCrs != null && !activeCrs.isEmpty()) {
             fetchTrains(false);
             fetchStationMessages();
@@ -387,7 +385,6 @@ public class StationActivity extends AppCompatActivity {
         btnToggleMessages.setOnClickListener(v -> toggleMessagesExpansion());
     }
 
-    // --- TFL FETCH LOGIC ---
     private void fetchTflTrains() {
         showShimmer();
         if (btnLaterServices != null) btnLaterServices.setVisibility(View.GONE);
@@ -402,7 +399,6 @@ public class StationActivity extends AppCompatActivity {
                 if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
                     List<TflArrivalPrediction> predictions = response.body();
 
-                    // Sort by closest arrival time
                     Collections.sort(predictions, (p1, p2) -> Integer.compare(p1.timeToStation, p2.timeToStation));
 
                     List<StationDepartureResponse.TrainService> mappedServices = new ArrayList<>();
@@ -415,13 +411,14 @@ public class StationActivity extends AppCompatActivity {
                         StationDepartureResponse.TrainService tService = new StationDepartureResponse.TrainService();
 
                         tService.serviceID = pred.id;
-                        tService.operatorName = pred.lineName != null ? pred.lineName : "TfL Service";
+
+                        tService.operatorName = normalizeTflLineName(pred.lineName);
 
                         try {
                             java.util.Date expectedDate = isoFormat.parse(pred.expectedArrival);
                             if (expectedDate != null) {
                                 tService.std = timeFormat.format(expectedDate);
-                                tService.etd = "On time"; // Forces adapter to render the countdown
+                                tService.etd = "On time";
                             }
                         } catch (Exception e) {
                             tService.std = "--:--";
@@ -468,7 +465,23 @@ public class StationActivity extends AppCompatActivity {
         });
     }
 
-    // --- NATIONAL RAIL FETCH LOGIC ---
+    private String normalizeTflLineName(String rawName) {
+        if (rawName == null) return "TfL Service";
+        String lower = rawName.toLowerCase();
+
+        System.out.println(lower);
+        if (lower.contains("h&c") || lower.contains("hammersmith")) return "Hammersmith & City Line";
+        if (lower.equals("elizabeth")) return "Elizabeth line";
+        if (lower.equals("dlr")) return "DLR";
+        if (lower.contains("overground")) return "London Overground";
+        if (lower.equals("tram")) return "London Trams";
+
+        if (!lower.endsWith(" line") && !lower.endsWith(" dlr") && !lower.endsWith("overground") && !lower.endsWith("trams")) {
+            return rawName + " Line";
+        }
+        return rawName;
+    }
+
     private void fetchTrains(boolean isAppending) {
         if (!isAppending) {
             currentOffset = 0;

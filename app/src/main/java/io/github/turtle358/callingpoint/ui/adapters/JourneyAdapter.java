@@ -44,8 +44,36 @@ public class JourneyAdapter extends RecyclerView.Adapter<JourneyAdapter.ViewHold
         JourneyOption route = routes.get(position);
 
         if (route.legs != null && !route.legs.isEmpty()) {
-            String firstOperator = route.legs.get(0).operatorName;
-            holder.tocColourBar.setBackgroundColor(TOCBrandHelper.getColourForToc(firstOperator));
+            String primaryBrand = "walk";
+
+            for (int i = 0; i < route.legs.size(); i++) {
+                String op = route.legs.get(i).operatorName;
+
+                if (op == null || op.trim().isEmpty() || op.toLowerCase().contains("walk")) {
+                    continue;
+                }
+
+                if (op.matches("^[a-zA-Z]{0,2}\\d+[a-zA-Z]?$") && !op.equalsIgnoreCase("c2c")) {
+                    primaryBrand = "bus";
+                } else {
+                    primaryBrand = op;
+                }
+                break;
+            }
+
+            int brandColor = TOCBrandHelper.getColourForToc(primaryBrand);
+            holder.tocColourBar.setBackgroundColor(brandColor);
+
+            holder.tvOperatorName.setText(primaryBrand);
+
+            if(TOCBrandHelper.getManagerName(primaryBrand).equalsIgnoreCase("Great British Railways")) {
+                holder.ivModeIcon.setImageResource(R.drawable.ic_national_rail);
+            } else {
+                holder.ivModeIcon.setImageResource(TOCBrandHelper.getIconForToc(primaryBrand));
+            }
+
+
+            holder.ivModeIcon.clearColorFilter();
         }
 
         holder.tvJourneyTimes.setText((route.departTime != null ? route.departTime : "--:--") + " → " + (route.arriveTime != null ? route.arriveTime : "--:--"));
@@ -75,12 +103,15 @@ public class JourneyAdapter extends RecyclerView.Adapter<JourneyAdapter.ViewHold
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
         View tocColourBar;
-        TextView tvJourneyTimes, tvLiveDepart, tvJourneyDuration, tvJourneyChanges;
+        android.widget.ImageView ivModeIcon;
+        TextView tvOperatorName, tvJourneyTimes, tvLiveDepart, tvJourneyDuration, tvJourneyChanges;
         int defaultTimeColor;
 
         public ViewHolder(View itemView) {
             super(itemView);
             tocColourBar = itemView.findViewById(R.id.tocColourBar);
+            ivModeIcon = itemView.findViewById(R.id.ivModeIcon);
+            tvOperatorName = itemView.findViewById(R.id.tvOperatorName);
             tvJourneyTimes = itemView.findViewById(R.id.tvJourneyTimes);
             tvLiveDepart = itemView.findViewById(R.id.tvLiveDepart);
             tvJourneyDuration = itemView.findViewById(R.id.tvJourneyDuration);

@@ -60,7 +60,7 @@ public class CallingPointApp extends Application {
         );
 
         PeriodicWorkRequest widgetSyncRequest = new PeriodicWorkRequest.Builder(
-                io.github.turtle358.callingpoint.workers.WidgetSyncWorker.class,
+                 io.github.turtle358.callingpoint.workers.WidgetSyncWorker.class,
                 30, TimeUnit.MINUTES)
                 .setConstraints(new Constraints.Builder()
                         .setRequiredNetworkType(NetworkType.CONNECTED)

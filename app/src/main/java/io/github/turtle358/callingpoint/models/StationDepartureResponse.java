@@ -70,5 +70,8 @@ public class StationDepartureResponse {
 
         @SerializedName("crs")
         public String crs;
+
+        @SerializedName("via")
+        public String via;
     }
 }

@@ -6,6 +6,7 @@ import android.graphics.Paint;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -44,8 +45,39 @@ public class PinnedJourneyAdapter extends RecyclerView.Adapter<PinnedJourneyAdap
         JourneyOption journey = pinnedJourneys.get(position);
 
         if (journey.legs != null && !journey.legs.isEmpty()) {
-            String firstOperator = journey.legs.get(0).operatorName;
-            holder.tocColourBar.setBackgroundColor(TOCBrandHelper.getColourForToc(firstOperator));
+            String primaryBrand = "walk";
+
+            for (int i = 0; i < journey.legs.size(); i++) {
+                String op = journey.legs.get(i).operatorName;
+
+                if (op == null || op.trim().isEmpty() || op.toLowerCase().contains("walk")) {
+                    continue;
+                }
+
+                if (op.matches("^[a-zA-Z]{0,2}\\d+[a-zA-Z]?$") && !op.equalsIgnoreCase("c2c")) {
+                    primaryBrand = "bus";
+                } else {
+                    primaryBrand = op;
+                }
+                break;
+            }
+
+            int brandColor = TOCBrandHelper.getColourForToc(primaryBrand);
+            holder.tocColourBar.setBackgroundColor(brandColor);
+
+            if (primaryBrand.equalsIgnoreCase("bus")) {
+                holder.tvOperatorName.setText("London Bus");
+            } else {
+                holder.tvOperatorName.setText(primaryBrand);
+            }
+
+            System.out.println(primaryBrand + TOCBrandHelper.getManagerName(primaryBrand));
+            if(TOCBrandHelper.getManagerName(primaryBrand).equalsIgnoreCase("Great British Railways")) {
+                holder.ivModeIcon.setImageResource(R.drawable.ic_national_rail);
+            } else {
+                holder.ivModeIcon.setImageResource(TOCBrandHelper.getIconForToc(primaryBrand));
+            }
+            holder.ivModeIcon.clearColorFilter();
         }
 
         holder.tvJourneyTimes.setText((journey.departTime != null ? journey.departTime : "--:--") + " → " + (journey.arriveTime != null ? journey.arriveTime : "--:--"));
@@ -94,12 +126,15 @@ public class PinnedJourneyAdapter extends RecyclerView.Adapter<PinnedJourneyAdap
 
     static class PinnedViewHolder extends RecyclerView.ViewHolder {
         View tocColourBar;
-        TextView tvJourneyTimes, tvLiveDepart, tvJourneyDuration, tvJourneyChanges;
+        ImageView ivModeIcon;
+        TextView tvOperatorName, tvJourneyTimes, tvLiveDepart, tvJourneyDuration, tvJourneyChanges;
         int defaultTimeColor;
 
         public PinnedViewHolder(@NonNull View itemView) {
             super(itemView);
             tocColourBar = itemView.findViewById(R.id.tocColourBar);
+            ivModeIcon = itemView.findViewById(R.id.ivModeIcon);
+            tvOperatorName = itemView.findViewById(R.id.tvOperatorName);
             tvJourneyTimes = itemView.findViewById(R.id.tvJourneyTimes);
             tvLiveDepart = itemView.findViewById(R.id.tvLiveDepart);
             tvJourneyDuration = itemView.findViewById(R.id.tvJourneyDuration);

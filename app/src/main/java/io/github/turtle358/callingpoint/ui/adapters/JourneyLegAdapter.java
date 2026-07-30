@@ -58,9 +58,11 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
             holder.headerOperator.setVisibility(View.GONE);
             holder.layoutTimeline.setVisibility(View.GONE);
             holder.cardTransfer.setVisibility(View.VISIBLE);
-            holder.tvTransferTitle.setText("Walking / Transfer to " + currentLeg.toStationName);
-            holder.tvTransferDuration.setText(currentLeg.durationMinutes + " min walk (Tap for Google Maps)");
-            holder.ivTransferIcon.setImageResource(R.drawable.ic_tfl);
+            holder.btnMapTransfer.setVisibility(View.VISIBLE);
+
+            holder.tvTransferTitle.setText("Walk " + currentLeg.durationMinutes + " min");
+
+            holder.ivTransferIcon.setImageResource(R.drawable.ic_walk);
 
             holder.cardTransfer.setOnClickListener(v -> {
                 try {
@@ -79,13 +81,36 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
         holder.layoutTimeline.setVisibility(View.VISIBLE);
         holder.cardTransfer.setVisibility(View.GONE);
 
-        holder.tvOperatorName.setText(currentLeg.operatorName);
+        boolean isBus = "BUS".equalsIgnoreCase(currentLeg.transportMode)
+                || "bus".equalsIgnoreCase(currentLeg.transportMode)
+                || (currentLeg.operatorName != null && currentLeg.operatorName.matches("^[a-zA-Z]{0,2}\\d+[a-zA-Z]?$") && !currentLeg.operatorName.equalsIgnoreCase("c2c"));
+
+        String lookupName = isBus ? "bus" : currentLeg.operatorName;
+        int brandColour = TOCBrandHelper.getColourForToc(lookupName);
+
+        if (isBus) {
+            String busTitle = currentLeg.operatorName;
+            if (busTitle != null && !busTitle.toLowerCase().contains("bus")) {
+                busTitle = "Bus " + busTitle;
+            }
+            holder.tvOperatorName.setText(busTitle);
+        } else {
+            holder.tvOperatorName.setText(currentLeg.operatorName);
+        }
+
         holder.tvTrainDestination.setText("to " + currentLeg.trainDestination);
-        int brandColour = TOCBrandHelper.getColourForToc(currentLeg.operatorName);
-        holder.ivManagerLogo.setImageResource(TOCBrandHelper.getIconForToc(currentLeg.operatorName));
+
+        if (holder.ivModeIcon != null) {
+            if(lookupName.equalsIgnoreCase("bus")) {
+                holder.ivModeIcon.setImageResource(R.drawable.ic_bus);
+            } else {
+                holder.ivModeIcon.setImageResource(R.drawable.ic_train);
+            }
+        }
+        holder.ivManagerLogo.setImageResource(TOCBrandHelper.getIconForToc(lookupName));
 
         holder.ivManagerLogo.setOnClickListener(v ->
-                TOCBrandHelper.showTOCInfoDialog(v.getContext(), currentLeg.operatorName)
+                TOCBrandHelper.showTOCInfoDialog(v.getContext(), lookupName)
         );
 
         ServiceDetailsResponse liveDetails = liveDataMap.get(currentLeg.serviceId);
@@ -155,9 +180,9 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
             JourneyLeg nextLeg = legs.get(position + 1);
             if (!"TUBE/WALK".equals(nextLeg.transportMode)) {
                 holder.cardTransfer.setVisibility(View.VISIBLE);
+                holder.btnMapTransfer.setVisibility(View.GONE);
                 holder.tvTransferTitle.setText("Change at " + currentLeg.toStationName);
                 holder.ivTransferIcon.setImageResource(R.drawable.ic_transfer);
-                holder.tvTransferDuration.setText("Transfer time " + calculateTransferTime(currentLeg.arrivalTime, nextLeg.departureTime) + "m");
             }
         }
     }
@@ -346,21 +371,13 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
     @Override
     public int getItemCount() { return legs != null ? legs.size() : 0; }
 
-    private int calculateTransferTime(String arrival, String nextDeparture) {
-        try {
-            String[] arr = arrival.split(":");
-            String[] dep = nextDeparture.split(":");
-            int diff = (Integer.parseInt(dep[0]) * 60 + Integer.parseInt(dep[1])) - (Integer.parseInt(arr[0]) * 60 + Integer.parseInt(arr[1]));
-            return diff < 0 ? diff + 1440 : diff;
-        } catch (Exception e) { return 0; }
-    }
 
     static class LegViewHolder extends RecyclerView.ViewHolder {
         LinearLayout headerOperator, layoutTimeline;
         TextView tvOperatorName, tvTrainDestination, tvLiveLocation;
         CardView cardTransfer;
-        TextView tvTransferTitle, tvTransferDuration;
-        ImageView ivManagerLogo;
+        TextView tvTransferTitle;
+        ImageView ivManagerLogo, btnMapTransfer, ivModeIcon;
         ImageView ivTransferIcon;
 
         public LegViewHolder(@NonNull View itemView) {
@@ -370,10 +387,11 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
             tvTrainDestination = itemView.findViewById(R.id.tvTrainDestination);
             tvLiveLocation = itemView.findViewById(R.id.tvLiveLocation);
             ivManagerLogo = itemView.findViewById(R.id.ivManagerLogo);
+            ivModeIcon = itemView.findViewById(R.id.ivModeIcon);
             layoutTimeline = itemView.findViewById(R.id.layoutTimeline);
             cardTransfer = itemView.findViewById(R.id.cardTransfer);
             tvTransferTitle = itemView.findViewById(R.id.tvTransferTitle);
-            tvTransferDuration = itemView.findViewById(R.id.tvTransferDuration);
+            btnMapTransfer = itemView.findViewById(R.id.btnMapTransfer);
             ivTransferIcon = itemView.findViewById(R.id.ivTransferIcon);
         }
     }
