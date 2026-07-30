@@ -86,7 +86,6 @@ public class TOCBrandHelper {
     public static Toc getTocByName(String operatorName) {
         if (operatorName == null) return null;
 
-        // 1. Strict Exact Match (Uncleaned)
         for (Toc t : allTocs) {
             if (operatorName.equalsIgnoreCase(t.name) || operatorName.equalsIgnoreCase(t.code)) {
                 return t;
@@ -95,17 +94,14 @@ public class TOCBrandHelper {
 
         String cleanInput = cleanName(operatorName);
 
-        // 2. Exact Match (Cleaned)
         for (Toc t : allTocs) {
             if (cleanInput.equalsIgnoreCase(cleanName(t.name))) {
                 return t;
             }
         }
 
-        // 3. Fuzzy Match Fallback (Handles live board names like "Circle" matching "Circle Line")
         for (Toc t : allTocs) {
             String cleanToc = cleanName(t.name);
-            // Prevent National Rail "Northern" from accidentally grabbing "Northern Line"
             if (cleanInput.equals("northern") && cleanToc.equals("northern")) {
                 return t;
             }

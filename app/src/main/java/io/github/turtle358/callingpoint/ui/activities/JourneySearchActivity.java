@@ -224,7 +224,6 @@ public class JourneySearchActivity extends AppCompatActivity {
                         adapter.updateData(journeys);
                         recyclerSearchResults.setVisibility(View.VISIBLE);
                     } else {
-                        // Fallback to National Rail if TfL fails to find routes
                         if (fromCrs != null && toCrs != null) {
                             startInternalRouting(fromCrs, toCrs);
                         }

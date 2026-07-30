@@ -80,26 +80,23 @@ public class TflJourneyPlannerEngine {
                 String toName = arrPoint.has("commonName") ? arrPoint.get("commonName").getAsString() : "Unknown";
 
                 String modeId = modeInfo.has("id") ? modeInfo.get("id").getAsString() : "unknown";
-                String specificLineId = modeId; // Fallback to generic mode (e.g., "dlr" or "tram")
-
+                String specificLineId = modeId;
                 String depTimeStr = legObj.has("departureTime") ? legObj.get("departureTime").getAsString() : "";
                 String arrTimeStr = legObj.has("arrivalTime") ? legObj.get("arrivalTime").getAsString() : "";
                 String depTime = extractTime(depTimeStr);
                 String arrTime = extractTime(arrTimeStr);
 
-                String dest = toName; // Fallback destination if TfL doesn't provide a direction
+                String dest = toName;
 
                 if (legObj.has("routeOptions")) {
                     JsonArray routeOptions = legObj.getAsJsonArray("routeOptions");
                     if (routeOptions.size() > 0) {
                         JsonObject firstOption = routeOptions.get(0).getAsJsonObject();
 
-                        // 1. Get the ACTUAL direction/destination (e.g., "Westbound" or "Uxbridge")
                         if (firstOption.has("directions") && firstOption.getAsJsonArray("directions").size() > 0) {
                             dest = firstOption.getAsJsonArray("directions").get(0).getAsString();
                         }
 
-                        // 2. Get the SPECIFIC tube line ID (e.g., "metropolitan" instead of "tube")
                         if (firstOption.has("lineIdentifier")) {
                             JsonObject lineIdentifier = firstOption.getAsJsonObject("lineIdentifier");
                             if (lineIdentifier.has("id")) {
@@ -109,10 +106,8 @@ public class TflJourneyPlannerEngine {
                     }
                 }
 
-                // Map the TfL ID to your 2-letter code (e.g., "northern" -> "NO")
                 String tocCode = TOCBrandHelper.getTocCodeForTflId(specificLineId);
 
-                // Get the Full Name (e.g., "Northern Line") so the adapter can map the color!
                 String operatorName = TOCBrandHelper.getNameForCode(tocCode);
                 if (operatorName == null || operatorName.isEmpty()) {
                     operatorName = specificLineId;
@@ -123,7 +118,6 @@ public class TflJourneyPlannerEngine {
                 fromName = fromName.replace(" Underground Station", "").replace(" Rail Station", "");
                 toName = toName.replace(" Underground Station", "").replace(" Rail Station", "");
 
-                // Pass operatorName so JourneyLegAdapter can find the correct brand colour
                 JourneyLeg leg = new JourneyLeg(
                         depPoint.has("naptanId") ? depPoint.get("naptanId").getAsString() : "", fromName,
                         arrPoint.has("naptanId") ? arrPoint.get("naptanId").getAsString() : "", toName,
@@ -138,7 +132,6 @@ public class TflJourneyPlannerEngine {
         return options;
     }
 
-    // Extracts "15:41" from TfL's "2026-07-30T15:41:00" format
     private String extractTime(String isoDate) {
         if (isoDate == null || isoDate.length() < 16) return "--:--";
         try {
