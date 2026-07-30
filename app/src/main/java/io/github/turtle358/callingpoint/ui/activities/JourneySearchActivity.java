@@ -12,13 +12,10 @@ import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ProgressBar;
-import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.view.KeyEvent;
 import android.view.inputmethod.EditorInfo;
-import android.text.Editable;
-import android.text.TextWatcher;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.WindowCompat;
@@ -69,20 +66,26 @@ public class JourneySearchActivity extends AppCompatActivity {
         tvStatusUpdate = findViewById(R.id.tvStatusUpdate);
         shimmerView = findViewById(R.id.shimmer_journey_container);
 
-
         GraphManager graphManager = GraphManager.getInstance(this);
 
         plannerEngine = new JourneyPlannerEngine(graphManager);
         tflPlannerEngine = new TflJourneyPlannerEngine();
 
-        List<String> stations = StationHelper.getStationNames();
-        autoCompleteAdapter = new StationAutoCompleteAdapter(this, stations);
-        etFromCrs.setAdapter(autoCompleteAdapter);
-        etToCrs.setAdapter(autoCompleteAdapter);
-        applyInlineAutocomplete(etFromCrs);
-        applyInlineAutocomplete(etToCrs);
-        setupAutoCompleteEnterBehavior(etFromCrs, autoCompleteAdapter, etToCrs, null);
-        setupAutoCompleteEnterBehavior(etToCrs, autoCompleteAdapter, null, () -> btnSearch.performClick());
+        setupAdaptersAndListeners(btnSearch);
+
+        etFromCrs.setOnClickListener(v -> {
+            if (etFromCrs.getText().length() > 0) etFromCrs.showDropDown();
+        });
+        etFromCrs.setOnFocusChangeListener((v, hasFocus) -> {
+            if (hasFocus && etFromCrs.getText().length() > 0) etFromCrs.showDropDown();
+        });
+
+        etToCrs.setOnClickListener(v -> {
+            if (etToCrs.getText().length() > 0) etToCrs.showDropDown();
+        });
+        etToCrs.setOnFocusChangeListener((v, hasFocus) -> {
+            if (hasFocus && etToCrs.getText().length() > 0) etToCrs.showDropDown();
+        });
 
         etFromCrs.requestFocus();
 
@@ -116,12 +119,31 @@ public class JourneySearchActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        if (autoCompleteAdapter != null) {
-            autoCompleteAdapter.updateStations(StationHelper.getStationNames());
-        }
+
+        Button btnSearch = findViewById(R.id.btnSearchJourney);
+        setupAdaptersAndListeners(btnSearch);
+    }
+
+    private void setupAdaptersAndListeners(Button btnSearch) {
+        List<String> stations = StationHelper.getStationNames();
+        autoCompleteAdapter = new StationAutoCompleteAdapter(this, stations);
+
+        etFromCrs.setAdapter(autoCompleteAdapter);
+        etToCrs.setAdapter(autoCompleteAdapter);
+
+        applyInlineAutocomplete(etFromCrs);
+        applyInlineAutocomplete(etToCrs);
+
+        setupAutoCompleteEnterBehavior(etFromCrs, autoCompleteAdapter, etToCrs, null);
+        setupAutoCompleteEnterBehavior(etToCrs, autoCompleteAdapter, null, () -> {
+            if (btnSearch != null) btnSearch.performClick();
+        });
     }
 
     private void handleSearch(boolean useGoogleMaps) {
+        etFromCrs.dismissDropDown();
+        etToCrs.dismissDropDown();
+
         String fromName = etFromCrs.getText().toString().trim();
         String toName = etToCrs.getText().toString().trim();
 
@@ -329,5 +351,4 @@ public class JourneySearchActivity extends AppCompatActivity {
             return false;
         });
     }
-
 }
