@@ -152,6 +152,7 @@ public class StationActivity extends AppCompatActivity {
 
         setupHeader();
         setupPinButton();
+        checkTflAvailability();
         setupToggle();
 
         recyclerDepartures.setLayoutManager(new LinearLayoutManager(this));
@@ -188,14 +189,7 @@ public class StationActivity extends AppCompatActivity {
     }
 
     private void setupToggle() {
-        boolean hasNr = activeCrs != null && !activeCrs.isEmpty();
-        boolean hasTfl = activeNaptan != null && !activeNaptan.isEmpty();
-
-        if (hasNr && hasTfl) {
-            toggleServiceType.setVisibility(View.VISIBLE);
-        } else {
-            toggleServiceType.setVisibility(View.GONE);
-        }
+        toggleServiceType.setVisibility(View.GONE);
 
         toggleServiceType.addOnButtonCheckedListener((group, checkedId, isChecked) -> {
             if (isChecked) {
@@ -206,6 +200,28 @@ public class StationActivity extends AppCompatActivity {
                     isShowingTfl = true;
                     fetchTflTrains();
                 }
+            }
+        });
+    }
+
+    private void checkTflAvailability() {
+        if (activeNaptan == null || activeNaptan.isEmpty()) return;
+
+        if (activeCrs == null || activeCrs.isEmpty()) return;
+
+        tflApi.getStopPointArrivals(activeNaptan).enqueue(new Callback<>() {
+            @Override
+            public void onResponse(@NonNull Call<List<TflArrivalPrediction>> call, @NonNull Response<List<TflArrivalPrediction>> response) {
+                if (isFinishing() || isDestroyed()) return;
+
+                if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
+                    android.transition.TransitionManager.beginDelayedTransition((ViewGroup) rootView);
+                    toggleServiceType.setVisibility(View.VISIBLE);
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<List<TflArrivalPrediction>> call, @NonNull Throwable t) {
             }
         });
     }
