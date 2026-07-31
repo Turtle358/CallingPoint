@@ -20,6 +20,12 @@ public class StationDepartureResponse {
         @SerializedName("eta")
         public String eta;
 
+        @SerializedName("ata")
+        public String ata;
+
+        @SerializedName("atd")
+        public String atd;
+
         @SerializedName("origin")
         public List<Location> origin;
 
