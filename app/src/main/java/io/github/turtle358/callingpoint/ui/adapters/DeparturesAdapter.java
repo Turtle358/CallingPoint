@@ -5,7 +5,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.transition.TransitionManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -236,7 +235,7 @@ public class DeparturesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
 
         itemHolder.tvPlatform.setText(service.platform != null ? "Platform " + service.platform : "Platform -");
 
-        String originName = (service.origin != null && !service.origin.isEmpty()) ? service.origin.get(0).locationName : "Unknown";
+        String originName = (service.origin != null && !service.origin.isEmpty()) ? service.origin.get(0).locationName : "";
         String rawDest = (service.destination != null && !service.destination.isEmpty()) ? service.destination.get(0).locationName : "Unknown";
 
         String extractedVia = "";
@@ -250,8 +249,15 @@ public class DeparturesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
                 .replace(" Station", "")
                 .trim();
 
-        String routeHtml = "<b>" + cleanDest + "</b>";
-        itemHolder.tvRoute.setText(android.text.Html.fromHtml(routeHtml, android.text.Html.FROM_HTML_MODE_COMPACT));
+        boolean isTfl = service.destination != null && !service.destination.isEmpty() && service.destination.get(0).crs == null;
+
+        if (isTfl || originName.isEmpty() || originName.equalsIgnoreCase(rawDest) || originName.equalsIgnoreCase("Unknown")) {
+            String routeHtml = "<b>" + cleanDest + "</b>";
+            itemHolder.tvRoute.setText(android.text.Html.fromHtml(routeHtml, android.text.Html.FROM_HTML_MODE_COMPACT));
+        } else {
+            String routeHtml = "<b>" + originName + "</b> to <b>" + cleanDest + "</b>";
+            itemHolder.tvRoute.setText(android.text.Html.fromHtml(routeHtml, android.text.Html.FROM_HTML_MODE_COMPACT));
+        }
 
         String durationStr = "";
         int stopsCount = 0;
