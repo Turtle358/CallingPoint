@@ -14,7 +14,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        app:layout_constraintGuide_begin="84dp" />
+        app:layout_constraintGuide_begin="24dp" />
 
     <View
         android:id="@+id/dot"
@@ -56,39 +56,41 @@
         app:layout_constraintTop_toBottomOf="@id/iconTrainBetween" />
 
     <TextView
-        android:id="@+id/tvTime"
-        android:layout_width="60dp"
-        android:layout_height="wrap_content"
-        android:gravity="end"
-        android:textColor="@color/text_primary"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        app:layout_constraintBottom_toBottomOf="@id/dot"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@id/dot" />
-
-    <TextView
-        android:id="@+id/tvLiveStatus"
-        android:layout_width="60dp"
-        android:layout_height="wrap_content"
-        android:gravity="end"
-        android:textSize="11sp"
-        android:textStyle="bold"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tvTime" />
-
-    <TextView
         android:id="@+id/tvStationName"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:textColor="@color/text_primary"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="@id/dot"
+        app:layout_constraintEnd_toStartOf="@id/tvTime"
+        app:layout_constraintStart_toEndOf="@id/timeline_center"
+        app:layout_constraintTop_toTopOf="@id/dot" />
+
+    <TextView
+        android:id="@+id/tvTime"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="end"
         android:textColor="@color/text_primary"
         android:textSize="16sp"
         android:textStyle="bold"
         app:layout_constraintBottom_toBottomOf="@id/dot"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@id/timeline_center"
         app:layout_constraintTop_toTopOf="@id/dot" />
+
+    <TextView
+        android:id="@+id/tvLiveStatus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="end"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:layout_marginTop="2dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tvTime" />
 
     <ImageView
         android:id="@+id/iconTrainAt"
@@ -103,9 +105,7 @@
         app:layout_constraintTop_toTopOf="@id/dot"
         app:layout_constraintBottom_toBottomOf="@id/dot"
         app:layout_constraintEnd_toEndOf="@id/timeline_center"
-        app:layout_constraintStart_toStartOf="@id/timeline_center"
-        app:cardPreventCornerOverlap="false"
-        app:cardUseCompatPadding="true"/>
+        app:layout_constraintStart_toStartOf="@id/timeline_center" />
 
     <ImageView
         android:id="@+id/iconTrainBetween"
@@ -120,8 +120,6 @@
         app:layout_constraintTop_toBottomOf="@id/dot"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="@id/timeline_center"
-        app:layout_constraintStart_toStartOf="@id/timeline_center"
-        app:cardPreventCornerOverlap="false"
-        app:cardUseCompatPadding="true"/>
+        app:layout_constraintStart_toStartOf="@id/timeline_center" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -286,28 +286,36 @@ public class TimelineAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                 h.dot.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#DE350B")));
                 h.tvTime.setPaintFlags(h.tvTime.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
                 h.tvTime.setTextColor(Color.parseColor("#9E9E9E"));
-            } else if (isPassed) {
-                String actual = point.actualTime != null ? point.actualTime : point.scheduledTime;
-                boolean isLate = !actual.equals(point.scheduledTime);
 
-                h.tvLiveStatus.setText("Dep " + actual);
-                if (isLate) {
-                    h.tvLiveStatus.setTextColor(Color.parseColor("#FF8C00"));
-                    h.tvTime.setPaintFlags(h.tvTime.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
-                    h.tvTime.setTextColor(Color.parseColor("#9E9E9E"));
-                } else {
-                    h.tvLiveStatus.setTextColor(Color.parseColor("#00875A"));
+            } else if (isPassed) {
+                String actual = point.actualTime != null ? point.actualTime : (point.estimatedTime != null ? point.estimatedTime : point.scheduledTime);
+
+                boolean isOnTime = actual.toLowerCase().contains("on time") || actual.equals(point.scheduledTime);
+
+                h.tvLiveStatus.setText(isOnTime ? "Dep On time" : "Dep " + actual);
+
+                h.tvLiveStatus.setTextColor(isOnTime ? Color.parseColor("#8000875A") : Color.parseColor("#FF8C00"));
+
+                h.tvTime.setTextColor(Color.parseColor("#888888"));
+
+                if (isOnTime) {
                     h.tvTime.setPaintFlags(h.tvTime.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
+                } else {
+                    h.tvTime.setPaintFlags(h.tvTime.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
                 }
-            } else if (point.estimatedTime != null && !point.estimatedTime.equalsIgnoreCase("On time")) {
+
+            } else if (point.estimatedTime != null && !point.estimatedTime.toLowerCase().contains("on time")) {
                 h.tvLiveStatus.setText("Exp " + point.estimatedTime);
                 h.tvLiveStatus.setTextColor(Color.parseColor("#FF8C00"));
                 h.tvTime.setPaintFlags(h.tvTime.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
                 h.tvTime.setTextColor(Color.parseColor("#9E9E9E"));
+
             } else {
                 h.tvLiveStatus.setText("On time");
                 h.tvLiveStatus.setTextColor(Color.parseColor("#00875A"));
                 h.tvTime.setPaintFlags(h.tvTime.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
+
+                h.tvTime.setTextColor(androidx.core.content.ContextCompat.getColor(h.itemView.getContext(), R.color.text_primary));
             }
         }
     }
