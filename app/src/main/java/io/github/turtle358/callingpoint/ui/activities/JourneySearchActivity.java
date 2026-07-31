@@ -161,7 +161,11 @@ public class JourneySearchActivity extends AppCompatActivity {
             return;
         }
 
-        if (fromName.equals(toName) || (fromCrs != null && fromCrs.equals(toCrs))) {
+        boolean sameName = fromName.equalsIgnoreCase(toName);
+        boolean sameCrs = fromCrs != null && !fromCrs.isEmpty() && fromCrs.equalsIgnoreCase(toCrs);
+        boolean sameNaptan = fromNaptan != null && !fromNaptan.isEmpty() && fromNaptan.equalsIgnoreCase(toNaptan);
+
+        if (sameName || sameCrs || sameNaptan) {
             Toast.makeText(this, "Origin and Destination cannot be the same", Toast.LENGTH_SHORT).show();
             return;
         }

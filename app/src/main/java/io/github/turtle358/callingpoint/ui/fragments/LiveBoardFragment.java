@@ -120,7 +120,6 @@ public class LiveBoardFragment extends Fragment {
             etToCrs.dismissDropDown();
         });
 
-        // --- UPDATED SEARCH VALIDATION LOGIC ---
         btnSearch.setOnClickListener(v -> {
             String fromName = etFromCrs.getText().toString().trim();
             String toName = etToCrs.getText().toString().trim();
@@ -139,20 +138,32 @@ public class LiveBoardFragment extends Fragment {
 
             boolean isValidFrom = (fromCrs != null && !fromCrs.isEmpty()) || (fromNaptan != null && !fromNaptan.isEmpty());
 
-            if (isValidFrom) {
-                hideKeyboard();
-                boolean isArrivals = toggleBoardType.getCheckedRadioButtonId() == R.id.radioArrivals;
-
-                String fromCodeToPass = (fromCrs != null && !fromCrs.isEmpty()) ? fromCrs : fromNaptan;
-                String toCodeToPass = "";
-                if (!toName.isEmpty()) {
-                    toCodeToPass = (toCrs != null && !toCrs.isEmpty()) ? toCrs : toNaptan;
-                }
-
-                launchStationActivity(fromCodeToPass, toCodeToPass, isArrivals);
-            } else {
+            if (!isValidFrom) {
                 Toast.makeText(requireContext(), "Please select a valid departing station", Toast.LENGTH_SHORT).show();
+                return;
             }
+
+            if (!toName.isEmpty()) {
+                boolean sameName = fromName.equalsIgnoreCase(toName);
+                boolean sameCrs = fromCrs != null && !fromCrs.isEmpty() && fromCrs.equalsIgnoreCase(toCrs);
+                boolean sameNaptan = fromNaptan != null && !fromNaptan.isEmpty() && fromNaptan.equalsIgnoreCase(toNaptan);
+
+                if (sameName || sameCrs || sameNaptan) {
+                    Toast.makeText(requireContext(), "Origin and Destination cannot be the same", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+            }
+
+            hideKeyboard();
+            boolean isArrivals = toggleBoardType.getCheckedRadioButtonId() == R.id.radioArrivals;
+
+            String fromCodeToPass = (fromCrs != null && !fromCrs.isEmpty()) ? fromCrs : fromNaptan;
+            String toCodeToPass = "";
+            if (!toName.isEmpty()) {
+                toCodeToPass = (toCrs != null && !toCrs.isEmpty()) ? toCrs : toNaptan;
+            }
+
+            launchStationActivity(fromCodeToPass, toCodeToPass, isArrivals);
         });
 
         autoRefreshHandler = new Handler(Looper.getMainLooper());
