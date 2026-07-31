@@ -155,6 +155,10 @@ public class SettingsFragment extends Fragment {
                         }
                     });
         });
+
+        android.widget.TextView tvAttributions = view.findViewById(R.id.tvAttributions);
+        String attributionHtml = "Powered by data from the <b>National Rail Data Portal</b>, <b>Transport for London (TfL)</b>, and <b>OpenStreetMap</b>.";
+        tvAttributions.setText(android.text.Html.fromHtml(attributionHtml, android.text.Html.FROM_HTML_MODE_COMPACT));
     }
 
     private void setupThemeControl() {
