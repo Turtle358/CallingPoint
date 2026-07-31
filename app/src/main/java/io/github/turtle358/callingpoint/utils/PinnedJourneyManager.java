@@ -24,6 +24,10 @@ public class PinnedJourneyManager {
         gson = new Gson();
     }
 
+    public void saveAllPinnedJourneys(List<JourneyOption> journeys) {
+        prefs.edit().putString(KEY_JOURNEYS, gson.toJson(journeys)).apply();
+    }
+
     public void saveJourney(JourneyOption journey) {
         List<JourneyOption> currentList = getPinnedJourneys();
         for (JourneyOption existing : currentList) {

@@ -77,6 +77,7 @@ public class TOCBrandHelper {
     private static String cleanName(String name) {
         if (name == null) return "";
         return name.toLowerCase()
+                .replace("-", " ")
                 .replace(" line", "")
                 .replace(" underground", "")
                 .replace(" station", "")
@@ -109,7 +110,7 @@ public class TOCBrandHelper {
                 continue;
             }
 
-            if (cleanInput.contains(cleanToc) || cleanToc.contains(cleanInput)) {
+            if (!cleanToc.isEmpty() && cleanInput.length() > 2 && (cleanInput.contains(cleanToc) || cleanToc.contains(cleanInput))) {
                 return t;
             }
         }
@@ -227,6 +228,8 @@ public class TOCBrandHelper {
                 return "This is a high-speed Eurostar service operating between the UK and mainland Europe.";
             case "open-access":
                 return "This is an open access operator. A private for profit company not part of the national rail network";
+            case "london buses":
+                return "This service is operated by London Buses, part of the Transport for London network.";
             default:
                 return "This is an independent train operator.";
         }

@@ -13,6 +13,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.util.Collections;
 import java.util.List;
 
 import io.github.turtle358.callingpoint.R;
@@ -71,7 +72,6 @@ public class PinnedJourneyAdapter extends RecyclerView.Adapter<PinnedJourneyAdap
                 holder.tvOperatorName.setText(primaryBrand);
             }
 
-            System.out.println(primaryBrand + TOCBrandHelper.getManagerName(primaryBrand));
             if(TOCBrandHelper.getManagerName(primaryBrand).equalsIgnoreCase("Great British Railways")) {
                 holder.ivModeIcon.setImageResource(R.drawable.ic_national_rail);
             } else {
@@ -109,19 +109,24 @@ public class PinnedJourneyAdapter extends RecyclerView.Adapter<PinnedJourneyAdap
             context.startActivity(intent);
         });
 
-        holder.itemView.setOnLongClickListener(v -> {
-            manager.removeJourney(journey);
-            pinnedJourneys.remove(position);
-            notifyItemRemoved(position);
-            notifyItemRangeChanged(position, pinnedJourneys.size());
-            Toast.makeText(context, "Saved journey removed", Toast.LENGTH_SHORT).show();
-            return true;
-        });
     }
 
     @Override
     public int getItemCount() {
         return pinnedJourneys != null ? pinnedJourneys.size() : 0;
+    }
+    public void swapItems(int fromPosition, int toPosition) {
+        Collections.swap(pinnedJourneys, fromPosition, toPosition);
+        notifyItemMoved(fromPosition, toPosition);
+    }
+
+    public List<JourneyOption> getItems() {
+        return pinnedJourneys;
+    }
+
+    public void restoreItem(JourneyOption journey, int position) {
+        pinnedJourneys.add(position, journey);
+        notifyItemInserted(position);
     }
 
     static class PinnedViewHolder extends RecyclerView.ViewHolder {

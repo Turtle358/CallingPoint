@@ -233,6 +233,12 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
         View lineBottom = node.findViewById(R.id.lineBottom);
         View dotStation = node.findViewById(R.id.dotStation);
 
+        if (livePoint != null && livePoint.scheduledTime != null && !livePoint.scheduledTime.trim().isEmpty()) {
+            if ("--:--".equals(schTime) || schTime == null || schTime.trim().isEmpty()) {
+                schTime = livePoint.scheduledTime;
+            }
+        }
+
         tvName.setText(name);
         tvSchTime.setText(schTime);
 
