@@ -101,19 +101,11 @@ public class StationHelper {
 
     public static int getIconForStation(String name) {
         if (getStationType(name).equalsIgnoreCase("tfl") || getStationType(name).equalsIgnoreCase("tfl-national")) {
-            return R.drawable.ic_tfl;
+            return R.drawable.ic_metro;
         } else if (getStationType(name).equalsIgnoreCase("gbr")){
             return R.drawable.ic_gbr;
         } else if (getStationType(name).equalsIgnoreCase("national")) {
             return R.drawable.ic_national_rail;
-        } else if (getStationType(name).equalsIgnoreCase("eurostar")) {
-            return R.drawable.ic_eurostar;
-        } else if (getStationType(name).equalsIgnoreCase("scot")) {
-            return R.drawable.ic_scotrail_small;
-        } else if (getStationType(name).equalsIgnoreCase("wales")) {
-            return R.drawable.ic_tfw;
-        } else if (getStationType(name).equalsIgnoreCase("merseytravel")) {
-            return R.drawable.ic_merseyrail;
         } else {
             return R.drawable.ic_train;
         }

@@ -57,6 +57,8 @@ public class PinnedStationAdapter extends RecyclerView.Adapter<PinnedStationAdap
 
         holder.tvStationName.setText(fromName);
 
+        if(!StationHelper.getStationType(fromName).equalsIgnoreCase("national"))
+            holder.ivLogo.setColorFilter(android.graphics.Color.BLACK);
         holder.ivLogo.setImageResource(StationHelper.getIconForStation(fromName));
 
         if (!toCode.isEmpty()) {
