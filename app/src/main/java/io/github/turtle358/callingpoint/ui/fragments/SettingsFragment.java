@@ -114,8 +114,29 @@ public class SettingsFragment extends Fragment {
         recyclerTocs.setLayoutManager(new LinearLayoutManager(requireContext()));
 
         List<Toc> allTocs = TOCBrandHelper.getVisibleTocs();
+        List<Toc> nationalRail = new java.util.ArrayList<>();
+        List<Toc> tflServices = new java.util.ArrayList<>();
 
-        adapter = new TocSettingAdapter(allTocs, trackedTocs, (tocCode, isTracked) -> {
+        for (Toc t : allTocs) {
+            String manager = TOCBrandHelper.getManagerForToc(t.name);
+            boolean isTfl = "tfl".equalsIgnoreCase(manager) || "tfl-national".equalsIgnoreCase(manager) || "london buses".equalsIgnoreCase(manager);
+            if (isTfl) {
+                tflServices.add(t);
+            } else {
+                nationalRail.add(t);
+            }
+        }
+
+        List<Toc> groupedTocs = new java.util.ArrayList<>(nationalRail);
+        if (!nationalRail.isEmpty() && !tflServices.isEmpty()) {
+            Toc separator = new Toc();
+            separator.code = "SEPARATOR";
+            separator.name = "Transport for London";
+            groupedTocs.add(separator);
+        }
+        groupedTocs.addAll(tflServices);
+
+        adapter = new TocSettingAdapter(requireContext(), groupedTocs, trackedTocs, (tocCode, isTracked) -> {
             if (isTracked) trackedTocs.add(tocCode);
             else trackedTocs.remove(tocCode);
             saveTrackedTocs();

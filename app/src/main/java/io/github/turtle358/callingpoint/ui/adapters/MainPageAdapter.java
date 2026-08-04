@@ -10,9 +10,9 @@ import io.github.turtle358.callingpoint.ui.fragments.JourneyPlannerFragment;
 import io.github.turtle358.callingpoint.ui.fragments.LiveBoardFragment;
 import io.github.turtle358.callingpoint.ui.fragments.SettingsFragment;
 
-public class MainPagerAdapter extends FragmentStateAdapter {
+public class MainPageAdapter extends FragmentStateAdapter {
 
-    public MainPagerAdapter(@NonNull FragmentActivity fragmentActivity) {
+    public MainPageAdapter(@NonNull FragmentActivity fragmentActivity) {
         super(fragmentActivity);
     }
 

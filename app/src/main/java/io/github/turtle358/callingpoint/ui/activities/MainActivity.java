@@ -25,7 +25,7 @@ import com.google.android.material.color.DynamicColors;
 import java.util.concurrent.TimeUnit;
 
 import io.github.turtle358.callingpoint.R;
-import io.github.turtle358.callingpoint.ui.adapters.MainPagerAdapter;
+import io.github.turtle358.callingpoint.ui.adapters.MainPageAdapter;
 import io.github.turtle358.callingpoint.utils.TOCBrandHelper;
 import io.github.turtle358.callingpoint.workers.TrainTrackerWorker;
 
@@ -77,7 +77,7 @@ public class MainActivity extends AppCompatActivity {
         viewPager = findViewById(R.id.view_pager);
         bottomNav = findViewById(R.id.bottom_navigation);
 
-        MainPagerAdapter pagerAdapter = new MainPagerAdapter(this);
+        MainPageAdapter pagerAdapter = new MainPageAdapter(this);
         viewPager.setAdapter(pagerAdapter);
         viewPager.setOffscreenPageLimit(3);
         bottomNav.setOnItemSelectedListener(item -> {

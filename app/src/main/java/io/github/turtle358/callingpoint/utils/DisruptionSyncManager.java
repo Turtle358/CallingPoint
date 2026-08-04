@@ -61,7 +61,6 @@ public class DisruptionSyncManager {
         }).start();
     }
 
-
     public static boolean syncSync(Context context, SyncCallback callback) {
         SharedPreferences prefs = context.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
 
@@ -247,13 +246,20 @@ public class DisruptionSyncManager {
                     }
                 }
 
-                trackedLive.sort((a, b) -> a.tocName.compareToIgnoreCase(b.tocName));
-                othersLive.sort((a, b) -> a.tocName.compareToIgnoreCase(b.tocName));
-                plannedWorks.sort((a, b) -> a.tocName.compareToIgnoreCase(b.tocName));
+                trackedLive = groupAndFormatList(trackedLive);
+                othersLive = groupAndFormatList(othersLive);
+                plannedWorks = groupAndFormatList(plannedWorks);
 
                 CachedDisruptionData cacheContainer = new CachedDisruptionData(trackedLive, othersLive, plannedWorks);
                 String appJson = new Gson().toJson(cacheContainer);
-                String widgetJson = new Gson().toJson(trackedLive);
+
+                List<DisruptionResponce.ServiceIndicator> widgetTracked = new ArrayList<>();
+                for (DisruptionResponce.ServiceIndicator si : trackedLive) {
+                    if (!"SEPARATOR".equals(si.tocCode)) {
+                        widgetTracked.add(si);
+                    }
+                }
+                String widgetJson = new Gson().toJson(widgetTracked);
 
                 prefs.edit()
                         .putString("CACHED_TOC_DATA", widgetJson)
@@ -264,8 +270,11 @@ public class DisruptionSyncManager {
                 triggerWidgetUpdate(context);
 
                 if (callback != null) {
+                    List<DisruptionResponce.ServiceIndicator> finalTrackedLive = trackedLive;
+                    List<DisruptionResponce.ServiceIndicator> finalOthersLive = othersLive;
+                    List<DisruptionResponce.ServiceIndicator> finalPlannedWorks = plannedWorks;
                     new Handler(Looper.getMainLooper()).post(() ->
-                            callback.onSuccess(trackedLive, othersLive, plannedWorks)
+                            callback.onSuccess(finalTrackedLive, finalOthersLive, finalPlannedWorks)
                     );
                 }
                 return true;
@@ -274,6 +283,44 @@ public class DisruptionSyncManager {
             e.printStackTrace();
         }
         return false;
+    }
+
+    private static boolean isTflService(DisruptionResponce.ServiceIndicator si) {
+        if (si == null || si.tocName == null) return false;
+        String manager = TOCBrandHelper.getManagerForToc(si.tocName);
+        return "tfl".equalsIgnoreCase(manager) || "tfl-national".equalsIgnoreCase(manager) || "london buses".equalsIgnoreCase(manager);
+    }
+
+    private static List<DisruptionResponce.ServiceIndicator> groupAndFormatList(List<DisruptionResponce.ServiceIndicator> inputList) {
+        if (inputList == null || inputList.isEmpty()) return new ArrayList<>();
+
+        List<DisruptionResponce.ServiceIndicator> nationalRail = new ArrayList<>();
+        List<DisruptionResponce.ServiceIndicator> tflServices = new ArrayList<>();
+
+        for (DisruptionResponce.ServiceIndicator si : inputList) {
+            if ("SEPARATOR".equals(si.tocCode)) continue;
+            if (isTflService(si)) {
+                tflServices.add(si);
+            } else {
+                nationalRail.add(si);
+            }
+        }
+
+        nationalRail.sort((a, b) -> a.tocName.compareToIgnoreCase(b.tocName));
+        tflServices.sort((a, b) -> a.tocName.compareToIgnoreCase(b.tocName));
+
+        List<DisruptionResponce.ServiceIndicator> result = new ArrayList<>();
+        result.addAll(nationalRail);
+
+        if (!nationalRail.isEmpty() && !tflServices.isEmpty()) {
+            DisruptionResponce.ServiceIndicator sep = new DisruptionResponce.ServiceIndicator();
+            sep.tocCode = "SEPARATOR";
+            sep.tocName = "Transport for London";
+            result.add(sep);
+        }
+
+        result.addAll(tflServices);
+        return result;
     }
 
     private static void triggerWidgetUpdate(Context context) {
