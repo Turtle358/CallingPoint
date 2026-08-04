@@ -16,6 +16,9 @@
 
     <color name="good_service_logo">#3949AB</color>
 
-
     <color name="tfl_logo_circle_bg">#F2F2F2</color>
+
+    <color name="predicted_route_disclaimer">#132842</color>
+
+    <color name="predicted_route_disclaimer_text">#8AB4F8</color>
 </resources>

@@ -10,7 +10,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -356,40 +355,31 @@ public class DeparturesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
 
         setAnimation(itemHolder.itemView, position);
 
-        String manager = TOCBrandHelper.getManagerForToc(service.operatorName);
-        if ("tfl".equalsIgnoreCase(manager)) {
-            itemHolder.itemView.setClickable(false);
-            itemHolder.itemView.setFocusable(false);
-            itemHolder.itemView.setOnClickListener(v -> {
-                Toast.makeText(context, "Calling points are not available for underground services", Toast.LENGTH_LONG).show();
-            });
-        } else {
-            itemHolder.itemView.setClickable(true);
-            itemHolder.itemView.setFocusable(true);
+        itemHolder.itemView.setClickable(true);
+        itemHolder.itemView.setFocusable(true);
 
-            itemHolder.itemView.setOnClickListener(v -> {
-                Intent intent = new Intent(context, ServiceDetailsActivity.class);
-                intent.putExtra("SERVICE_ID", service.serviceID);
+        itemHolder.itemView.setOnClickListener(v -> {
+            Intent intent = new Intent(context, ServiceDetailsActivity.class);
+            intent.putExtra("SERVICE_ID", service.serviceID);
 
-                String trainOrigin = (service.origin != null && !service.origin.isEmpty()) ? service.origin.get(0).locationName : "Unknown";
-                String trainDest = (service.destination != null && !service.destination.isEmpty()) ? service.destination.get(0).locationName : "Unknown";
+            String trainOrigin = (service.origin != null && !service.origin.isEmpty()) ? service.origin.get(0).locationName : "Unknown";
+            String trainDest = (service.destination != null && !service.destination.isEmpty()) ? service.destination.get(0).locationName : "Unknown";
 
-                String uOrigin;
-                String uDest;
+            String uOrigin;
+            String uDest;
 
-                if (isArrivals) {
-                    uDest = userOriginStation;
-                    uOrigin = (userArrivingStation != null && !userArrivingStation.isEmpty() && !userArrivingStation.equals("Unknown")) ? userArrivingStation : trainOrigin;
-                } else {
-                    uOrigin = userOriginStation;
-                    uDest = (userArrivingStation != null && !userArrivingStation.isEmpty() && !userArrivingStation.equals("Unknown")) ? userArrivingStation : trainDest;
-                }
+            if (isArrivals) {
+                uDest = userOriginStation;
+                uOrigin = (userArrivingStation != null && !userArrivingStation.isEmpty() && !userArrivingStation.equals("Unknown")) ? userArrivingStation : trainOrigin;
+            } else {
+                uOrigin = userOriginStation;
+                uDest = (userArrivingStation != null && !userArrivingStation.isEmpty() && !userArrivingStation.equals("Unknown")) ? userArrivingStation : trainDest;
+            }
 
-                intent.putExtra("USER_ORIGIN", uOrigin);
-                intent.putExtra("USER_DESTINATION", uDest);
-                context.startActivity(intent);
-            });
-        }
+            intent.putExtra("USER_ORIGIN", uOrigin);
+            intent.putExtra("USER_DESTINATION", uDest);
+            context.startActivity(intent);
+        });
     }
 
     private String calculateCountdown(String scheduledTime, String estimatedTime) {

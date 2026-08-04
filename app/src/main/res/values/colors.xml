@@ -25,4 +25,7 @@
 
     <color name="good_service_logo">#003366</color>
 
+    <color name="predicted_route_disclaimer">#E8F0FE</color>
+
+    <color name="predicted_route_disclaimer_text">#1967D2</color>
 </resources>

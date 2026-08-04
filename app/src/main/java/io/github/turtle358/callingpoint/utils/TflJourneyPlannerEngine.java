@@ -75,9 +75,6 @@ public class TflJourneyPlannerEngine {
         });
     }
 
-    /**
-     * Matches TfL train legs with National Rail departure boards to attach serviceIDs.
-     */
     private void enrichNationalRailServices(List<JourneyOption> options) {
         for (JourneyOption option : options) {
             if (option.legs == null) continue;
@@ -131,9 +128,6 @@ public class TflJourneyPlannerEngine {
         return crs;
     }
 
-    /**
-     * Calculates the minutes offset between current system time and journey departure time.
-     */
     private int calculateTimeOffset(String departureTimeStr) {
         if (departureTimeStr == null || !departureTimeStr.contains(":")) return 0;
         try {
@@ -221,7 +215,6 @@ public class TflJourneyPlannerEngine {
 
                 if ("bus".equalsIgnoreCase(modeId)) {
                     transportMode = "BUS";
-                    // Ensure the bus route number is used (e.g. "Bus 2")
                     operatorName = "Bus " + specificLineId.toUpperCase();
                 } else if ("walking".equalsIgnoreCase(modeId)) {
                     transportMode = "TUBE/WALK";
