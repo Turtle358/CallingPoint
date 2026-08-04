@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/widgetRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/bg_widget_rounded"
     android:orientation="vertical"
-    android:paddingStart="20dp"
-    android:paddingTop="20dp"
-    android:paddingEnd="20dp"
+    android:paddingStart="16dp"
+    android:paddingTop="16dp"
+    android:paddingEnd="16dp"
     android:paddingBottom="14dp">
 
     <RelativeLayout
@@ -30,7 +31,8 @@
                 android:text="Status"
                 android:textColor="#111111"
                 android:textSize="20sp"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                android:letterSpacing="-0.02" />
 
             <TextView
                 android:id="@+id/titleLine2"
@@ -38,7 +40,8 @@
                 android:layout_height="wrap_content"
                 android:text="Disruption"
                 android:textColor="#111111"
-                android:textSize="18sp" />
+                android:textSize="18sp"
+                android:letterSpacing="-0.01" />
         </LinearLayout>
 
         <FrameLayout
@@ -88,7 +91,7 @@
             android:id="@+id/widgetLogo"
             android:layout_width="16dp"
             android:layout_height="16dp"
-            android:layout_marginEnd="6dp"
+            android:layout_marginEnd="4dp"
             android:src="@drawable/ic_national_rail"
             android:tint="#111111" />
 
@@ -96,9 +99,9 @@
             android:id="@+id/widgetTime"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="--:--"
+            tools:text="11:20"
             android:textColor="#111111"
-            android:textSize="11sp"
+            android:textSize="12sp"
             android:includeFontPadding="false" />
 
         <FrameLayout
@@ -112,36 +115,45 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:layout_marginEnd="6dp">
+            android:layout_marginEnd="6dp"
+            tools:visibility="visible">
 
             <TextView
                 android:id="@+id/badge1_text"
                 android:layout_width="wrap_content"
-                android:layout_height="20dp"
-                android:minWidth="32dp"
-                android:layout_marginEnd="3dp"
-                android:paddingHorizontal="4dp"
+                android:layout_height="22dp"
+                android:minWidth="34dp"
+                android:layout_marginEnd="4dp"
+                android:paddingStart="6dp"
+                android:paddingEnd="6dp"
                 android:background="@drawable/bg_pill_base"
                 android:gravity="center"
                 android:textColor="#FFFFFF"
                 android:textSize="11sp"
                 android:textStyle="bold"
                 android:visibility="gone"
-                android:includeFontPadding="false" />
+                android:includeFontPadding="false"
+                tools:visibility="visible"
+                tools:text="EMR"
+                tools:backgroundTint="#603950" />
 
             <TextView
                 android:id="@+id/badge2_text"
                 android:layout_width="wrap_content"
-                android:layout_height="20dp"
-                android:minWidth="32dp"
-                android:paddingHorizontal="4dp"
+                android:layout_height="22dp"
+                android:minWidth="34dp"
+                android:paddingStart="6dp"
+                android:paddingEnd="6dp"
                 android:background="@drawable/bg_pill_base"
                 android:gravity="center"
                 android:textColor="#FFFFFF"
                 android:textSize="11sp"
                 android:textStyle="bold"
                 android:visibility="gone"
-                android:includeFontPadding="false" />
+                android:includeFontPadding="false"
+                tools:visibility="visible"
+                tools:text="SN"
+                tools:backgroundTint="#003D2E" />
         </LinearLayout>
 
         <LinearLayout
@@ -163,6 +175,7 @@
             android:id="@+id/iconAlert"
             android:layout_width="22dp"
             android:layout_height="22dp"
-            android:src="@drawable/ic_alert_diamond" />
+            android:src="@drawable/ic_alert_diamond"
+            tools:visibility="visible" />
     </LinearLayout>
 </LinearLayout>
