@@ -74,7 +74,6 @@ public class JourneySearchActivity extends AppCompatActivity {
         etToCrs = findViewById(R.id.etToCrs);
         ImageButton btnSwap = findViewById(R.id.btnSwapStations);
         Button btnSearch = findViewById(R.id.btnSearchJourney);
-        Button btnMaps = findViewById(R.id.btnSearchMaps);
         recyclerSearchResults = findViewById(R.id.recyclerSearchResults);
         progressSearch = findViewById(R.id.progressSearch);
         tvStatusUpdate = findViewById(R.id.tvStatusUpdate);
@@ -130,8 +129,7 @@ public class JourneySearchActivity extends AppCompatActivity {
             etToCrs.dismissDropDown();
         });
 
-        btnSearch.setOnClickListener(v -> handleSearch(false));
-        btnMaps.setOnClickListener(v -> handleSearch(true));
+        btnSearch.setOnClickListener(v -> handleSearch());
     }
 
     private void setupDateTimePickers() {
@@ -292,7 +290,7 @@ public class JourneySearchActivity extends AppCompatActivity {
         });
     }
 
-    private void handleSearch(boolean useGoogleMaps) {
+    private void handleSearch() {
         etFromCrs.dismissDropDown();
         etToCrs.dismissDropDown();
         tvStatusUpdate.setVisibility(View.GONE);
@@ -328,29 +326,26 @@ public class JourneySearchActivity extends AppCompatActivity {
 
         hideKeyboard();
 
-        if (useGoogleMaps) {
-            launchMapsRouting(fromName, toName, fromCrs != null ? fromCrs : fromNaptan, toCrs != null ? toCrs : toNaptan);
-        } else {
-            String dateParam = null;
-            String timeParam = null;
-            String timeIsParam = null;
+        String dateParam = null;
+        String timeParam = null;
+        String timeIsParam = null;
 
-            if (selectedCalendar != null) {
-                java.text.SimpleDateFormat dateFmt = new java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.UK);
-                java.text.SimpleDateFormat timeFmt = new java.text.SimpleDateFormat("HHmm", java.util.Locale.UK);
-                dateParam = dateFmt.format(selectedCalendar.getTime());
-                timeParam = timeFmt.format(selectedCalendar.getTime());
-                timeIsParam = isArriving ? "arriving" : "departing";
-            }
-
-            if (fromNaptan != null && !fromNaptan.isEmpty() && toNaptan != null && !toNaptan.isEmpty()) {
-                startTflRouting(fromNaptan, toNaptan, fromCrs, toCrs, dateParam, timeParam, timeIsParam);
-            } else if (fromCrs != null && toCrs != null && selectedCalendar == null) {
-                startInternalRouting(fromCrs, toCrs);
-            } else {
-                Toast.makeText(this, "National Rail routing is only available for 'Now'. Switch to 'Now' or use TfL stations.", Toast.LENGTH_LONG).show();
-            }
+        if (selectedCalendar != null) {
+            java.text.SimpleDateFormat dateFmt = new java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.UK);
+            java.text.SimpleDateFormat timeFmt = new java.text.SimpleDateFormat("HHmm", java.util.Locale.UK);
+            dateParam = dateFmt.format(selectedCalendar.getTime());
+            timeParam = timeFmt.format(selectedCalendar.getTime());
+            timeIsParam = isArriving ? "arriving" : "departing";
         }
+
+        if (fromNaptan != null && !fromNaptan.isEmpty() && toNaptan != null && !toNaptan.isEmpty()) {
+            startTflRouting(fromNaptan, toNaptan, fromCrs, toCrs, dateParam, timeParam, timeIsParam);
+        } else if (fromCrs != null && toCrs != null && selectedCalendar == null) {
+            startInternalRouting(fromCrs, toCrs);
+        } else {
+            Toast.makeText(this, "National Rail routing is only available for 'Now'. Switch to 'Now' or use TfL stations.", Toast.LENGTH_LONG).show();
+        }
+
     }
 
     private void launchMapsRouting(String originName, String destName, String originCrs, String destCrs) {

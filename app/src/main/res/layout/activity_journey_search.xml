@@ -238,21 +238,6 @@
             android:textStyle="bold"
             android:backgroundTint="@color/brand_primary"
             android:textColor="#FFFFFF"/>
-
-        <Button
-            android:id="@+id/btnSearchMaps"
-            android:layout_width="0dp"
-            android:layout_height="50dp"
-            android:layout_weight="1"
-            android:layout_marginStart="8dp"
-            android:text="Maps"
-            android:textSize="15sp"
-            android:textStyle="bold"
-            android:textColor="@color/maps_btn_text"
-            android:backgroundTint="@color/maps_btn_bg"
-            app:icon="@drawable/ic_google_g"
-            app:iconGravity="end"
-            app:iconTint="@null" />
     </LinearLayout>
 
     <TextView
