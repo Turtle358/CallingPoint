@@ -75,7 +75,7 @@ public class PinnedJourneyAdapter extends RecyclerView.Adapter<PinnedJourneyAdap
 
             int brandColor = TOCBrandHelper.getColourForToc(primaryBrand);
 
-            float radius = holder.itemView.getContext().getResources().getDisplayMetrics().density * 16;
+            float radius = holder.itemView.getContext().getResources().getDisplayMetrics().density * 28;
             GradientDrawable barBg = new GradientDrawable();
             barBg.setColor(brandColor);
             barBg.setCornerRadii(new float[]{radius, radius, 0, 0, 0, 0, radius, radius});

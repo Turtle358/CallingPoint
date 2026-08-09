@@ -1,6 +1,5 @@
 package io.github.turtle358.callingpoint.ui.activities;
 
-import static io.github.turtle358.callingpoint.utils.InlineAutocompleteManager.applyInlineAutocomplete;
 
 import android.app.Dialog;
 import android.graphics.Color;
@@ -40,6 +39,7 @@ import io.github.turtle358.callingpoint.ui.adapters.JourneyAdapter;
 import io.github.turtle358.callingpoint.ui.adapters.StationAutoCompleteAdapter;
 import io.github.turtle358.callingpoint.utils.GraphManager;
 import io.github.turtle358.callingpoint.utils.JourneyPlannerEngine;
+import io.github.turtle358.callingpoint.utils.RecentStationsManager;
 import io.github.turtle358.callingpoint.utils.StationHelper;
 import io.github.turtle358.callingpoint.utils.TflJourneyPlannerEngine;
 
@@ -276,16 +276,36 @@ public class JourneySearchActivity extends AppCompatActivity {
 
     private void setupAdaptersAndListeners(Button btnSearch) {
         List<String> stations = StationHelper.getStationNames();
-        autoCompleteAdapter = new StationAutoCompleteAdapter(this, stations);
+        // FIX: Create separate adapters so they don't share search states!
+        StationAutoCompleteAdapter fromAdapter = new StationAutoCompleteAdapter(this, stations);
+        StationAutoCompleteAdapter toAdapter = new StationAutoCompleteAdapter(this, stations);
 
-        etFromCrs.setAdapter(autoCompleteAdapter);
-        etToCrs.setAdapter(autoCompleteAdapter);
+        etFromCrs.setAdapter(fromAdapter);
+        etToCrs.setAdapter(toAdapter);
 
-        applyInlineAutocomplete(etFromCrs);
-        applyInlineAutocomplete(etToCrs);
+        io.github.turtle358.callingpoint.utils.RecentStationsManager recentManager =
+                new io.github.turtle358.callingpoint.utils.RecentStationsManager(this);
 
-        setupAutoCompleteEnterBehavior(etFromCrs, autoCompleteAdapter, etToCrs, null);
-        setupAutoCompleteEnterBehavior(etToCrs, autoCompleteAdapter, null, () -> {
+        etFromCrs.setOnItemClickListener((parent, v, position, id) -> {
+            recentManager.addStation(fromAdapter.getItem(position));
+            etToCrs.requestFocus();
+        });
+
+        etToCrs.setOnItemClickListener((parent, v, position, id) -> {
+            recentManager.addStation(toAdapter.getItem(position));
+            hideKeyboard();
+            if (btnSearch != null) btnSearch.performClick();
+        });
+
+        etFromCrs.setOnFocusChangeListener((v, hasFocus) -> {
+            if (hasFocus) etFromCrs.showDropDown();
+        });
+        etToCrs.setOnFocusChangeListener((v, hasFocus) -> {
+            if (hasFocus) etToCrs.showDropDown();
+        });
+
+        setupAutoCompleteEnterBehavior(etFromCrs, fromAdapter, etToCrs, null);
+        setupAutoCompleteEnterBehavior(etToCrs, toAdapter, null, () -> {
             if (btnSearch != null) btnSearch.performClick();
         });
     }

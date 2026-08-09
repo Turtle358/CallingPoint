@@ -1,6 +1,5 @@
 package io.github.turtle358.callingpoint.ui.fragments;
 
-import static io.github.turtle358.callingpoint.utils.InlineAutocompleteManager.applyInlineAutocomplete;
 
 import android.content.Context;
 import android.content.Intent;
@@ -38,6 +37,7 @@ import io.github.turtle358.callingpoint.ui.adapters.PinnedServiceAdapter;
 import io.github.turtle358.callingpoint.ui.adapters.PinnedStationAdapter;
 import io.github.turtle358.callingpoint.R;
 import io.github.turtle358.callingpoint.ui.adapters.StationAutoCompleteAdapter;
+import io.github.turtle358.callingpoint.utils.RecentStationsManager;
 import io.github.turtle358.callingpoint.utils.StationHelper;
 import io.github.turtle358.callingpoint.api.APIClient;
 import io.github.turtle358.callingpoint.api.NationalRailAPI;
@@ -91,13 +91,36 @@ public class LiveBoardFragment extends Fragment {
         pinnedDataManager = new PinnedDataManager(requireContext());
 
         List<String> stations = StationHelper.getStationNames();
-        StationAutoCompleteAdapter autoCompleteAdapter = new StationAutoCompleteAdapter(requireContext(), stations);
-        etFromCrs.setAdapter(autoCompleteAdapter);
-        etToCrs.setAdapter(autoCompleteAdapter);
-        applyInlineAutocomplete(etFromCrs);
-        applyInlineAutocomplete(etToCrs);
-        setupAutoCompleteEnterBehavior(etFromCrs, autoCompleteAdapter, etToCrs, null);
-        setupAutoCompleteEnterBehavior(etToCrs, autoCompleteAdapter, null, () -> btnSearch.performClick());
+
+        // FIX: Two separate adapters to prevent the ghosting bug!
+        StationAutoCompleteAdapter fromAdapter = new StationAutoCompleteAdapter(requireContext(), stations);
+        StationAutoCompleteAdapter toAdapter = new StationAutoCompleteAdapter(requireContext(), stations);
+
+        etFromCrs.setAdapter(fromAdapter);
+        etToCrs.setAdapter(toAdapter);
+
+        RecentStationsManager recentManager = new RecentStationsManager(requireContext());
+
+        etFromCrs.setOnItemClickListener((parent, v, position, id) -> {
+            recentManager.addStation(fromAdapter.getItem(position));
+            etToCrs.requestFocus();
+        });
+
+        etToCrs.setOnItemClickListener((parent, v, position, id) -> {
+            recentManager.addStation(toAdapter.getItem(position));
+            hideKeyboard();
+            btnSearch.performClick();
+        });
+
+        etFromCrs.setOnFocusChangeListener((v, hasFocus) -> {
+            if (hasFocus) etFromCrs.showDropDown();
+        });
+        etToCrs.setOnFocusChangeListener((v, hasFocus) -> {
+            if (hasFocus) etToCrs.showDropDown();
+        });
+
+        setupAutoCompleteEnterBehavior(etFromCrs, fromAdapter, etToCrs, null);
+        setupAutoCompleteEnterBehavior(etToCrs, toAdapter, null, () -> btnSearch.performClick());
 
         recyclerPinnedStations.setLayoutManager(new LinearLayoutManager(requireContext()));
         recyclerPinnedStations.setNestedScrollingEnabled(false);

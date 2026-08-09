@@ -35,24 +35,26 @@
     </LinearLayout>
 
     <androidx.cardview.widget.CardView
+        android:id="@+id/cardSearchInput"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginHorizontal="12dp"
+        android:layout_marginHorizontal="16dp"
         android:layout_marginTop="8dp"
-        android:layout_marginBottom="12dp"
+        android:layout_marginBottom="16dp"
         app:cardBackgroundColor="@color/bg_card"
-        app:cardCornerRadius="16dp"
+        app:cardCornerRadius="28dp"
         app:cardElevation="2dp">
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:padding="8dp">
+            android:paddingHorizontal="8dp"
+            android:paddingVertical="4dp">
 
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/tilFromCrs"
                 android:layout_width="0dp"
-                android:layout_height="64dp"
+                android:layout_height="56dp"
                 app:boxBackgroundMode="none"
                 app:hintEnabled="false"
                 app:endIconMode="clear_text"
@@ -66,8 +68,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:background="@android:color/transparent"
-                    android:hint="Leaving from"
                     android:completionThreshold="1"
+                    android:hint="Leaving from"
                     android:paddingStart="16dp"
                     android:paddingEnd="0dp"
                     android:textColor="@color/text_primary"
@@ -77,6 +79,7 @@
                     android:inputType="text"
                     android:maxLines="1"
                     android:imeOptions="actionNext"
+                    android:dropDownAnchor="@+id/cardSearchInput"
                     android:popupBackground="@drawable/bg_dropdown"/>
             </com.google.android.material.textfield.TextInputLayout>
 
@@ -93,7 +96,7 @@
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/tilToCrs"
                 android:layout_width="0dp"
-                android:layout_height="64dp"
+                android:layout_height="56dp"
                 app:boxBackgroundMode="none"
                 app:hintEnabled="false"
                 app:endIconMode="clear_text"
@@ -107,8 +110,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:background="@android:color/transparent"
-                    android:hint="Going to"
                     android:completionThreshold="1"
+                    android:hint="Going to"
                     android:paddingStart="16dp"
                     android:paddingEnd="0dp"
                     android:textColor="@color/text_primary"
@@ -118,6 +121,7 @@
                     android:inputType="text"
                     android:maxLines="1"
                     android:imeOptions="actionSearch"
+                    android:dropDownAnchor="@+id/cardSearchInput"
                     android:popupBackground="@drawable/bg_dropdown"/>
             </com.google.android.material.textfield.TextInputLayout>
 
@@ -140,10 +144,10 @@
     <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginHorizontal="12dp"
-        android:layout_marginBottom="12dp"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginBottom="16dp"
         app:cardBackgroundColor="@color/bg_card"
-        app:cardCornerRadius="16dp"
+        app:cardCornerRadius="28dp"
         app:cardElevation="2dp">
 
         <LinearLayout
@@ -176,8 +180,8 @@
 
             <ImageButton
                 android:id="@+id/btnResetTime"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:src="@android:drawable/ic_menu_revert"
                 android:visibility="gone"
@@ -189,12 +193,12 @@
         android:id="@+id/cardFallbackWarning"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginHorizontal="20dp"
+        android:layout_marginHorizontal="16dp"
         android:layout_marginBottom="16dp"
         android:visibility="gone"
         app:cardBackgroundColor="#1AFF8C00"
-        app:cardCornerRadius="12dp"
-        app:cardElevation="0dp">
+        app:cardCornerRadius="28dp"
+        app:cardElevation="2dp">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -224,17 +228,15 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:layout_marginHorizontal="24dp"
+        android:layout_marginHorizontal="16dp"
         android:layout_marginBottom="8dp">
 
         <Button
             android:id="@+id/btnSearchJourney"
-            android:layout_width="0dp"
-            android:layout_height="50dp"
-            android:layout_weight="1"
-            android:layout_marginEnd="8dp"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
             android:text="Find Journeys"
-            android:textSize="15sp"
+            android:textSize="16sp"
             android:textStyle="bold"
             android:backgroundTint="@color/brand_primary"
             android:textColor="#FFFFFF"/>

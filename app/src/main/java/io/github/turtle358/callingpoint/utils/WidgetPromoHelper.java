@@ -1,4 +1,4 @@
-package io.github.turtle358.callingpoint.utils; // Make sure this matches your package
+package io.github.turtle358.callingpoint.utils;
 
 import android.appwidget.AppWidgetManager;
 import android.content.ComponentName;

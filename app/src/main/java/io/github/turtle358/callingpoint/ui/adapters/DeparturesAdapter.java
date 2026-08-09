@@ -186,7 +186,15 @@ public class DeparturesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
 
         boolean isEarlier = earlierServices.contains(service);
 
-        itemHolder.tocColourBar.setBackgroundColor(TOCBrandHelper.getColourForToc(service.operatorName));
+        int brandColor = TOCBrandHelper.getColourForToc(service.operatorName);
+
+        // Dynamically round the left corners to 24dp to match the CardView
+        float radius = itemHolder.itemView.getContext().getResources().getDisplayMetrics().density * 28;
+        android.graphics.drawable.GradientDrawable barBg = new android.graphics.drawable.GradientDrawable();
+        barBg.setColor(brandColor);
+        barBg.setCornerRadii(new float[]{radius, radius, 0, 0, 0, 0, radius, radius});
+
+        itemHolder.tocColourBar.setBackground(barBg);
         itemHolder.ivManagerLogo.setImageResource(TOCBrandHelper.getIconForToc(service.operatorName));
 
         String schTime = service.std != null ? service.std : (service.sta != null ? service.sta : "--:--");

@@ -36,7 +36,7 @@
                 android:layout_marginHorizontal="12dp"
                 android:layout_marginBottom="16dp"
                 app:cardBackgroundColor="@color/bg_card"
-                app:cardCornerRadius="16dp"
+                app:cardCornerRadius="28dp"
                 app:cardElevation="2dp"
                 app:cardPreventCornerOverlap="false">
 
@@ -141,7 +141,7 @@
                     android:layout_weight="1"
                     android:layout_marginEnd="6dp"
                     app:cardBackgroundColor="@color/bg_card"
-                    app:cardCornerRadius="16dp"
+                    app:cardCornerRadius="28dp"
                     app:cardElevation="2dp"
                     app:cardPreventCornerOverlap="false"
                     app:cardUseCompatPadding="true">
@@ -189,7 +189,7 @@
                     android:layout_weight="1"
                     android:layout_marginStart="6dp"
                     app:cardBackgroundColor="@color/bg_card"
-                    app:cardCornerRadius="16dp"
+                    app:cardCornerRadius="28dp"
                     app:cardElevation="2dp"
                     app:cardPreventCornerOverlap="false"
                     app:cardUseCompatPadding="true">
@@ -245,7 +245,7 @@
                     android:layout_weight="1"
                     android:layout_marginEnd="6dp"
                     app:cardBackgroundColor="@color/bg_card"
-                    app:cardCornerRadius="16dp"
+                    app:cardCornerRadius="28dp"
                     app:cardElevation="2dp"
                     app:cardPreventCornerOverlap="false"
                     app:cardUseCompatPadding="true">
@@ -332,7 +332,7 @@
                     android:layout_weight="1"
                     android:layout_marginStart="6dp"
                     app:cardBackgroundColor="@color/bg_card"
-                    app:cardCornerRadius="16dp"
+                    app:cardCornerRadius="28dp"
                     app:cardElevation="2dp"
                     app:cardPreventCornerOverlap="false"
                     app:cardUseCompatPadding="true">
@@ -380,7 +380,7 @@
                 android:layout_marginHorizontal="12dp"
                 android:layout_marginBottom="16dp"
                 app:cardBackgroundColor="@color/bg_card"
-                app:cardCornerRadius="16dp"
+                app:cardCornerRadius="28dp"
                 app:cardElevation="2dp">
 
                 <LinearLayout

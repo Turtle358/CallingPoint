@@ -99,6 +99,17 @@
     "delayRepayMessage": ""
   },
   {
+    "code": "GR",
+    "acronym": "LNER",
+    "name": "LNER",
+    "colour": "#CE0F20",
+    "manager": "gbr",
+    "shown": 0,
+    "delayRepayUrl": "https://delayrepay.lner.co.uk/delayrepayV2/",
+    "delayRepayMinTime": 15,
+    "delayRepayMessage": ""
+  },
+  {
     "code": "XC",
     "acronym": "XC",
     "name": "CrossCountry",
@@ -452,6 +463,18 @@
     "colour": "#F3A9BB",
     "manager": "tfl",
     "shown": 1,
+    "delayRepayUrl": "https://tfl.gov.uk/fares/refunds/apply-for-a-service-delay-refund",
+    "delayRepayMinTime": 15,
+    "delayRepayMessage": "Handled via TfL refunds."
+  },
+  {
+    "code": "HC",
+    "acronym": "H&C",
+    "tflId": "hammersmith-city",
+    "name": "Hammersmith City Line",
+    "colour": "#F3A9BB",
+    "manager": "tfl",
+    "shown": 0,
     "delayRepayUrl": "https://tfl.gov.uk/fares/refunds/apply-for-a-service-delay-refund",
     "delayRepayMinTime": 15,
     "delayRepayMessage": "Handled via TfL refunds."

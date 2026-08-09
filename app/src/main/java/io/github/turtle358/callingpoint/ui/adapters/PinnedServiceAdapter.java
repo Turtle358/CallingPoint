@@ -43,7 +43,14 @@ public class PinnedServiceAdapter extends RecyclerView.Adapter<PinnedServiceAdap
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         ServiceDetailsResponse service = liveServices.get(position);
 
-        holder.tocColourBar.setBackgroundColor(TOCBrandHelper.getColourForToc(service.operator));
+        int brandColor = TOCBrandHelper.getColourForToc(service.operator);
+
+        float radius = holder.itemView.getContext().getResources().getDisplayMetrics().density * 28;
+        android.graphics.drawable.GradientDrawable barBg = new android.graphics.drawable.GradientDrawable();
+        barBg.setColor(brandColor);
+        barBg.setCornerRadii(new float[]{radius, radius, 0, 0, 0, 0, radius, radius}); // Top-Left and Bottom-Left
+
+        holder.tocColourBar.setBackground(barBg);
         holder.ivManagerLogo.setImageResource(TOCBrandHelper.getIconForToc(service.operator));
 
         String origin = service.locationName;
