@@ -148,7 +148,7 @@ public class ServiceAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             View v = LayoutInflater.from(context).inflate(R.layout.item_earlier_header, parent, false);
             return new HeaderViewHolder(v);
         } else {
-            View v = LayoutInflater.from(context).inflate(R.layout.item_departure, parent, false);
+            View v = LayoutInflater.from(context).inflate(R.layout.item_service, parent, false);
             return new ItemViewHolder(v);
         }
     }
