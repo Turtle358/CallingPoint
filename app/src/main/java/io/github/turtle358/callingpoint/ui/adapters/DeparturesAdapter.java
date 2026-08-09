@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.drawable.GradientDrawable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -167,9 +168,7 @@ public class DeparturesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
 
             hHolder.itemView.setOnClickListener(v -> {
                 isEarlierExpanded = !isEarlierExpanded;
-
                 hHolder.ivExpandEarlier.animate().rotation(isEarlierExpanded ? 180f : 0f).setDuration(200).start();
-
                 if (isEarlierExpanded) {
                     hHolder.tvEarlierTitle.setText("Hide previous departures");
                     notifyItemRangeInserted(1, earlierServices.size());
@@ -186,185 +185,145 @@ public class DeparturesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
 
         boolean isEarlier = earlierServices.contains(service);
 
-        int brandColor = TOCBrandHelper.getColourForToc(service.operatorName);
 
-        // Dynamically round the left corners to 24dp to match the CardView
-        float radius = itemHolder.itemView.getContext().getResources().getDisplayMetrics().density * 28;
-        android.graphics.drawable.GradientDrawable barBg = new android.graphics.drawable.GradientDrawable();
-        barBg.setColor(brandColor);
-        barBg.setCornerRadii(new float[]{radius, radius, 0, 0, 0, 0, radius, radius});
+        int brandColour = TOCBrandHelper.getColourForToc(service.operatorName);
+        if (Objects.equals(TOCBrandHelper.getManagerForToc(service.operatorName), "gbr") || Objects.equals(TOCBrandHelper.getManagerForToc(service.operatorName), "national")) {
+            itemHolder.ivModeIcon.setImageResource(R.drawable.ic_national_rail);
+        } else {
+            itemHolder.ivModeIcon.setImageResource(TOCBrandHelper.getIconForToc(service.operatorName));
+            itemHolder.ivModeIcon.setColorFilter(brandColour);
+        }
 
-        itemHolder.tocColourBar.setBackground(barBg);
-        itemHolder.ivManagerLogo.setImageResource(TOCBrandHelper.getIconForToc(service.operatorName));
+        GradientDrawable pillBg = new GradientDrawable();
+        pillBg.setColor(brandColour);
+        pillBg.setCornerRadius(itemHolder.itemView.getContext().getResources().getDisplayMetrics().density * 8);
+        itemHolder.tvOperatorName.setBackground(pillBg);
+        itemHolder.tvOperatorName.setText(service.operatorName);
+
+        GradientDrawable dotBg = new GradientDrawable();
+        dotBg.setShape(GradientDrawable.OVAL);
+        dotBg.setColor(brandColour);
+        itemHolder.dotTop.setBackground(dotBg);
+        itemHolder.dotBottom.setBackground(dotBg);
+        itemHolder.timelineLine.setBackgroundColor(androidx.core.graphics.ColorUtils.setAlphaComponent(brandColour, 102));
+
+        itemHolder.tvPlatform.setText(service.platform != null ? "Plat " + service.platform : "Plat -");
 
         String schTime = service.std != null ? service.std : (service.sta != null ? service.sta : "--:--");
         String estTime = service.etd != null ? service.etd : (service.eta != null ? service.eta : "Unknown");
-
         String countdownText = calculateCountdown(schTime, estTime);
 
-        itemHolder.tvSchTime.setPaintFlags(itemHolder.tvSchTime.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
-        itemHolder.tvSchTime.setVisibility(View.VISIBLE);
-        itemHolder.tvLiveStatus.setVisibility(View.VISIBLE);
-
-        if (isEarlier) {
-            itemHolder.tvSchTime.setText(countdownText);
-            itemHolder.tvSchTime.setTextColor(Color.parseColor("#888888"));
-            itemHolder.tvLiveStatus.setVisibility(View.GONE);
-            itemHolder.itemView.setAlpha(0.5f);
-        } else {
-            itemHolder.itemView.setAlpha(1.0f);
-            itemHolder.tvSchTime.setTextColor(itemHolder.defaultSchColour);
-
-            if ("Cancelled".equalsIgnoreCase(estTime)) {
-                itemHolder.tvSchTime.setText(schTime);
-                itemHolder.tvSchTime.setPaintFlags(itemHolder.tvSchTime.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
-                itemHolder.tvLiveStatus.setText("Cancelled");
-                itemHolder.tvLiveStatus.setTextColor(Color.parseColor("#DE350B"));
-
-            } else if ("Delayed".equalsIgnoreCase(estTime)) {
-                itemHolder.tvSchTime.setText(schTime);
-                itemHolder.tvSchTime.setPaintFlags(itemHolder.tvSchTime.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
-                itemHolder.tvLiveStatus.setText("Delayed");
-                itemHolder.tvLiveStatus.setTextColor(Color.parseColor("#FF8C00"));
-
-            } else if ("On time".equalsIgnoreCase(estTime)) {
-                itemHolder.tvSchTime.setText(countdownText);
-                itemHolder.tvSchTime.setTextColor(Color.parseColor("#00875A"));
-                itemHolder.tvLiveStatus.setVisibility(View.GONE);
-
-            } else {
-                itemHolder.tvSchTime.setText(schTime);
-                itemHolder.tvSchTime.setPaintFlags(itemHolder.tvSchTime.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
-                itemHolder.tvLiveStatus.setText("Exp " + estTime + " (" + countdownText + ")");
-                itemHolder.tvLiveStatus.setTextColor(Color.parseColor("#FF8C00"));
-            }
-        }
-
-        itemHolder.tvPlatform.setText(service.platform != null ? "Platform " + service.platform : "Platform -");
-
-        String originName = (service.origin != null && !service.origin.isEmpty()) ? service.origin.get(0).locationName : "";
-        String rawDest = (service.destination != null && !service.destination.isEmpty()) ? service.destination.get(0).locationName : "Unknown";
-
-        String extractedVia = "";
-        if (rawDest.contains(" via ")) {
-            extractedVia = rawDest.substring(rawDest.indexOf(" via ") + 5);
-            rawDest = rawDest.substring(0, rawDest.indexOf(" via "));
-        }
-
-        String cleanDest = rawDest.replaceAll(" \\(.*?\\)", "")
-                .replace(" Underground Station", "")
-                .replace(" Station", "")
-                .trim();
-
-        boolean isTfl = service.destination != null && !service.destination.isEmpty() && service.destination.get(0).crs == null;
-
-        if (isTfl || originName.isEmpty() || originName.equalsIgnoreCase(rawDest) || originName.equalsIgnoreCase("Unknown")) {
-            String routeHtml = "<b>" + cleanDest + "</b>";
-            itemHolder.tvRoute.setText(android.text.Html.fromHtml(routeHtml, android.text.Html.FROM_HTML_MODE_COMPACT));
-        } else {
-            String routeHtml = "<b>" + originName + "</b> to <b>" + cleanDest + "</b>";
-            itemHolder.tvRoute.setText(android.text.Html.fromHtml(routeHtml, android.text.Html.FROM_HTML_MODE_COMPACT));
-        }
-
+        String topTime = "--:--";
+        String topStation = userOriginStation;
+        String bottomTime = "--:--";
+        String bottomStation = "Unknown";
         String durationStr = "";
         int stopsCount = 0;
 
         boolean hasFilter = !Objects.equals(userArrivingStation, "Unknown") && userArrivingStation != null && !userArrivingStation.isEmpty();
 
-        if (!isArrivals && service.subsequentCallingPoints != null && !service.subsequentCallingPoints.isEmpty()) {
-            List<StationDepartureResponse.CallingPoint> pts = service.subsequentCallingPoints.get(0).callingPoint;
+        String rawDest = (service.destination != null && !service.destination.isEmpty()) ? service.destination.get(0).locationName : "Unknown";
+        String cleanDest = rawDest.replaceAll(" \\(.*?\\)", "").replace(" Underground Station", "").replace(" Station", "").trim();
+        String originName = (service.origin != null && !service.origin.isEmpty()) ? service.origin.get(0).locationName : "Unknown";
 
-            if (hasFilter) {
-                itemHolder.tvCallingAt.setText("Calling at " + userOriginStation + " and " + userArrivingStation);
+        if (!isArrivals) {
+            topTime = schTime;
+            topStation = userOriginStation;
+            bottomStation = hasFilter ? userArrivingStation : cleanDest;
 
-                int destIndex = -1;
-                for (int i = 0; i < pts.size(); i++) {
-                    if (pts.get(i).locationName.equalsIgnoreCase(userArrivingStation)) {
-                        destIndex = i;
-                        break;
+            if (service.subsequentCallingPoints != null && !service.subsequentCallingPoints.isEmpty()) {
+                List<StationDepartureResponse.CallingPoint> pts = service.subsequentCallingPoints.get(0).callingPoint;
+                if (hasFilter) {
+                    int destIndex = -1;
+                    for (int i = 0; i < pts.size(); i++) {
+                        if (pts.get(i).locationName.equalsIgnoreCase(userArrivingStation)) { destIndex = i; break; }
                     }
-                }
-
-                if (destIndex != -1) {
-                    stopsCount = destIndex + 1;
-                    durationStr = calculateDuration(schTime, pts.get(destIndex).st);
+                    if (destIndex != -1) {
+                        stopsCount = destIndex + 1;
+                        bottomTime = pts.get(destIndex).st;
+                    } else {
+                        stopsCount = pts.size();
+                        bottomTime = pts.get(pts.size() - 1).st;
+                    }
                 } else {
                     stopsCount = pts.size();
-                    durationStr = calculateDuration(schTime, pts.get(pts.size() - 1).st);
+                    bottomTime = pts.get(pts.size() - 1).st;
                 }
-            } else {
-                itemHolder.tvCallingAt.setText("Calling at " + userOriginStation);
-                stopsCount = pts.size();
-                durationStr = calculateDuration(schTime, pts.get(pts.size() - 1).st);
+                durationStr = calculateDuration(schTime, bottomTime);
             }
-            itemHolder.tvCallingAt.setVisibility(View.VISIBLE);
+        } else {
+            bottomTime = schTime;
+            bottomStation = userOriginStation;
+            topStation = hasFilter ? userArrivingStation : originName;
 
-        } else if (isArrivals && service.previousCallingPoints != null && !service.previousCallingPoints.isEmpty()) {
-            List<StationDepartureResponse.CallingPoint> pts = service.previousCallingPoints.get(0).callingPoint;
-
-            if (hasFilter) {
-                itemHolder.tvCallingAt.setText("Arriving at " + userOriginStation + " from " + userArrivingStation);
-
-                int originIndex = -1;
-                for (int i = 0; i < pts.size(); i++) {
-                    if (pts.get(i).locationName.equalsIgnoreCase(userArrivingStation)) {
-                        originIndex = i;
-                        break;
+            if (service.previousCallingPoints != null && !service.previousCallingPoints.isEmpty()) {
+                List<StationDepartureResponse.CallingPoint> pts = service.previousCallingPoints.get(0).callingPoint;
+                if (hasFilter) {
+                    int originIndex = -1;
+                    for (int i = 0; i < pts.size(); i++) {
+                        if (pts.get(i).locationName.equalsIgnoreCase(userArrivingStation)) { originIndex = i; break; }
                     }
-                }
-
-                if (originIndex != -1) {
-                    stopsCount = pts.size() - originIndex;
-                    durationStr = calculateDuration(pts.get(originIndex).st, schTime);
+                    if (originIndex != -1) {
+                        stopsCount = pts.size() - originIndex;
+                        topTime = pts.get(originIndex).st;
+                    } else {
+                        stopsCount = pts.size();
+                        topTime = pts.get(0).st;
+                    }
                 } else {
                     stopsCount = pts.size();
-                    durationStr = calculateDuration(pts.get(0).st, schTime);
+                    topTime = pts.get(0).st;
                 }
+                durationStr = calculateDuration(topTime, schTime);
+            }
+        }
+
+        itemHolder.tvDepTime.setText(topTime);
+        itemHolder.tvOriginStation.setText(topStation);
+        itemHolder.tvArrTime.setText(bottomTime);
+        itemHolder.tvDestStation.setText(bottomStation);
+
+        itemHolder.tvDepTime.setPaintFlags(itemHolder.tvDepTime.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
+        itemHolder.tvDepTime.setVisibility(View.VISIBLE);
+        itemHolder.tvLiveStatus.setVisibility(View.VISIBLE);
+
+        if (isEarlier) {
+            itemHolder.tvDepTime.setText(countdownText);
+            itemHolder.tvDepTime.setTextColor(Color.parseColor("#888888"));
+            itemHolder.tvLiveStatus.setVisibility(View.GONE);
+            itemHolder.itemView.setAlpha(0.5f);
+        } else {
+            itemHolder.itemView.setAlpha(1.0f);
+            itemHolder.tvDepTime.setTextColor(itemHolder.defaultSchColour);
+
+            if ("Cancelled".equalsIgnoreCase(estTime)) {
+                itemHolder.tvDepTime.setPaintFlags(itemHolder.tvDepTime.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+                itemHolder.tvLiveStatus.setText("Cancelled");
+                itemHolder.tvLiveStatus.setTextColor(Color.parseColor("#DE350B"));
+
+            } else if ("Delayed".equalsIgnoreCase(estTime)) {
+                itemHolder.tvDepTime.setPaintFlags(itemHolder.tvDepTime.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+                itemHolder.tvLiveStatus.setText("Delayed");
+                itemHolder.tvLiveStatus.setTextColor(Color.parseColor("#FF8C00"));
+
+            } else if ("On time".equalsIgnoreCase(estTime)) {
+                itemHolder.tvDepTime.setTextColor(itemHolder.defaultSchColour);
+                itemHolder.tvLiveStatus.setText("On time");
+                itemHolder.tvLiveStatus.setTextColor(Color.parseColor("#00875A"));
+
             } else {
-                itemHolder.tvCallingAt.setText("Arriving at " + userOriginStation);
-                stopsCount = pts.size();
-                durationStr = calculateDuration(pts.get(0).st, schTime);
+                itemHolder.tvDepTime.setPaintFlags(itemHolder.tvDepTime.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+                itemHolder.tvLiveStatus.setText("Exp " + estTime);
+                itemHolder.tvLiveStatus.setTextColor(Color.parseColor("#FF8C00"));
             }
-            itemHolder.tvCallingAt.setVisibility(View.VISIBLE);
-
-        } else {
-            itemHolder.tvCallingAt.setVisibility(View.GONE);
         }
 
-        boolean isTflService = "tfl".equalsIgnoreCase(TOCBrandHelper.getManagerForToc(service.operatorName));
-
-        if (isTflService || stopsCount == 0) {
-            String subtitle = service.operatorName;
-
-            java.util.regex.Matcher m = java.util.regex.Pattern.compile("\\((.*?)\\)").matcher(rawDest);
-            if (m.find()) {
-                subtitle = m.group(1);
-            }
-
-            String finalVia = "";
-            if (service.destination != null && !service.destination.isEmpty() && service.destination.get(0).via != null) {
-                finalVia = service.destination.get(0).via;
-            } else if (!extractedVia.isEmpty()) {
-                finalVia = extractedVia;
-            }
-
-            if (!finalVia.isEmpty()) {
-                subtitle += " via " + finalVia;
-            }
-
-            itemHolder.tvServiceDetails.setText(subtitle);
-        } else {
-            String detailsText = "";
-            if (!durationStr.isEmpty()) detailsText += durationStr + " • ";
-            detailsText += stopsCount + (stopsCount == 1 ? " stop • " : " stops • ");
-            detailsText += service.operatorName;
-            itemHolder.tvServiceDetails.setText(detailsText);
-        }
+        String detailsText = "";
+        if (!durationStr.isEmpty()) detailsText += durationStr + " • ";
+        detailsText += stopsCount + (stopsCount == 1 ? " stop" : " stops");
+        itemHolder.tvServiceDetails.setText(detailsText);
 
         setAnimation(itemHolder.itemView, position);
-
-        itemHolder.itemView.setClickable(true);
-        itemHolder.itemView.setFocusable(true);
 
         itemHolder.itemView.setOnClickListener(v -> {
             Intent intent = new Intent(context, ServiceDetailsActivity.class);
@@ -522,22 +481,28 @@ public class DeparturesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
     }
 
     public static class ItemViewHolder extends RecyclerView.ViewHolder {
-        View tocColourBar;
-        ImageView ivManagerLogo;
-        TextView tvSchTime, tvLiveStatus, tvPlatform, tvRoute, tvCallingAt, tvServiceDetails;
+        ImageView ivModeIcon;
+        TextView tvOperatorName, tvPlatform;
+        View dotTop, timelineLine, dotBottom;
+        TextView tvDepTime, tvOriginStation, tvArrTime, tvDestStation;
+        TextView tvServiceDetails, tvLiveStatus;
         int defaultSchColour;
 
         public ItemViewHolder(View v) {
             super(v);
-            tocColourBar = v.findViewById(R.id.tocColourBar);
-            ivManagerLogo = v.findViewById(R.id.ivManagerLogo);
-            tvSchTime = v.findViewById(R.id.tvSchTime);
-            tvLiveStatus = v.findViewById(R.id.tvLiveStatus);
+            ivModeIcon = v.findViewById(R.id.ivModeIcon);
+            tvOperatorName = v.findViewById(R.id.tvOperatorName);
             tvPlatform = v.findViewById(R.id.tvPlatform);
-            tvRoute = v.findViewById(R.id.tvRoute);
-            tvCallingAt = v.findViewById(R.id.tvCallingAt);
+            dotTop = v.findViewById(R.id.dotTop);
+            timelineLine = v.findViewById(R.id.timelineLine);
+            dotBottom = v.findViewById(R.id.dotBottom);
+            tvDepTime = v.findViewById(R.id.tvDepTime);
+            tvOriginStation = v.findViewById(R.id.tvOriginStation);
+            tvArrTime = v.findViewById(R.id.tvArrTime);
+            tvDestStation = v.findViewById(R.id.tvDestStation);
             tvServiceDetails = v.findViewById(R.id.tvServiceDetails);
-            defaultSchColour = tvSchTime.getCurrentTextColor();
+            tvLiveStatus = v.findViewById(R.id.tvLiveStatus);
+            defaultSchColour = tvDepTime.getCurrentTextColor();
         }
     }
 }

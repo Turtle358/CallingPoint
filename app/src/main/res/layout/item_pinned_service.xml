@@ -13,94 +13,183 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:orientation="vertical"
+        android:padding="16dp">
 
-        <View
-            android:id="@+id/tocColourBar"
-            android:layout_width="8dp"
-            android:layout_height="match_parent"
-            android:background="#000000" />
-
+        <!-- Header: Icon | Operator Pill | Platform -->
         <LinearLayout
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:padding="16dp">
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="16dp">
 
-            <LinearLayout
-                android:layout_width="match_parent"
+            <ImageView
+                android:id="@+id/ivModeIcon"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_train" />
+
+            <TextView
+                android:id="@+id/tvOperatorName"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:baselineAligned="true"
-                android:gravity="bottom"
-                android:orientation="horizontal">
+                android:layout_marginStart="10dp"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="4dp"
+                android:textColor="#FFFFFF"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:text="operator" />
 
-                <TextView
-                    android:id="@+id/tvSchTime"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textColor="@color/text_primary"
-                    android:textSize="22sp"
-                    android:textStyle="bold" />
+            <View
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
 
-                <TextView
-                    android:id="@+id/tvLiveStatus"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:textColor="#00875A"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
-
-                <View android:layout_width="0dp" android:layout_height="0dp" android:layout_weight="1" />
-
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
+            <TextView
+                android:id="@+id/tvPlatform"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:id="@+id/tvRoute"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textColor="@color/text_primary"
-                        android:textSize="20sp" />
-
-                    <TextView
-                        android:id="@+id/tvNextStop"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:textColor="@color/text_primary"
-                        android:textSize="16sp" />
-
-                    <TextView
-                        android:id="@+id/tvServiceDetails"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="14sp" />
-                </LinearLayout>
-
-                <ImageView
-                    android:id="@+id/ivManagerLogo"
-                    android:layout_width="wrap_content"
-                    android:layout_height="24dp"
-                    android:layout_marginStart="12dp"
-                    android:adjustViewBounds="true"
-                    android:contentDescription="Operator Logo" />
-            </LinearLayout>
+                android:textColor="@color/text_primary"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:text="Plat 1" />
         </LinearLayout>
+
+        <!-- Timeline Body -->
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <!-- Top Dot -->
+            <View
+                android:id="@+id/dotTop"
+                android:layout_width="8dp"
+                android:layout_height="8dp"
+                android:background="@drawable/bg_pill_base"
+                android:backgroundTint="#888888"
+                app:layout_constraintTop_toTopOf="@+id/tvDepTime"
+                app:layout_constraintBottom_toBottomOf="@+id/tvDepTime"
+                app:layout_constraintStart_toStartOf="parent" />
+
+            <TextView
+                android:id="@+id/tvDepTime"
+                android:layout_width="60dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:text="00:00"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/text_primary"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintStart_toEndOf="@id/dotTop" />
+
+            <TextView
+                android:id="@+id/tvOriginStation"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:text="Origin Station"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/text_primary"
+                android:ellipsize="end"
+                android:maxLines="1"
+                app:layout_constraintTop_toTopOf="@id/tvDepTime"
+                app:layout_constraintBottom_toBottomOf="@id/tvDepTime"
+                app:layout_constraintStart_toEndOf="@id/tvDepTime"
+                app:layout_constraintEnd_toEndOf="parent" />
+
+            <!-- Connecting Line -->
+            <View
+                android:id="@+id/timelineLine"
+                android:layout_width="2dp"
+                android:layout_height="0dp"
+                android:background="#33888888"
+                app:layout_constraintTop_toBottomOf="@id/dotTop"
+                app:layout_constraintBottom_toTopOf="@id/dotBottom"
+                app:layout_constraintStart_toStartOf="@id/dotTop"
+                app:layout_constraintEnd_toEndOf="@id/dotTop"
+                android:layout_marginTop="4dp"
+                android:layout_marginBottom="4dp" />
+
+            <!-- Bottom Dot -->
+            <View
+                android:id="@+id/dotBottom"
+                android:layout_width="8dp"
+                android:layout_height="8dp"
+                android:background="@drawable/bg_pill_base"
+                android:backgroundTint="#888888"
+                app:layout_constraintTop_toTopOf="@+id/tvArrTime"
+                app:layout_constraintBottom_toBottomOf="@+id/tvArrTime"
+                app:layout_constraintStart_toStartOf="parent" />
+
+            <TextView
+                android:id="@+id/tvArrTime"
+                android:layout_width="60dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="20dp"
+                android:text="00:00"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/text_primary"
+                app:layout_constraintTop_toBottomOf="@id/tvDepTime"
+                app:layout_constraintStart_toEndOf="@id/dotBottom" />
+
+            <TextView
+                android:id="@+id/tvDestStation"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:text="Destination Station"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/text_primary"
+                android:ellipsize="end"
+                android:maxLines="1"
+                app:layout_constraintTop_toTopOf="@id/tvArrTime"
+                app:layout_constraintBottom_toBottomOf="@id/tvArrTime"
+                app:layout_constraintStart_toEndOf="@id/tvArrTime"
+                app:layout_constraintEnd_toEndOf="parent" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <!-- Dashed Divider -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="2dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="12dp"
+            android:background="@drawable/bg_dashed_line"
+            android:layerType="software" />
+
+        <!-- Footer -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/tvServiceDetails"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="1h 20m • 6 stops"
+                android:textColor="@color/text_secondary"
+                android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/tvLiveStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Exp 00:00"
+                android:textColor="#FF8C00"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+        </LinearLayout>
+
     </LinearLayout>
 </androidx.cardview.widget.CardView>

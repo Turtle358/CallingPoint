@@ -2,7 +2,8 @@ package io.github.turtle358.callingpoint.ui.adapters;
 
 import android.content.Context;
 import android.graphics.Color;
-import android.text.Html;
+import android.graphics.Paint;
+import android.graphics.drawable.GradientDrawable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,6 +16,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 import io.github.turtle358.callingpoint.R;
 import io.github.turtle358.callingpoint.utils.TOCBrandHelper;
@@ -43,33 +45,47 @@ public class PinnedServiceAdapter extends RecyclerView.Adapter<PinnedServiceAdap
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         ServiceDetailsResponse service = liveServices.get(position);
 
-        int brandColor = TOCBrandHelper.getColourForToc(service.operator);
-
-        float radius = holder.itemView.getContext().getResources().getDisplayMetrics().density * 28;
-        android.graphics.drawable.GradientDrawable barBg = new android.graphics.drawable.GradientDrawable();
-        barBg.setColor(brandColor);
-        barBg.setCornerRadii(new float[]{radius, radius, 0, 0, 0, 0, radius, radius}); // Top-Left and Bottom-Left
-
-        holder.tocColourBar.setBackground(barBg);
-        holder.ivManagerLogo.setImageResource(TOCBrandHelper.getIconForToc(service.operator));
-
-        String origin = service.locationName;
-        if (service.previousCallingPoints != null && !service.previousCallingPoints.isEmpty()
-                && service.previousCallingPoints.get(0).callingPoint != null) {
-            origin = service.previousCallingPoints.get(0).callingPoint.get(0).locationName;
+        int brandColour = TOCBrandHelper.getColourForToc(service.operator);
+        if (Objects.equals(TOCBrandHelper.getManagerForToc(service.operator), "gbr") || Objects.equals(TOCBrandHelper.getManagerForToc(service.operator), "national")) {
+            holder.ivModeIcon.setImageResource(R.drawable.ic_national_rail);
+        } else {
+            holder.ivModeIcon.setImageResource(TOCBrandHelper.getIconForToc(service.operator));
+            holder.ivModeIcon.setColorFilter(brandColour);
         }
 
+
+        GradientDrawable pillBg = new GradientDrawable();
+        pillBg.setColor(brandColour);
+        pillBg.setCornerRadius(holder.itemView.getContext().getResources().getDisplayMetrics().density * 8);
+        holder.tvOperatorName.setBackground(pillBg);
+        holder.tvOperatorName.setText(service.operator);
+
+        GradientDrawable dotBg = new GradientDrawable();
+        dotBg.setShape(GradientDrawable.OVAL);
+        dotBg.setColor(brandColour);
+        holder.dotTop.setBackground(dotBg);
+        holder.dotBottom.setBackground(dotBg);
+        holder.timelineLine.setBackgroundColor(androidx.core.graphics.ColorUtils.setAlphaComponent(brandColour, 102));
+
+        String origin = service.locationName;
+        String topTime = service.std != null ? service.std : "--:--";
+
         String destination;
+        String bottomTime = "--:--";
         if (service.subsequentCallingPoints != null && !service.subsequentCallingPoints.isEmpty()
                 && service.subsequentCallingPoints.get(0).callingPoint != null) {
             List<ServiceDetailsResponse.TimelinePoint> subsequent = service.subsequentCallingPoints.get(0).callingPoint;
             destination = subsequent.get(subsequent.size() - 1).locationName;
+            bottomTime = subsequent.get(subsequent.size() - 1).scheduledTime;
         } else {
             destination = service.locationName;
         }
 
-        String routeHtml = "<b>" + origin + "</b> to <b>" + destination + "</b>";
-        holder.tvRoute.setText(Html.fromHtml(routeHtml, Html.FROM_HTML_MODE_COMPACT));
+        holder.tvOriginStation.setText(origin);
+        holder.tvDestStation.setText(destination);
+        holder.tvDepTime.setText(topTime);
+        holder.tvArrTime.setText(bottomTime);
+        holder.tvPlatform.setText(service.platform != null ? "Plat " + service.platform : "Plat -");
 
         List<ServiceDetailsResponse.TimelinePoint> entireJourney = new ArrayList<>();
         if (service.previousCallingPoints != null && !service.previousCallingPoints.isEmpty() && service.previousCallingPoints.get(0).callingPoint != null) {
@@ -105,22 +121,27 @@ public class PinnedServiceAdapter extends RecyclerView.Adapter<PinnedServiceAdap
             }
         }
 
-        if (trueNextStop != null) {
-            holder.tvNextStop.setText("Next calling at " + trueNextStop.locationName);
-            holder.tvSchTime.setText(trueNextStop.scheduledTime);
+        holder.tvDepTime.setPaintFlags(holder.tvDepTime.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
+        holder.tvDepTime.setVisibility(View.VISIBLE);
+        holder.tvLiveStatus.setVisibility(View.VISIBLE);
 
+        if (trueNextStop != null) {
             String estTime = (trueNextStop.estimatedTime != null && !trueNextStop.estimatedTime.isEmpty()) ? trueNextStop.estimatedTime : "On time";
-            holder.tvLiveStatus.setText(estTime);
 
             if ("On time".equalsIgnoreCase(estTime)) {
+                holder.tvDepTime.setTextColor(holder.defaultSchColour);
+                holder.tvLiveStatus.setText("On time");
                 holder.tvLiveStatus.setTextColor(Color.parseColor("#00875A"));
             } else if ("Cancelled".equalsIgnoreCase(estTime)) {
+                holder.tvDepTime.setPaintFlags(holder.tvDepTime.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+                holder.tvLiveStatus.setText("Cancelled");
                 holder.tvLiveStatus.setTextColor(Color.parseColor("#DE350B"));
             } else {
+                holder.tvDepTime.setPaintFlags(holder.tvDepTime.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+                holder.tvLiveStatus.setText("Exp " + estTime);
                 holder.tvLiveStatus.setTextColor(Color.parseColor("#FF8C00"));
             }
 
-            // Calculate stops and duration logic
             int stopsLeft = entireJourney.size() - trueNextStopIndex - 1;
             String durationStr = "";
 
@@ -137,16 +158,14 @@ public class PinnedServiceAdapter extends RecyclerView.Adapter<PinnedServiceAdap
             } else {
                 detailsText += "Last stop • ";
             }
-            detailsText += service.operator;
+            detailsText += "Next calling at " + trueNextStop.locationName;
 
             holder.tvServiceDetails.setText(detailsText);
 
         } else {
-            holder.tvNextStop.setText("Arrived at " + destination);
-            holder.tvSchTime.setText("--:--");
             holder.tvLiveStatus.setText("Terminated");
             holder.tvLiveStatus.setTextColor(Color.parseColor("#666666"));
-            holder.tvServiceDetails.setText("Last stop • " + service.operator);
+            holder.tvServiceDetails.setText("Last stop");
         }
 
         setAnimation(holder.itemView, position);
@@ -208,19 +227,28 @@ public class PinnedServiceAdapter extends RecyclerView.Adapter<PinnedServiceAdap
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
-        View tocColourBar;
-        ImageView ivManagerLogo;
-        TextView tvRoute, tvNextStop, tvLiveStatus, tvSchTime, tvServiceDetails;
+        ImageView ivModeIcon;
+        TextView tvOperatorName, tvPlatform;
+        View dotTop, timelineLine, dotBottom;
+        TextView tvDepTime, tvOriginStation, tvArrTime, tvDestStation;
+        TextView tvServiceDetails, tvLiveStatus;
+        int defaultSchColour;
 
         public ViewHolder(View v) {
             super(v);
-            tocColourBar = v.findViewById(R.id.tocColourBar);
-            tvRoute = v.findViewById(R.id.tvRoute);
-            tvNextStop = v.findViewById(R.id.tvNextStop);
-            tvLiveStatus = v.findViewById(R.id.tvLiveStatus);
-            tvSchTime = v.findViewById(R.id.tvSchTime);
+            ivModeIcon = v.findViewById(R.id.ivModeIcon);
+            tvOperatorName = v.findViewById(R.id.tvOperatorName);
+            tvPlatform = v.findViewById(R.id.tvPlatform);
+            dotTop = v.findViewById(R.id.dotTop);
+            timelineLine = v.findViewById(R.id.timelineLine);
+            dotBottom = v.findViewById(R.id.dotBottom);
+            tvDepTime = v.findViewById(R.id.tvDepTime);
+            tvOriginStation = v.findViewById(R.id.tvOriginStation);
+            tvArrTime = v.findViewById(R.id.tvArrTime);
+            tvDestStation = v.findViewById(R.id.tvDestStation);
             tvServiceDetails = v.findViewById(R.id.tvServiceDetails);
-            ivManagerLogo = v.findViewById(R.id.ivManagerLogo);
+            tvLiveStatus = v.findViewById(R.id.tvLiveStatus);
+            defaultSchColour = tvDepTime.getCurrentTextColor();
         }
     }
 }

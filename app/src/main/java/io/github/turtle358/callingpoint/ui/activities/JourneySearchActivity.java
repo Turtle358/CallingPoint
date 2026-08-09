@@ -67,7 +67,7 @@ public class JourneySearchActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView()).setAppearanceLightStatusBars(false);
+        WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
         setContentView(R.layout.activity_journey_search);
 
         etFromCrs = findViewById(R.id.etFromCrs);

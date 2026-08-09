@@ -75,11 +75,18 @@ public class PinnedJourneyAdapter extends RecyclerView.Adapter<PinnedJourneyAdap
 
             int brandColor = TOCBrandHelper.getColourForToc(primaryBrand);
 
-            float radius = holder.itemView.getContext().getResources().getDisplayMetrics().density * 28;
-            GradientDrawable barBg = new GradientDrawable();
-            barBg.setColor(brandColor);
-            barBg.setCornerRadii(new float[]{radius, radius, 0, 0, 0, 0, radius, radius});
-            holder.tocColourBar.setBackground(barBg);
+            GradientDrawable pillBg = new GradientDrawable();
+            pillBg.setColor(brandColor);
+            pillBg.setCornerRadius(holder.itemView.getContext().getResources().getDisplayMetrics().density * 8);
+            holder.tvOperatorName.setBackground(pillBg);
+            holder.tvOperatorName.setTextColor(Color.WHITE);
+
+            if (primaryBrand.equalsIgnoreCase("bus")) {
+                holder.tvOperatorName.setText("London Bus");
+            } else if (primaryBrand != null && !primaryBrand.isEmpty()) {
+                String formattedName = primaryBrand.substring(0, 1).toUpperCase() + primaryBrand.substring(1).toLowerCase();
+                holder.tvOperatorName.setText(formattedName);
+            }
 
             GradientDrawable dotBg = new GradientDrawable();
             dotBg.setShape(GradientDrawable.OVAL);
@@ -91,12 +98,12 @@ public class PinnedJourneyAdapter extends RecyclerView.Adapter<PinnedJourneyAdap
             holder.timelineLine.setBackgroundColor(translucentBrandColor);
 
             if (primaryBrand.equalsIgnoreCase("bus")) {
-                holder.tvOperatorName.setText("London Bus");
-            } else {
-                holder.tvOperatorName.setText(primaryBrand);
-            }
-
-            if (TOCBrandHelper.getManagerName(primaryBrand).equalsIgnoreCase("Great British Railways")) {
+                holder.ivModeIcon.setImageResource(R.drawable.ic_bus);
+                holder.ivModeIcon.setColorFilter(brandColor);
+            } else if (primaryBrand.equalsIgnoreCase("walk")) {
+                holder.ivModeIcon.setImageResource(R.drawable.ic_walk);
+                holder.ivModeIcon.setColorFilter(brandColor);
+            } else if (TOCBrandHelper.getManagerForToc(primaryBrand).equalsIgnoreCase("gbr") || TOCBrandHelper.getManagerForToc(primaryBrand).equalsIgnoreCase("national")) {
                 holder.ivModeIcon.setImageResource(R.drawable.ic_national_rail);
             } else {
                 holder.ivModeIcon.setImageResource(TOCBrandHelper.getIconForToc(primaryBrand));
@@ -194,7 +201,7 @@ public class PinnedJourneyAdapter extends RecyclerView.Adapter<PinnedJourneyAdap
     }
 
     static class PinnedViewHolder extends RecyclerView.ViewHolder {
-        View tocColourBar, dotTop, dotBottom, timelineLine;
+        View dotTop, dotBottom, timelineLine;
         ImageView ivModeIcon;
         TextView tvOperatorName, tvJourneyDate, tvJourneyDuration, tvJourneyChanges;
         TextView tvDepTime, tvArrTime, tvOriginStation, tvDestStation, tvLiveStatus;
@@ -202,7 +209,6 @@ public class PinnedJourneyAdapter extends RecyclerView.Adapter<PinnedJourneyAdap
 
         public PinnedViewHolder(@NonNull View itemView) {
             super(itemView);
-            tocColourBar = itemView.findViewById(R.id.tocColourBar);
             dotTop = itemView.findViewById(R.id.dotTop);
             dotBottom = itemView.findViewById(R.id.dotBottom);
             timelineLine = itemView.findViewById(R.id.timelineLine);
