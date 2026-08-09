@@ -34,7 +34,7 @@ import io.github.turtle358.callingpoint.data.PinnedDataManager;
 import io.github.turtle358.callingpoint.models.StationDepartureResponse;
 import io.github.turtle358.callingpoint.models.StationMessage;
 import io.github.turtle358.callingpoint.models.TflArrivalPrediction;
-import io.github.turtle358.callingpoint.ui.adapters.DeparturesAdapter;
+import io.github.turtle358.callingpoint.ui.adapters.ServiceAdapter;
 import io.github.turtle358.callingpoint.utils.StationHelper;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -65,7 +65,7 @@ public class StationActivity extends AppCompatActivity {
     private LinearLayout containerStationMessages;
     private TextView btnToggleMessages;
 
-    private DeparturesAdapter adapter;
+    private ServiceAdapter adapter;
     private NationalRailAPI api;
     private TflAPI tflApi;
     private PinnedDataManager pinnedDataManager;
@@ -156,7 +156,7 @@ public class StationActivity extends AppCompatActivity {
         setupToggle();
 
         recyclerDepartures.setLayoutManager(new LinearLayoutManager(this));
-        adapter = new DeparturesAdapter(this, new ArrayList<>());
+        adapter = new ServiceAdapter(this, new ArrayList<>());
         recyclerDepartures.setAdapter(adapter);
 
         swipeRefreshLayout.setOnRefreshListener(() -> {

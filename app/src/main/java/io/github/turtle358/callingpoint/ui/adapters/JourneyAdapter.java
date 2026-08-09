@@ -24,6 +24,7 @@ public class JourneyAdapter extends RecyclerView.Adapter<JourneyAdapter.ViewHold
 
     private List<JourneyOption> routes;
     private final OnJourneyClickListener listener;
+    boolean isLightColour;
 
     public interface OnJourneyClickListener {
         void onJourneyClick(JourneyOption route);
@@ -74,13 +75,14 @@ public class JourneyAdapter extends RecyclerView.Adapter<JourneyAdapter.ViewHold
                 break;
             }
 
-            int brandColor = TOCBrandHelper.getColourForToc(primaryBrand);
+            int brandColour = TOCBrandHelper.getColourForToc(primaryBrand);
 
             GradientDrawable pillBg = new GradientDrawable();
-            pillBg.setColor(brandColor);
+            pillBg.setColor(brandColour);
+            isLightColour = ColorUtils.calculateLuminance(brandColour) > 0.5;
             pillBg.setCornerRadius(holder.itemView.getContext().getResources().getDisplayMetrics().density * 8);
             holder.tvOperatorName.setBackground(pillBg);
-            holder.tvOperatorName.setTextColor(Color.WHITE);
+            holder.tvOperatorName.setTextColor(isLightColour ? Color.BLACK : Color.WHITE);
 
             if (primaryBrand != null && !primaryBrand.isEmpty()) {
                 if (primaryBrand.equalsIgnoreCase("bus")) {
@@ -93,24 +95,24 @@ public class JourneyAdapter extends RecyclerView.Adapter<JourneyAdapter.ViewHold
 
             GradientDrawable dotBg = new GradientDrawable();
             dotBg.setShape(GradientDrawable.OVAL);
-            dotBg.setColor(brandColor);
+            dotBg.setColor(brandColour);
             holder.dotTop.setBackground(dotBg);
             holder.dotBottom.setBackground(dotBg);
 
-            int translucentBrandColor = ColorUtils.setAlphaComponent(brandColor, 102);
+            int translucentBrandColor = ColorUtils.setAlphaComponent(brandColour, 102);
             holder.timelineLine.setBackgroundColor(translucentBrandColor);
 
             if (primaryBrand.equalsIgnoreCase("bus")) {
                 holder.ivModeIcon.setImageResource(R.drawable.ic_bus);
-                holder.ivModeIcon.setColorFilter(brandColor);
+                holder.ivModeIcon.setColorFilter(brandColour);
             } else if (primaryBrand.equalsIgnoreCase("walk")) {
                 holder.ivModeIcon.setImageResource(R.drawable.ic_walk);
-                holder.ivModeIcon.setColorFilter(brandColor);
+                holder.ivModeIcon.setColorFilter(brandColour);
             } else if (TOCBrandHelper.getManagerForToc(primaryBrand).equalsIgnoreCase("gbr") || TOCBrandHelper.getManagerForToc(primaryBrand).equalsIgnoreCase("national")) {
                 holder.ivModeIcon.setImageResource(R.drawable.ic_national_rail);
             } else {
                 holder.ivModeIcon.setImageResource(TOCBrandHelper.getIconForToc(primaryBrand));
-                holder.ivModeIcon.setColorFilter(brandColor);
+                holder.ivModeIcon.setColorFilter(brandColour);
             }
         }
 

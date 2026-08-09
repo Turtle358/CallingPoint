@@ -11,6 +11,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.graphics.ColorUtils;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
@@ -55,9 +56,11 @@ public class PinnedServiceAdapter extends RecyclerView.Adapter<PinnedServiceAdap
 
 
         GradientDrawable pillBg = new GradientDrawable();
+        boolean isLightColour = ColorUtils.calculateLuminance(brandColour) > 0.5;
         pillBg.setColor(brandColour);
         pillBg.setCornerRadius(holder.itemView.getContext().getResources().getDisplayMetrics().density * 8);
         holder.tvOperatorName.setBackground(pillBg);
+        holder.tvOperatorName.setTextColor(isLightColour ? Color.BLACK : Color.WHITE);
         holder.tvOperatorName.setText(service.operator);
 
         GradientDrawable dotBg = new GradientDrawable();

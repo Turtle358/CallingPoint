@@ -13,6 +13,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.graphics.ColorUtils;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.text.SimpleDateFormat;
@@ -30,7 +31,7 @@ import io.github.turtle358.callingpoint.ui.activities.ServiceDetailsActivity;
 import io.github.turtle358.callingpoint.utils.StationHelper;
 import io.github.turtle358.callingpoint.utils.TOCBrandHelper;
 
-public class DeparturesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+public class ServiceAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private static final int VIEW_TYPE_HEADER = 0;
     private static final int VIEW_TYPE_ITEM = 1;
 
@@ -44,7 +45,7 @@ public class DeparturesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
     private String userArrivingStation = "";
     private int lastPosition = -1;
 
-    public DeparturesAdapter(Context context, List<StationDepartureResponse.TrainService> services) {
+    public ServiceAdapter(Context context, List<StationDepartureResponse.TrainService> services) {
         this.context = context;
         processServices(services);
     }
@@ -195,9 +196,11 @@ public class DeparturesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
         }
 
         GradientDrawable pillBg = new GradientDrawable();
+        boolean isLightColour = ColorUtils.calculateLuminance(brandColour) > 0.5;
         pillBg.setColor(brandColour);
         pillBg.setCornerRadius(itemHolder.itemView.getContext().getResources().getDisplayMetrics().density * 8);
         itemHolder.tvOperatorName.setBackground(pillBg);
+        itemHolder.tvOperatorName.setTextColor(isLightColour ? Color.BLACK : Color.WHITE);
         itemHolder.tvOperatorName.setText(service.operatorName);
 
         GradientDrawable dotBg = new GradientDrawable();
