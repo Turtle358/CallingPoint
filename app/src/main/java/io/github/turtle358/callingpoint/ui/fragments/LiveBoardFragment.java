@@ -537,7 +537,7 @@ public class LiveBoardFragment extends Fragment {
         paint.setColor(android.graphics.Color.parseColor("#FFB4AB"));
         paint.setAntiAlias(true);
 
-        float cornerRadius = itemView.getResources().getDisplayMetrics().density * 16;
+        float cornerRadius = itemView.getResources().getDisplayMetrics().density * 30;
 
         android.graphics.RectF background = new android.graphics.RectF(
                 itemView.getLeft(),
