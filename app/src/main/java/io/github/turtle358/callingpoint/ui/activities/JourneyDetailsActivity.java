@@ -26,7 +26,9 @@ import org.osmdroid.views.overlay.Polyline;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import io.github.turtle358.callingpoint.R;
@@ -35,8 +37,11 @@ import io.github.turtle358.callingpoint.api.NationalRailAPI;
 import io.github.turtle358.callingpoint.models.JourneyLeg;
 import io.github.turtle358.callingpoint.models.JourneyOption;
 import io.github.turtle358.callingpoint.models.ServiceDetailsResponse;
+import io.github.turtle358.callingpoint.models.StationDepartureResponse;
 import io.github.turtle358.callingpoint.ui.adapters.JourneyLegAdapter;
+import io.github.turtle358.callingpoint.utils.LiveLocationEngine;
 import io.github.turtle358.callingpoint.utils.PinnedJourneyManager;
+import io.github.turtle358.callingpoint.utils.StationHelper;
 import io.github.turtle358.callingpoint.utils.TOCBrandHelper;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -76,6 +81,7 @@ public class JourneyDetailsActivity extends AppCompatActivity {
         }
 
         TextView tvTitle = findViewById(R.id.tvDetailTitle);
+        TextView tvDate = findViewById(R.id.tvJourneyDate);
         TextView tvSummary = findViewById(R.id.tvDetailSummary);
 
         View btnBack = findViewById(R.id.btnBack);
@@ -117,6 +123,8 @@ public class JourneyDetailsActivity extends AppCompatActivity {
                 tvTitle.setText(origin + "\nto " + dest);
             }
         });
+
+        tvDate.setText(getFormattedDate(journey.departureDate));
 
         String summary = journey.departTime + " — " + journey.arriveTime + "  •  " + journey.duration;
         tvSummary.setText(summary);
@@ -224,7 +232,7 @@ public class JourneyDetailsActivity extends AppCompatActivity {
 
             findViewById(R.id.fabOpenExternalMap).setOnClickListener(v -> {
                 try {
-                    String destQuery = java.net.URLEncoder.encode(dest + " Station, London", StandardCharsets.UTF_8);
+                    String destQuery = java.net.URLEncoder.encode(dest + " Station, London", "UTF-8");
                     String uriString = "https://www.google.com/maps/dir/?api=1&destination=" + destQuery + "&travelmode=walking";
                     android.content.Intent intent = new android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(uriString));
                     startActivity(intent);
@@ -245,6 +253,49 @@ public class JourneyDetailsActivity extends AppCompatActivity {
         }
     }
 
+    private String getFormattedDate(String isoDate) {
+        if (isoDate == null || isoDate.isEmpty()) return "Today";
+        try {
+            java.text.SimpleDateFormat format = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.UK);
+            java.util.Date parsedDate = format.parse(isoDate);
+
+            java.util.Calendar cal = java.util.Calendar.getInstance();
+            cal.setTime(parsedDate);
+            java.util.Calendar today = java.util.Calendar.getInstance();
+            java.util.Calendar tomorrow = java.util.Calendar.getInstance();
+            tomorrow.add(java.util.Calendar.DAY_OF_YEAR, 1);
+
+            if (cal.get(java.util.Calendar.YEAR) == today.get(java.util.Calendar.YEAR) && cal.get(java.util.Calendar.DAY_OF_YEAR) == today.get(java.util.Calendar.DAY_OF_YEAR)) {
+                return "Today";
+            } else if (cal.get(java.util.Calendar.YEAR) == tomorrow.get(java.util.Calendar.YEAR) && cal.get(java.util.Calendar.DAY_OF_YEAR) == tomorrow.get(java.util.Calendar.DAY_OF_YEAR)) {
+                return "Tomorrow";
+            } else {
+                java.text.SimpleDateFormat outputFormat = new java.text.SimpleDateFormat("EEEE, d MMMM yyyy", java.util.Locale.UK);
+                return outputFormat.format(parsedDate);
+            }
+        } catch (Exception e) {
+            return "Today";
+        }
+    }
+
+    private boolean isJourneyToday(String isoDate) {
+        if (isoDate == null || isoDate.isEmpty()) return true;
+        try {
+            java.text.SimpleDateFormat format = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.UK);
+            java.util.Date parsedDate = format.parse(isoDate);
+
+            java.util.Calendar cal = java.util.Calendar.getInstance();
+            cal.setTime(parsedDate);
+
+            java.util.Calendar today = java.util.Calendar.getInstance();
+
+            return cal.get(java.util.Calendar.YEAR) == today.get(java.util.Calendar.YEAR) &&
+                    cal.get(java.util.Calendar.DAY_OF_YEAR) == today.get(java.util.Calendar.DAY_OF_YEAR);
+        } catch (Exception e) {
+            return true;
+        }
+    }
+
     @NonNull
     private JSONArray getJsonArray(GeoPoint startPoint, GeoPoint endPoint) throws IOException, JSONException {
         String urlString = "https://router.project-osrm.org/route/v1/foot/"
@@ -262,8 +313,7 @@ public class JourneyDetailsActivity extends AppCompatActivity {
         String response = scanner.hasNext() ? scanner.next() : "";
 
         org.json.JSONObject json = new org.json.JSONObject(response);
-        JSONArray routes = json.getJSONArray("routes");
-        return routes;
+        return json.getJSONArray("routes");
     }
 
     @Override
@@ -300,48 +350,164 @@ public class JourneyDetailsActivity extends AppCompatActivity {
     }
 
     private void fetchLiveServiceDetails(JourneyOption journey) {
+        if (!isJourneyToday(journey.departureDate)) {
+            return;
+        }
+
+        for (JourneyLeg leg : journey.legs) {
+            if ("TRAIN".equals(leg.transportMode)) {
+                if (leg.serviceId != null) {
+                    fetchDetailsForLeg(leg, journey);
+                } else {
+                    long now = System.currentTimeMillis();
+                    if (now - leg.lastMatchAttemptTime > 5 * 60 * 1000) {
+                        leg.lastMatchAttemptTime = now;
+                        updatePinnedJourneyIfPinned(journey);
+                        attemptMatchForLeg(leg, journey);
+                    }
+                }
+            }
+        }
+    }
+
+    private void fetchDetailsForLeg(JourneyLeg leg, JourneyOption journey) {
         NationalRailAPI api = APIClient.getClient().create(NationalRailAPI.class);
+        api.getServiceDetails(leg.serviceId).enqueue(new Callback<>() {
+            @Override
+            public void onResponse(@NonNull Call<ServiceDetailsResponse> call, @NonNull Response<ServiceDetailsResponse> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    ServiceDetailsResponse details = response.body();
+                    liveDataMap.put(leg.serviceId, details);
 
-        int fetchCount = 0;
-        for (JourneyLeg leg : journey.legs) {
-            if ("TRAIN".equals(leg.transportMode) && leg.serviceId != null) {
-                fetchCount++;
+                    List<JourneyLeg.Stop> fullStops = extractStopsFromDetails(details, leg.fromStationName, leg.toStationName);
+                    if (!fullStops.isEmpty()) {
+                        leg.intermediateStops = fullStops;
+                    }
+
+                    leg.liveLocation = LiveLocationEngine.getLiveLocation(details);
+                    leg.lastCheckedLiveTime = String.valueOf(System.currentTimeMillis());
+
+                    updatePinnedJourneyIfPinned(journey);
+
+                    if (adapter != null) {
+                        adapter.updateLiveData(liveDataMap);
+                    }
+                }
             }
+
+            @Override
+            public void onFailure(@NonNull Call<ServiceDetailsResponse> call, @NonNull Throwable t) {
+            }
+        });
+    }
+
+    private List<JourneyLeg.Stop> extractStopsFromDetails(ServiceDetailsResponse details, String fromStation, String toStation) {
+        List<JourneyLeg.Stop> stops = new ArrayList<>();
+        if (details == null) return stops;
+
+        List<ServiceDetailsResponse.TimelinePoint> allPoints = new ArrayList<>();
+        if (details.previousCallingPoints != null && !details.previousCallingPoints.isEmpty()) {
+            allPoints.addAll(details.previousCallingPoints.get(0).callingPoint);
         }
 
-        if (fetchCount == 0) return;
+        ServiceDetailsResponse.TimelinePoint current = new ServiceDetailsResponse.TimelinePoint();
+        current.locationName = details.locationName;
+        current.scheduledTime = details.std != null ? details.std : details.sta;
+        allPoints.add(current);
 
-        final int[] completedRequests = {0};
-        final int totalRequests = fetchCount;
+        if (details.subsequentCallingPoints != null && !details.subsequentCallingPoints.isEmpty()) {
+            allPoints.addAll(details.subsequentCallingPoints.get(0).callingPoint);
+        }
 
-        for (JourneyLeg leg : journey.legs) {
-            if ("TRAIN".equals(leg.transportMode) && leg.serviceId != null) {
-                api.getServiceDetails(leg.serviceId).enqueue(new Callback<>() {
-                    @Override
-                    public void onResponse(@NonNull Call<ServiceDetailsResponse> call, @NonNull Response<ServiceDetailsResponse> response) {
-                        completedRequests[0]++;
-                        if (response.isSuccessful() && response.body() != null) {
-                            liveDataMap.put(leg.serviceId, response.body());
+        boolean recording = false;
+        for (ServiceDetailsResponse.TimelinePoint pt : allPoints) {
+            if (pt.locationName == null) continue;
+            if (pt.locationName.equalsIgnoreCase(toStation)) {
+                break;
+            }
+            if (recording) {
+                String schTime = pt.scheduledTime != null ? pt.scheduledTime : "--:--";
+                stops.add(new JourneyLeg.Stop(pt.locationName, schTime));
+            }
+            if (pt.locationName.equalsIgnoreCase(fromStation)) {
+                recording = true;
+            }
+        }
+        return stops;
+    }
+
+    private void attemptMatchForLeg(JourneyLeg leg, JourneyOption journey) {
+        String fromCrs = StationHelper.getCrsFromName(leg.fromStationName);
+        String toCrs = StationHelper.getCrsFromName(leg.toStationName);
+        if (fromCrs == null || toCrs == null) return;
+
+        NationalRailAPI api = APIClient.getClient().create(NationalRailAPI.class);
+        int timeOffset = calculateTimeOffset(leg.departureTime);
+
+        api.getStationDepartures(fromCrs, 40, toCrs, "to", timeOffset, 120).enqueue(new Callback<>() {
+            @Override
+            public void onResponse(@NonNull Call<StationDepartureResponse> call, @NonNull Response<StationDepartureResponse> response) {
+                if (response.isSuccessful() && response.body() != null && response.body().trainServices != null) {
+                    for (StationDepartureResponse.TrainService service : response.body().trainServices) {
+                        if (service.std != null && isTimeMatching(service.std, leg.departureTime, 2)) {
+                            leg.serviceId = service.serviceID;
+                            if (service.operatorName != null) {
+                                io.github.turtle358.callingpoint.models.Toc matchedToc = TOCBrandHelper.getTocByName(service.operatorName);
+                                if (matchedToc != null) {
+                                    leg.operatorName = matchedToc.name;
+                                }
+                            }
+
+                            updatePinnedJourneyIfPinned(journey);
+                            fetchDetailsForLeg(leg, journey);
+                            break;
                         }
-                        checkAndPushData(completedRequests[0], totalRequests);
                     }
-
-                    @Override
-                    public void onFailure(@NonNull Call<ServiceDetailsResponse> call, @NonNull Throwable t) {
-                        completedRequests[0]++;
-                        checkAndPushData(completedRequests[0], totalRequests);
-                    }
-                });
+                }
             }
+
+            @Override
+            public void onFailure(@NonNull Call<StationDepartureResponse> call, @NonNull Throwable t) {}
+        });
+    }
+
+    private void updatePinnedJourneyIfPinned(JourneyOption journey) {
+        PinnedJourneyManager pinnedManager = new PinnedJourneyManager(this);
+        if (pinnedManager.isJourneyPinned(journey)) {
+            pinnedManager.updateJourney(journey);
         }
     }
 
-    private void checkAndPushData(int completed, int total) {
-        if (completed == total && adapter != null) {
-            adapter.updateLiveData(liveDataMap);
+    private int calculateTimeOffset(String departureTimeStr) {
+        if (departureTimeStr == null || !departureTimeStr.contains(":")) return 0;
+        try {
+            String[] parts = departureTimeStr.split(":");
+            int depMins = Integer.parseInt(parts[0].trim()) * 60 + Integer.parseInt(parts[1].trim());
+
+            java.util.Calendar now = java.util.Calendar.getInstance();
+            int currentMins = now.get(java.util.Calendar.HOUR_OF_DAY) * 60 + now.get(java.util.Calendar.MINUTE);
+
+            int diff = depMins - currentMins;
+            int offset = diff - 10;
+            return Math.max(-120, Math.min(120, offset));
+        } catch (Exception e) {
+            return 0;
         }
     }
 
+    private boolean isTimeMatching(String time1, String time2, int toleranceMins) {
+        try {
+            String[] p1 = time1.trim().split(":");
+            String[] p2 = time2.trim().split(":");
+
+            int m1 = Integer.parseInt(p1[0].trim()) * 60 + Integer.parseInt(p1[1].trim());
+            int m2 = Integer.parseInt(p2[0].trim()) * 60 + Integer.parseInt(p2[1].trim());
+
+            return Math.abs(m1 - m2) <= toleranceMins;
+        } catch (Exception e) {
+            return time1.trim().equalsIgnoreCase(time2.trim());
+        }
+    }
 
     private android.graphics.drawable.Drawable createStartMarkerDrawable() {
         float density = getResources().getDisplayMetrics().density;

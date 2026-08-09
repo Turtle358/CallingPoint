@@ -1,9 +1,7 @@
 package io.github.turtle358.callingpoint.ui.adapters;
 
-import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.drawable.GradientDrawable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -115,14 +113,31 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
 
         ServiceDetailsResponse liveDetails = liveDataMap.get(currentLeg.serviceId);
 
+        String timeAgoStr = formatTimeAgo(currentLeg.lastCheckedLiveTime);
+
         if (liveDetails != null) {
             String updatedLocation = io.github.turtle358.callingpoint.utils.LiveLocationEngine.getLiveLocation(liveDetails);
+            if (!timeAgoStr.isEmpty()) {
+                if (updatedLocation != null && !updatedLocation.isEmpty()) {
+                    updatedLocation += " • " + timeAgoStr;
+                } else {
+                    updatedLocation = timeAgoStr;
+                }
+            }
             holder.tvLiveLocation.setText(updatedLocation);
             holder.tvLiveLocation.setVisibility(View.VISIBLE);
             holder.tvLiveLocation.setTextColor(liveDetails.isCancelled ? Color.parseColor("#DE350B") : Color.parseColor("#00875A"));
         } else {
-            holder.tvLiveLocation.setText(currentLeg.liveLocation != null ? currentLeg.liveLocation : "");
-            holder.tvLiveLocation.setVisibility(currentLeg.liveLocation != null ? View.VISIBLE : View.GONE);
+            String locationText = currentLeg.liveLocation != null ? currentLeg.liveLocation : "";
+            if (!timeAgoStr.isEmpty()) {
+                if (!locationText.isEmpty()) {
+                    locationText += " • " + timeAgoStr;
+                } else {
+                    locationText = timeAgoStr;
+                }
+            }
+            holder.tvLiveLocation.setText(locationText);
+            holder.tvLiveLocation.setVisibility(locationText.isEmpty() ? View.GONE : View.VISIBLE);
             holder.tvLiveLocation.setTextColor(Color.parseColor("#888888"));
         }
 
@@ -184,6 +199,23 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
                 holder.tvTransferTitle.setText("Change at " + currentLeg.toStationName);
                 holder.ivTransferIcon.setImageResource(R.drawable.ic_transfer);
             }
+        }
+    }
+
+    private String formatTimeAgo(String timeStr) {
+        if (timeStr == null || timeStr.isEmpty()) return "";
+        try {
+            long timestamp = Long.parseLong(timeStr);
+            long diffMins = (System.currentTimeMillis() - timestamp) / 60000;
+            if (diffMins <= 0) {
+                return "Live";
+            } else if (diffMins == 1) {
+                return "Updated 1 min ago";
+            } else {
+                return "Updated " + diffMins + " mins ago";
+            }
+        } catch (NumberFormatException e) {
+            return timeStr;
         }
     }
 

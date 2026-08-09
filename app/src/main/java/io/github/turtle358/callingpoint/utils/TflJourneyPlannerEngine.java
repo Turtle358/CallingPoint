@@ -7,9 +7,12 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -38,10 +41,10 @@ public class TflJourneyPlannerEngine {
         this.executor = Executors.newSingleThreadExecutor();
     }
 
-    public void findRoutes(String fromNaptan, String toNaptan, JourneyPlannerEngine.JourneyCallback callback) {
+    public void findRoutes(String fromNaptan, String toNaptan, String date, String time, String timeIs, JourneyPlannerEngine.JourneyCallback callback) {
         mainHandler.post(() -> callback.onStatusUpdate("Searching TfL network..."));
 
-        tflApi.getJourneyResults(fromNaptan, toNaptan, false).enqueue(new Callback<JsonObject>() {
+        tflApi.getJourneyResults(fromNaptan, toNaptan, false, date, time, timeIs).enqueue(new Callback<JsonObject>() {
             @Override
             public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
                 if (response.isSuccessful() && response.body() != null) {
@@ -49,8 +52,10 @@ public class TflJourneyPlannerEngine {
                         try {
                             List<JourneyOption> options = parseTflResponse(response.body());
 
-                            mainHandler.post(() -> callback.onStatusUpdate("Matching National Rail services..."));
-                            enrichNationalRailServices(options);
+                            if (isToday(date)) {
+                                mainHandler.post(() -> callback.onStatusUpdate("Matching National Rail services..."));
+                                enrichNationalRailServices(options);
+                            }
 
                             mainHandler.post(() -> {
                                 if (options.isEmpty()) {
@@ -75,10 +80,22 @@ public class TflJourneyPlannerEngine {
         });
     }
 
+    private boolean isToday(String dateStr) {
+        if (dateStr == null || dateStr.trim().isEmpty()) {
+            return true;
+        }
+        try {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd", Locale.UK);
+            String todayStr = sdf.format(new Date());
+            return todayStr.equals(dateStr.trim());
+        } catch (Exception e) {
+            return true;
+        }
+    }
+
     private void enrichNationalRailServices(List<JourneyOption> options) {
         for (JourneyOption option : options) {
             if (option.legs == null) continue;
-
             for (JourneyLeg leg : option.legs) {
                 if (!"TRAIN".equals(leg.transportMode)) continue;
 
@@ -169,6 +186,11 @@ public class TflJourneyPlannerEngine {
             JsonObject jObj = jElem.getAsJsonObject();
             if (!jObj.has("legs")) continue;
 
+            String journeyStartDate = null;
+            if (jObj.has("startDateTime")) {
+                journeyStartDate = jObj.get("startDateTime").getAsString();
+            }
+
             JsonArray legsData = jObj.getAsJsonArray("legs");
             List<JourneyLeg> parsedLegs = new ArrayList<>();
 
@@ -209,7 +231,6 @@ public class TflJourneyPlannerEngine {
                     }
                 }
 
-
                 String operatorName;
                 String transportMode;
 
@@ -219,14 +240,16 @@ public class TflJourneyPlannerEngine {
                 } else if ("walking".equalsIgnoreCase(modeId)) {
                     transportMode = "TUBE/WALK";
                     operatorName = "Walking";
+                } else if ("tube".equalsIgnoreCase(modeId) || "dlr".equalsIgnoreCase(modeId)
+                        || "overground".equalsIgnoreCase(modeId) || "tram".equalsIgnoreCase(modeId)
+                        || "elizabeth-line".equalsIgnoreCase(modeId) || "cable-car".equalsIgnoreCase(modeId)) {
+                    transportMode = "TUBE";
+                    operatorName = formatOperatorSlug(specificLineId) + " Line";
                 } else {
                     transportMode = "TRAIN";
-
                     String tocCode = TOCBrandHelper.getTocCodeForTflId(specificLineId);
                     Toc toc = TOCBrandHelper.getTocByName(tocCode);
-                    if (toc == null) {
-                        toc = TOCBrandHelper.getTocByName(specificLineId);
-                    }
+                    if (toc == null) toc = TOCBrandHelper.getTocByName(specificLineId);
                     operatorName = (toc != null) ? toc.name : formatOperatorSlug(specificLineId);
                 }
 
@@ -259,7 +282,9 @@ public class TflJourneyPlannerEngine {
                 parsedLegs.add(leg);
             }
             if (!parsedLegs.isEmpty()) {
-                options.add(new JourneyOption(parsedLegs));
+                JourneyOption option = new JourneyOption(parsedLegs);
+                option.departureDate = journeyStartDate;
+                options.add(option);
             }
         }
         return options;

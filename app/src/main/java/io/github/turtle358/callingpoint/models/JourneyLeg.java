@@ -22,11 +22,14 @@ public class JourneyLeg implements Serializable {
     public int durationMinutes;
 
     public String liveLocation;
-
     public String liveDepartureTime;
 
     public boolean isExpanded = false;
     public List<Stop> intermediateStops = new ArrayList<>();
+
+    public long lastMatchAttemptTime = 0;
+
+    public String lastCheckedLiveTime;
 
     public static class Stop implements Serializable {
         public String stationName;

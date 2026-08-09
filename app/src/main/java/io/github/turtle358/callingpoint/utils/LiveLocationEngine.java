@@ -30,12 +30,7 @@ public class LiveLocationEngine {
             ServiceDetailsResponse.TimelinePoint stop = allStops.get(i);
 
             if (stop.atd != null && !stop.atd.isEmpty()) {
-                if (i < allStops.size() - 1) {
-                    ServiceDetailsResponse.TimelinePoint nextStop = allStops.get(i + 1);
-                    return "Between " + stop.locationName + " and " + nextStop.locationName;
-                } else {
-                    return "Departed " + stop.locationName;
-                }
+                return "Departed " + stop.locationName;
             }
             if (stop.ata != null && !stop.ata.isEmpty()) {
                 return "At " + stop.locationName;

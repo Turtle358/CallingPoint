@@ -10,6 +10,8 @@ public class JourneyOption implements Serializable {
     public String changesSummary;
     public String liveDepartTime;
 
+    public String departureDate;
+
     public JourneyOption(List<JourneyLeg> legs) {
         this.legs = legs;
         calculateSummaries();

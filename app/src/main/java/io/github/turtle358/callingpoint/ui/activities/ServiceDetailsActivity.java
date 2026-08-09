@@ -326,7 +326,8 @@ public class ServiceDetailsActivity extends AppCompatActivity {
         String toQuery = (toNaptan != null && !toNaptan.isEmpty()) ? toNaptan : cleanDest;
 
         TflAPI tflApi = APIClient.getClient().create(TflAPI.class);
-        tflApi.getJourneyResults(fromQuery, toQuery, false).enqueue(new Callback<JsonObject>() {
+
+        tflApi.getJourneyResults(fromQuery, toQuery, false, null, null, null).enqueue(new Callback<JsonObject>() {
             @Override
             public void onResponse(@NonNull Call<JsonObject> call, @NonNull Response<JsonObject> response) {
                 if (response.isSuccessful() && response.body() != null) {
@@ -486,7 +487,7 @@ public class ServiceDetailsActivity extends AppCompatActivity {
     }
 
     private void enrichWithJourneyPlanner(TflAPI tflApi, List<TflVehicleArrival> tflArrivals, String fromNaptan, String toNaptan) {
-        tflApi.getJourneyResults(fromNaptan, toNaptan, false).enqueue(new Callback<JsonObject>() {
+        tflApi.getJourneyResults(fromNaptan, toNaptan, false, null, null, null).enqueue(new Callback<JsonObject>() {
             @Override
             public void onResponse(@NonNull Call<JsonObject> call, @NonNull Response<JsonObject> response) {
                 List<String> journeyPlannerStops = new ArrayList<>();

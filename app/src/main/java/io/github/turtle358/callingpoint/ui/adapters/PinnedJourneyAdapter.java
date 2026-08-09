@@ -2,19 +2,23 @@ package io.github.turtle358.callingpoint.ui.adapters;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.drawable.GradientDrawable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.core.graphics.ColorUtils;
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 
 import io.github.turtle358.callingpoint.R;
 import io.github.turtle358.callingpoint.models.JourneyOption;
@@ -45,7 +49,13 @@ public class PinnedJourneyAdapter extends RecyclerView.Adapter<PinnedJourneyAdap
     public void onBindViewHolder(@NonNull PinnedViewHolder holder, int position) {
         JourneyOption journey = pinnedJourneys.get(position);
 
+        String origin = "";
+        String dest = "";
+
         if (journey.legs != null && !journey.legs.isEmpty()) {
+            origin = journey.legs.get(0).fromStationName;
+            dest = journey.legs.get(journey.legs.size() - 1).toStationName;
+
             String primaryBrand = "walk";
 
             for (int i = 0; i < journey.legs.size(); i++) {
@@ -64,7 +74,21 @@ public class PinnedJourneyAdapter extends RecyclerView.Adapter<PinnedJourneyAdap
             }
 
             int brandColor = TOCBrandHelper.getColourForToc(primaryBrand);
-            holder.tocColourBar.setBackgroundColor(brandColor);
+
+            float radius = holder.itemView.getContext().getResources().getDisplayMetrics().density * 16;
+            GradientDrawable barBg = new GradientDrawable();
+            barBg.setColor(brandColor);
+            barBg.setCornerRadii(new float[]{radius, radius, 0, 0, 0, 0, radius, radius});
+            holder.tocColourBar.setBackground(barBg);
+
+            GradientDrawable dotBg = new GradientDrawable();
+            dotBg.setShape(GradientDrawable.OVAL);
+            dotBg.setColor(brandColor);
+            holder.dotTop.setBackground(dotBg);
+            holder.dotBottom.setBackground(dotBg);
+
+            int translucentBrandColor = ColorUtils.setAlphaComponent(brandColor, 102);
+            holder.timelineLine.setBackgroundColor(translucentBrandColor);
 
             if (primaryBrand.equalsIgnoreCase("bus")) {
                 holder.tvOperatorName.setText("London Bus");
@@ -72,26 +96,39 @@ public class PinnedJourneyAdapter extends RecyclerView.Adapter<PinnedJourneyAdap
                 holder.tvOperatorName.setText(primaryBrand);
             }
 
-            if(TOCBrandHelper.getManagerName(primaryBrand).equalsIgnoreCase("Great British Railways")) {
+            if (TOCBrandHelper.getManagerName(primaryBrand).equalsIgnoreCase("Great British Railways")) {
                 holder.ivModeIcon.setImageResource(R.drawable.ic_national_rail);
             } else {
                 holder.ivModeIcon.setImageResource(TOCBrandHelper.getIconForToc(primaryBrand));
+                holder.ivModeIcon.setColorFilter(brandColor);
             }
-            holder.ivModeIcon.clearColorFilter();
+
         }
 
-        holder.tvJourneyTimes.setText((journey.departTime != null ? journey.departTime : "--:--") + " → " + (journey.arriveTime != null ? journey.arriveTime : "--:--"));
+        holder.tvJourneyDate.setText(getFormattedDate(journey.departureDate));
+
+        holder.tvOriginStation.setText(origin);
+        holder.tvDestStation.setText(dest);
+        holder.tvDepTime.setText(journey.departTime != null ? journey.departTime : "--:--");
+        holder.tvArrTime.setText(journey.arriveTime != null ? journey.arriveTime : "--:--");
 
         if (journey.liveDepartTime != null && !journey.liveDepartTime.equalsIgnoreCase("On time") && !journey.liveDepartTime.equals(journey.departTime)) {
-            holder.tvLiveDepart.setVisibility(View.VISIBLE);
-            holder.tvLiveDepart.setText(journey.liveDepartTime.equalsIgnoreCase("Cancelled") ? "Cancelled" : "Exp " + journey.liveDepartTime);
+            holder.tvLiveStatus.setVisibility(View.VISIBLE);
 
-            holder.tvJourneyTimes.setPaintFlags(holder.tvJourneyTimes.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
-            holder.tvJourneyTimes.setTextColor(android.graphics.Color.parseColor("#888888"));
+            if (journey.liveDepartTime.equalsIgnoreCase("Cancelled")) {
+                holder.tvLiveStatus.setText("Cancelled");
+                holder.tvLiveStatus.setTextColor(Color.parseColor("#DE350B"));
+            } else {
+                holder.tvLiveStatus.setText("Exp " + journey.liveDepartTime);
+                holder.tvLiveStatus.setTextColor(Color.parseColor("#FF8C00"));
+            }
+
+            holder.tvDepTime.setPaintFlags(holder.tvDepTime.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+            holder.tvDepTime.setTextColor(Color.parseColor("#888888"));
         } else {
-            holder.tvLiveDepart.setVisibility(View.GONE);
-            holder.tvJourneyTimes.setPaintFlags(holder.tvJourneyTimes.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
-            holder.tvJourneyTimes.setTextColor(holder.defaultTimeColor);
+            holder.tvLiveStatus.setVisibility(View.GONE);
+            holder.tvDepTime.setPaintFlags(holder.tvDepTime.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
+            holder.tvDepTime.setTextColor(holder.defaultTimeColor);
         }
 
         holder.tvJourneyDuration.setText(journey.duration != null ? journey.duration : "");
@@ -99,7 +136,7 @@ public class PinnedJourneyAdapter extends RecyclerView.Adapter<PinnedJourneyAdap
         if (journey.changesSummary != null && !journey.changesSummary.isEmpty()) {
             holder.tvJourneyChanges.setText(journey.changesSummary);
         } else {
-            int changes = journey.legs.size() - 1;
+            int changes = journey.legs != null ? journey.legs.size() - 1 : 0;
             holder.tvJourneyChanges.setText(changes == 0 ? "Direct" : changes + " change(s)");
         }
 
@@ -108,13 +145,40 @@ public class PinnedJourneyAdapter extends RecyclerView.Adapter<PinnedJourneyAdap
             intent.putExtra("JOURNEY_OPTION", journey);
             context.startActivity(intent);
         });
+    }
 
+    private String getFormattedDate(String isoDate) {
+        if (isoDate == null || isoDate.isEmpty()) return "Today";
+
+        try {
+            java.text.SimpleDateFormat format = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.UK);
+            java.util.Date parsedDate = format.parse(isoDate);
+
+            Calendar cal = Calendar.getInstance();
+            cal.setTime(parsedDate);
+
+            Calendar today = Calendar.getInstance();
+            Calendar tomorrow = Calendar.getInstance();
+            tomorrow.add(Calendar.DAY_OF_YEAR, 1);
+
+            if (cal.get(Calendar.YEAR) == today.get(Calendar.YEAR) && cal.get(Calendar.DAY_OF_YEAR) == today.get(Calendar.DAY_OF_YEAR)) {
+                return "Today";
+            } else if (cal.get(Calendar.YEAR) == tomorrow.get(Calendar.YEAR) && cal.get(Calendar.DAY_OF_YEAR) == tomorrow.get(Calendar.DAY_OF_YEAR)) {
+                return "Tomorrow";
+            } else {
+                java.text.SimpleDateFormat outputFormat = new java.text.SimpleDateFormat("d MMM", Locale.UK);
+                return outputFormat.format(parsedDate);
+            }
+        } catch (Exception e) {
+            return "Today";
+        }
     }
 
     @Override
     public int getItemCount() {
         return pinnedJourneys != null ? pinnedJourneys.size() : 0;
     }
+
     public void swapItems(int fromPosition, int toPosition) {
         Collections.swap(pinnedJourneys, fromPosition, toPosition);
         notifyItemMoved(fromPosition, toPosition);
@@ -130,22 +194,32 @@ public class PinnedJourneyAdapter extends RecyclerView.Adapter<PinnedJourneyAdap
     }
 
     static class PinnedViewHolder extends RecyclerView.ViewHolder {
-        View tocColourBar;
+        View tocColourBar, dotTop, dotBottom, timelineLine;
         ImageView ivModeIcon;
-        TextView tvOperatorName, tvJourneyTimes, tvLiveDepart, tvJourneyDuration, tvJourneyChanges;
+        TextView tvOperatorName, tvJourneyDate, tvJourneyDuration, tvJourneyChanges;
+        TextView tvDepTime, tvArrTime, tvOriginStation, tvDestStation, tvLiveStatus;
         int defaultTimeColor;
 
         public PinnedViewHolder(@NonNull View itemView) {
             super(itemView);
             tocColourBar = itemView.findViewById(R.id.tocColourBar);
+            dotTop = itemView.findViewById(R.id.dotTop);
+            dotBottom = itemView.findViewById(R.id.dotBottom);
+            timelineLine = itemView.findViewById(R.id.timelineLine);
+
             ivModeIcon = itemView.findViewById(R.id.ivModeIcon);
             tvOperatorName = itemView.findViewById(R.id.tvOperatorName);
-            tvJourneyTimes = itemView.findViewById(R.id.tvJourneyTimes);
-            tvLiveDepart = itemView.findViewById(R.id.tvLiveDepart);
+            tvJourneyDate = itemView.findViewById(R.id.tvJourneyDate);
             tvJourneyDuration = itemView.findViewById(R.id.tvJourneyDuration);
             tvJourneyChanges = itemView.findViewById(R.id.tvJourneyChanges);
 
-            defaultTimeColor = tvJourneyTimes.getCurrentTextColor();
+            tvDepTime = itemView.findViewById(R.id.tvDepTime);
+            tvArrTime = itemView.findViewById(R.id.tvArrTime);
+            tvOriginStation = itemView.findViewById(R.id.tvOriginStation);
+            tvDestStation = itemView.findViewById(R.id.tvDestStation);
+            tvLiveStatus = itemView.findViewById(R.id.tvLiveStatus);
+
+            defaultTimeColor = tvDepTime.getCurrentTextColor();
         }
     }
 }

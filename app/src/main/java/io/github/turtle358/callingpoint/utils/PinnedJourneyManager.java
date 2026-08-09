@@ -9,6 +9,7 @@ import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import io.github.turtle358.callingpoint.models.JourneyOption;
 
@@ -31,7 +32,9 @@ public class PinnedJourneyManager {
     public void saveJourney(JourneyOption journey) {
         List<JourneyOption> currentList = getPinnedJourneys();
         for (JourneyOption existing : currentList) {
-            if (existing.departTime.equals(journey.departTime) && existing.duration.equals(journey.duration)) {
+            if (existing.departTime.equals(journey.departTime) &&
+                    existing.duration.equals(journey.duration) &&
+                    Objects.equals(existing.departureDate, journey.departureDate)) {
                 return;
             }
         }
@@ -41,7 +44,9 @@ public class PinnedJourneyManager {
 
     public void removeJourney(JourneyOption journeyToRemove) {
         List<JourneyOption> currentList = getPinnedJourneys();
-        currentList.removeIf(j -> j.departTime.equals(journeyToRemove.departTime) && j.duration.equals(journeyToRemove.duration));
+        currentList.removeIf(j -> j.departTime.equals(journeyToRemove.departTime) &&
+                j.duration.equals(journeyToRemove.duration) &&
+                Objects.equals(j.departureDate, journeyToRemove.departureDate));
         prefs.edit().putString(KEY_JOURNEYS, gson.toJson(currentList)).apply();
     }
 
@@ -57,7 +62,9 @@ public class PinnedJourneyManager {
     public boolean isJourneyPinned(JourneyOption journey) {
         List<JourneyOption> currentList = getPinnedJourneys();
         for (JourneyOption existing : currentList) {
-            if (existing.departTime.equals(journey.departTime) && existing.duration.equals(journey.duration)) {
+            if (existing.departTime.equals(journey.departTime) &&
+                    existing.duration.equals(journey.duration) &&
+                    Objects.equals(existing.departureDate, journey.departureDate)) {
                 return true;
             }
         }
@@ -69,6 +76,21 @@ public class PinnedJourneyManager {
             removeJourney(journey);
         } else {
             saveJourney(journey);
+        }
+    }
+
+    public void updateJourney(JourneyOption updatedJourney) {
+        List<JourneyOption> currentList = getPinnedJourneys();
+        for (int i = 0; i < currentList.size(); i++) {
+            JourneyOption existing = currentList.get(i);
+            if (existing.departTime.equals(updatedJourney.departTime) &&
+                    existing.duration.equals(updatedJourney.duration) &&
+                    Objects.equals(existing.departureDate, updatedJourney.departureDate)) {
+
+                currentList.set(i, updatedJourney);
+                prefs.edit().putString(KEY_JOURNEYS, gson.toJson(currentList)).apply();
+                return;
+            }
         }
     }
 }

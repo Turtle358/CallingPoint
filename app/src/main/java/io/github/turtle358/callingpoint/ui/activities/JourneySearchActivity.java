@@ -2,6 +2,11 @@ package io.github.turtle358.callingpoint.ui.activities;
 
 import static io.github.turtle358.callingpoint.utils.InlineAutocompleteManager.applyInlineAutocomplete;
 
+import android.app.Dialog;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
+import android.widget.NumberPicker;
+import android.widget.PopupMenu;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -25,7 +30,9 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.facebook.shimmer.ShimmerFrameLayout;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
+import java.util.Locale;
 
 import io.github.turtle358.callingpoint.R;
 import io.github.turtle358.callingpoint.models.JourneyOption;
@@ -40,8 +47,12 @@ public class JourneySearchActivity extends AppCompatActivity {
 
     private AutoCompleteTextView etFromCrs, etToCrs;
     private RecyclerView recyclerSearchResults;
-    private TextView tvStatusUpdate;
+    private TextView tvStatusUpdate, tvTimeSelection;
     private ProgressBar progressSearch;
+
+    private View cardFallbackWarning;
+    private View btnTimeSelector;
+    private ImageButton btnResetTime;
 
     private JourneyAdapter adapter;
     private JourneyPlannerEngine plannerEngine;
@@ -49,6 +60,9 @@ public class JourneySearchActivity extends AppCompatActivity {
 
     private StationAutoCompleteAdapter autoCompleteAdapter;
     private ShimmerFrameLayout shimmerView;
+
+    private Calendar selectedCalendar = null;
+    private boolean isArriving = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,12 +80,18 @@ public class JourneySearchActivity extends AppCompatActivity {
         tvStatusUpdate = findViewById(R.id.tvStatusUpdate);
         shimmerView = findViewById(R.id.shimmer_journey_container);
 
+        btnTimeSelector = findViewById(R.id.btnTimeSelector);
+        tvTimeSelection = findViewById(R.id.tvTimeSelection);
+        btnResetTime = findViewById(R.id.btnResetTime);
+        cardFallbackWarning = findViewById(R.id.cardFallbackWarning);
+
         GraphManager graphManager = GraphManager.getInstance(this);
 
         plannerEngine = new JourneyPlannerEngine(graphManager);
         tflPlannerEngine = new TflJourneyPlannerEngine();
 
         setupAdaptersAndListeners(btnSearch);
+        setupDateTimePickers();
 
         etFromCrs.setOnClickListener(v -> {
             if (etFromCrs.getText().length() > 0) etFromCrs.showDropDown();
@@ -91,9 +111,7 @@ public class JourneySearchActivity extends AppCompatActivity {
 
         View btnBack = findViewById(R.id.btnBack);
         if (btnBack != null) {
-            btnBack.setOnClickListener(v -> {
-                finish();
-            });
+            btnBack.setOnClickListener(v -> finish());
         }
 
         recyclerSearchResults.setLayoutManager(new LinearLayoutManager(this));
@@ -116,10 +134,144 @@ public class JourneySearchActivity extends AppCompatActivity {
         btnMaps.setOnClickListener(v -> handleSearch(true));
     }
 
+    private void setupDateTimePickers() {
+        btnTimeSelector.setOnClickListener(v -> {
+            PopupMenu popup = new PopupMenu(this, btnTimeSelector);
+            popup.getMenu().add(0, 0, 0, "Now");
+            popup.getMenu().add(0, 1, 1, "Leaving at...");
+            popup.getMenu().add(0, 2, 2, "Arriving by...");
+
+            popup.setOnMenuItemClickListener(item -> {
+                switch (item.getItemId()) {
+                    case 0:
+                        selectedCalendar = null;
+                        isArriving = false;
+                        updateDateTimeUI();
+                        break;
+                    case 1:
+                        isArriving = false;
+                        showCustomTimePicker();
+                        break;
+                    case 2:
+                        isArriving = true;
+                        showCustomTimePicker();
+                        break;
+                }
+                return true;
+            });
+            popup.show();
+        });
+
+        btnResetTime.setOnClickListener(v -> {
+            selectedCalendar = null;
+            isArriving = false;
+            updateDateTimeUI();
+            Toast.makeText(this, "Reset to Leaving now", Toast.LENGTH_SHORT).show();
+        });
+    }
+    private void showCustomTimePicker() {
+        Dialog dialog = new Dialog(this);
+        dialog.setContentView(R.layout.dialog_time_picker);
+
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            dialog.getWindow().setLayout(
+                    android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                    android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+            );
+        }
+
+        TextView tvTitle = dialog.findViewById(R.id.tvPickerTitle);
+        tvTitle.setText(isArriving ? "Set arrival time" : "Set departure time");
+
+        NumberPicker pickerDate = dialog.findViewById(R.id.pickerDate);
+        NumberPicker pickerHour = dialog.findViewById(R.id.pickerHour);
+        NumberPicker pickerMinute = dialog.findViewById(R.id.pickerMinute);
+
+        String[] dateDisplayValues = new String[30];
+        Calendar calIter = Calendar.getInstance();
+        for (int i = 0; i < 30; i++) {
+            if (i == 0) dateDisplayValues[i] = "Today";
+            else if (i == 1) dateDisplayValues[i] = "Tomorrow";
+            else {
+                java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("EEE, dd MMM", Locale.UK);
+                dateDisplayValues[i] = sdf.format(calIter.getTime());
+            }
+            calIter.add(Calendar.DAY_OF_YEAR, 1);
+        }
+
+        pickerDate.setMinValue(0);
+        pickerDate.setMaxValue(29);
+        pickerDate.setDisplayedValues(dateDisplayValues);
+
+        pickerHour.setMinValue(0);
+        pickerHour.setMaxValue(23);
+
+        pickerMinute.setMinValue(0);
+        pickerMinute.setMaxValue(59);
+
+        Calendar currentSelection = selectedCalendar != null ? selectedCalendar : Calendar.getInstance();
+
+        Calendar today = Calendar.getInstance();
+        today.set(Calendar.HOUR_OF_DAY, 0); today.set(Calendar.MINUTE, 0); today.set(Calendar.SECOND, 0); today.set(Calendar.MILLISECOND, 0);
+        Calendar sel = (Calendar) currentSelection.clone();
+        sel.set(Calendar.HOUR_OF_DAY, 0); sel.set(Calendar.MINUTE, 0); sel.set(Calendar.SECOND, 0); sel.set(Calendar.MILLISECOND, 0);
+
+        long diff = (sel.getTimeInMillis() - today.getTimeInMillis()) / (1000 * 60 * 60 * 24);
+        int dayOffset = Math.max(0, Math.min(29, (int) diff));
+
+        pickerDate.setValue(dayOffset);
+        pickerHour.setValue(currentSelection.get(Calendar.HOUR_OF_DAY));
+        pickerMinute.setValue(currentSelection.get(Calendar.MINUTE));
+
+        dialog.findViewById(R.id.btnCancel).setOnClickListener(v -> dialog.dismiss());
+        dialog.findViewById(R.id.btnSet).setOnClickListener(v -> {
+            Calendar result = Calendar.getInstance();
+            result.add(Calendar.DAY_OF_YEAR, pickerDate.getValue());
+            result.set(Calendar.HOUR_OF_DAY, pickerHour.getValue());
+            result.set(Calendar.MINUTE, pickerMinute.getValue());
+
+            selectedCalendar = result;
+            updateDateTimeUI();
+            dialog.dismiss();
+        });
+
+        dialog.show();
+    }
+
+    private void updateDateTimeUI() {
+        if (selectedCalendar == null) {
+            tvTimeSelection.setText("Leaving now");
+            btnResetTime.setVisibility(View.GONE);
+            cardFallbackWarning.setVisibility(View.GONE);
+        } else {
+            String prefix = isArriving ? "Arriving " : "Leaving ";
+            tvTimeSelection.setText(prefix + formatCalendarFriendly(selectedCalendar));
+            btnResetTime.setVisibility(View.VISIBLE);
+            cardFallbackWarning.setVisibility(View.VISIBLE);
+        }
+    }
+
+    private String formatCalendarFriendly(Calendar cal) {
+        Calendar today = Calendar.getInstance();
+        Calendar tomorrow = Calendar.getInstance();
+        tomorrow.add(Calendar.DAY_OF_YEAR, 1);
+
+        java.text.SimpleDateFormat timeFmt = new java.text.SimpleDateFormat("HH:mm", Locale.UK);
+
+        if (cal.get(Calendar.YEAR) == today.get(Calendar.YEAR) && cal.get(Calendar.DAY_OF_YEAR) == today.get(Calendar.DAY_OF_YEAR)) {
+            return "today at " + timeFmt.format(cal.getTime());
+        } else if (cal.get(Calendar.YEAR) == tomorrow.get(Calendar.YEAR) && cal.get(Calendar.DAY_OF_YEAR) == tomorrow.get(Calendar.DAY_OF_YEAR)) {
+            return "tomorrow at " + timeFmt.format(cal.getTime());
+        } else {
+            java.text.SimpleDateFormat dateFmt = new java.text.SimpleDateFormat("EEE, dd MMM 'at' HH:mm", Locale.UK);
+            return dateFmt.format(cal.getTime());
+        }
+    }
+
     @Override
     protected void onResume() {
         super.onResume();
-
         Button btnSearch = findViewById(R.id.btnSearchJourney);
         setupAdaptersAndListeners(btnSearch);
     }
@@ -143,6 +295,10 @@ public class JourneySearchActivity extends AppCompatActivity {
     private void handleSearch(boolean useGoogleMaps) {
         etFromCrs.dismissDropDown();
         etToCrs.dismissDropDown();
+        tvStatusUpdate.setVisibility(View.GONE);
+        tvStatusUpdate.setText("");
+        shimmerView.stopShimmer();
+        shimmerView.setVisibility(View.GONE);
 
         String fromName = etFromCrs.getText().toString().trim();
         String toName = etToCrs.getText().toString().trim();
@@ -175,12 +331,24 @@ public class JourneySearchActivity extends AppCompatActivity {
         if (useGoogleMaps) {
             launchMapsRouting(fromName, toName, fromCrs != null ? fromCrs : fromNaptan, toCrs != null ? toCrs : toNaptan);
         } else {
+            String dateParam = null;
+            String timeParam = null;
+            String timeIsParam = null;
+
+            if (selectedCalendar != null) {
+                java.text.SimpleDateFormat dateFmt = new java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.UK);
+                java.text.SimpleDateFormat timeFmt = new java.text.SimpleDateFormat("HHmm", java.util.Locale.UK);
+                dateParam = dateFmt.format(selectedCalendar.getTime());
+                timeParam = timeFmt.format(selectedCalendar.getTime());
+                timeIsParam = isArriving ? "arriving" : "departing";
+            }
+
             if (fromNaptan != null && !fromNaptan.isEmpty() && toNaptan != null && !toNaptan.isEmpty()) {
-                startTflRouting(fromNaptan, toNaptan, fromCrs, toCrs);
-            } else if (fromCrs != null && toCrs != null) {
+                startTflRouting(fromNaptan, toNaptan, fromCrs, toCrs, dateParam, timeParam, timeIsParam);
+            } else if (fromCrs != null && toCrs != null && selectedCalendar == null) {
                 startInternalRouting(fromCrs, toCrs);
             } else {
-                Toast.makeText(this, "Invalid station routing combination.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "National Rail routing is only available for 'Now'. Switch to 'Now' or use TfL stations.", Toast.LENGTH_LONG).show();
             }
         }
     }
@@ -208,8 +376,12 @@ public class JourneySearchActivity extends AppCompatActivity {
     }
 
     private void triggerMapsFallback(String originCrs, String destCrs) {
-        Toast.makeText(this, "Maps app unavailable. Using in-app routing...", Toast.LENGTH_LONG).show();
-        startInternalRouting(originCrs, destCrs);
+        if (selectedCalendar == null) {
+            Toast.makeText(this, "Maps app unavailable. Using in-app routing...", Toast.LENGTH_LONG).show();
+            startInternalRouting(originCrs, destCrs);
+        } else {
+            Toast.makeText(this, "Maps app unavailable. Internal fallback cannot be used for future times.", Toast.LENGTH_LONG).show();
+        }
     }
 
     private void startInternalRouting(String fromCrs, String toCrs) {
@@ -229,7 +401,7 @@ public class JourneySearchActivity extends AppCompatActivity {
         }
     }
 
-    private void startTflRouting(String fromNaptan, String toNaptan, String fromCrs, String toCrs) {
+    private void startTflRouting(String fromNaptan, String toNaptan, String fromCrs, String toCrs, String date, String time, String timeIs) {
         recyclerSearchResults.setVisibility(View.GONE);
         tvStatusUpdate.setVisibility(View.VISIBLE);
         tvStatusUpdate.setText("Initialising TfL search...");
@@ -238,7 +410,7 @@ public class JourneySearchActivity extends AppCompatActivity {
         shimmerView.startShimmer();
 
         if (tflPlannerEngine != null) {
-            tflPlannerEngine.findRoutes(fromNaptan, toNaptan, new JourneyPlannerEngine.JourneyCallback() {
+            tflPlannerEngine.findRoutes(fromNaptan, toNaptan, date, time, timeIs, new JourneyPlannerEngine.JourneyCallback() {
                 @Override
                 public void onJourneysFound(List<JourneyOption> journeys) {
                     if (isDestroyed()) return;
@@ -250,8 +422,11 @@ public class JourneySearchActivity extends AppCompatActivity {
                         adapter.updateData(journeys);
                         recyclerSearchResults.setVisibility(View.VISIBLE);
                     } else {
-                        if (fromCrs != null && toCrs != null) {
+                        if (date == null && fromCrs != null && toCrs != null) {
                             startInternalRouting(fromCrs, toCrs);
+                        } else {
+                            tvStatusUpdate.setVisibility(View.VISIBLE);
+                            tvStatusUpdate.setText("No routes found for the selected time.");
                         }
                     }
                 }
@@ -259,11 +434,11 @@ public class JourneySearchActivity extends AppCompatActivity {
                 @Override
                 public void onError(String message) {
                     if (isDestroyed()) return;
-                    if (fromCrs != null && toCrs != null) {
+                    if (date == null && fromCrs != null && toCrs != null) {
                         startInternalRouting(fromCrs, toCrs);
                     } else {
                         tvStatusUpdate.setVisibility(View.VISIBLE);
-                        tvStatusUpdate.setText(message);
+                        tvStatusUpdate.setText("Search failed: " + message);
                         shimmerView.stopShimmer();
                         shimmerView.setVisibility(View.GONE);
                     }
