@@ -6,7 +6,7 @@
     android:layout_marginHorizontal="16dp"
     android:layout_marginBottom="12dp"
     app:cardBackgroundColor="@color/bg_card"
-    app:cardCornerRadius="28dp"
+    app:cardCornerRadius="24dp"
     app:cardElevation="2dp"
     android:foreground="?attr/selectableItemBackground">
 
@@ -16,7 +16,6 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!-- Header: Icon | Operator Pill | Platform -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -26,10 +25,9 @@
 
             <ImageView
                 android:id="@+id/ivModeIcon"
-                android:layout_width="wrap_content"
+                android:layout_width="20dp"
                 android:layout_height="20dp"
-                android:src="@drawable/ic_train"
-                android:adjustViewBounds="true"/>
+                android:src="@drawable/ic_train" />
 
             <TextView
                 android:id="@+id/tvOperatorName"
@@ -41,7 +39,7 @@
                 android:textColor="#FFFFFF"
                 android:textSize="13sp"
                 android:textStyle="bold"
-                android:text="operator" />
+                android:text="Operator" />
 
             <View
                 android:layout_width="0dp"
@@ -49,21 +47,29 @@
                 android:layout_weight="1" />
 
             <TextView
+                android:id="@+id/tvCurrentStationTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:text="11:54" />
+
+            <TextView
                 android:id="@+id/tvPlatform"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
                 android:textColor="@color/text_primary"
                 android:textSize="14sp"
                 android:textStyle="bold"
                 android:text="Plat 1" />
         </LinearLayout>
 
-        <!-- Timeline Body -->
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
 
-            <!-- Top Dot -->
             <View
                 android:id="@+id/dotTop"
                 android:layout_width="8dp"
@@ -102,7 +108,6 @@
                 app:layout_constraintStart_toEndOf="@id/tvDepTime"
                 app:layout_constraintEnd_toEndOf="parent" />
 
-            <!-- Connecting Line -->
             <View
                 android:id="@+id/timelineLine"
                 android:layout_width="2dp"
@@ -115,7 +120,6 @@
                 android:layout_marginTop="4dp"
                 android:layout_marginBottom="4dp" />
 
-            <!-- Bottom Dot -->
             <View
                 android:id="@+id/dotBottom"
                 android:layout_width="8dp"
@@ -157,7 +161,6 @@
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 
-        <!-- Dashed Divider -->
         <View
             android:layout_width="match_parent"
             android:layout_height="2dp"
@@ -166,7 +169,6 @@
             android:background="@drawable/bg_dashed_line"
             android:layerType="software" />
 
-        <!-- Footer -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -191,6 +193,5 @@
                 android:textStyle="bold"
                 android:visibility="gone" />
         </LinearLayout>
-
     </LinearLayout>
 </androidx.cardview.widget.CardView>

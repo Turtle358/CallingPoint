@@ -186,7 +186,6 @@ public class ServiceAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
         boolean isEarlier = earlierServices.contains(service);
 
-
         int brandColour = TOCBrandHelper.getColourForToc(service.operatorName);
         if (Objects.equals(TOCBrandHelper.getManagerForToc(service.operatorName), "gbr") || Objects.equals(TOCBrandHelper.getManagerForToc(service.operatorName), "national")) {
             itemHolder.ivModeIcon.setImageResource(R.drawable.ic_national_rail);
@@ -201,7 +200,11 @@ public class ServiceAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         pillBg.setCornerRadius(itemHolder.itemView.getContext().getResources().getDisplayMetrics().density * 8);
         itemHolder.tvOperatorName.setBackground(pillBg);
         itemHolder.tvOperatorName.setTextColor(isLightColour ? Color.BLACK : Color.WHITE);
-        itemHolder.tvOperatorName.setText(service.operatorName);
+
+        if (service.operatorName != null && !service.operatorName.isEmpty()) {
+            String op = service.operatorName;
+            itemHolder.tvOperatorName.setText(op.substring(0, 1).toUpperCase() + op.substring(1).toLowerCase());
+        }
 
         GradientDrawable dotBg = new GradientDrawable();
         dotBg.setShape(GradientDrawable.OVAL);
@@ -210,140 +213,140 @@ public class ServiceAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         itemHolder.dotBottom.setBackground(dotBg);
         itemHolder.timelineLine.setBackgroundColor(androidx.core.graphics.ColorUtils.setAlphaComponent(brandColour, 102));
 
-        itemHolder.tvPlatform.setText(service.platform != null ? "Plat " + service.platform : "Plat -");
-
         String schTime = service.std != null ? service.std : (service.sta != null ? service.sta : "--:--");
         String estTime = service.etd != null ? service.etd : (service.eta != null ? service.eta : "Unknown");
         String countdownText = calculateCountdown(schTime, estTime);
 
-        String topTime = "--:--";
-        String topStation = userOriginStation;
-        String bottomTime = "--:--";
-        String bottomStation = "Unknown";
-        String durationStr = "";
+        String trueOriginName = (service.origin != null && !service.origin.isEmpty()) ? service.origin.get(0).locationName : "Unknown";
+        String trueOriginTime = "--:--";
+        if (service.previousCallingPoints != null && !service.previousCallingPoints.isEmpty()) {
+            trueOriginTime = service.previousCallingPoints.get(0).callingPoint.get(0).st;
+        } else {
+            trueOriginTime = schTime;
+        }
+
+        String rawDest = (service.destination != null && !service.destination.isEmpty()) ? service.destination.get(0).locationName : "Unknown";
+        String trueDestName = rawDest.replaceAll(" \\(.*?\\)", "").replace(" Underground Station", "").replace(" Station", "").trim();
+        if (trueDestName.contains(" via ")) trueDestName = trueDestName.substring(0, trueDestName.indexOf(" via "));
+
+        String trueDestTime = "--:--";
         int stopsCount = 0;
+        String durationStr = "";
 
         boolean hasFilter = !Objects.equals(userArrivingStation, "Unknown") && userArrivingStation != null && !userArrivingStation.isEmpty();
 
-        String rawDest = (service.destination != null && !service.destination.isEmpty()) ? service.destination.get(0).locationName : "Unknown";
-        String cleanDest = rawDest.replaceAll(" \\(.*?\\)", "").replace(" Underground Station", "").replace(" Station", "").trim();
-        String originName = (service.origin != null && !service.origin.isEmpty()) ? service.origin.get(0).locationName : "Unknown";
+        if (service.subsequentCallingPoints != null && !service.subsequentCallingPoints.isEmpty()) {
+            List<StationDepartureResponse.CallingPoint> pts = service.subsequentCallingPoints.get(0).callingPoint;
+            trueDestTime = pts.get(pts.size() - 1).st;
 
-        if (!isArrivals) {
-            topTime = schTime;
-            topStation = userOriginStation;
-            bottomStation = hasFilter ? userArrivingStation : cleanDest;
-
-            if (service.subsequentCallingPoints != null && !service.subsequentCallingPoints.isEmpty()) {
-                List<StationDepartureResponse.CallingPoint> pts = service.subsequentCallingPoints.get(0).callingPoint;
-                if (hasFilter) {
-                    int destIndex = -1;
-                    for (int i = 0; i < pts.size(); i++) {
-                        if (pts.get(i).locationName.equalsIgnoreCase(userArrivingStation)) { destIndex = i; break; }
-                    }
-                    if (destIndex != -1) {
-                        stopsCount = destIndex + 1;
-                        bottomTime = pts.get(destIndex).st;
-                    } else {
-                        stopsCount = pts.size();
-                        bottomTime = pts.get(pts.size() - 1).st;
-                    }
+            if (hasFilter && !isArrivals) {
+                int destIndex = -1;
+                for (int i = 0; i < pts.size(); i++) {
+                    if (pts.get(i).locationName.equalsIgnoreCase(userArrivingStation)) { destIndex = i; break; }
+                }
+                if (destIndex != -1) {
+                    stopsCount = destIndex + 1;
                 } else {
                     stopsCount = pts.size();
-                    bottomTime = pts.get(pts.size() - 1).st;
                 }
-                durationStr = calculateDuration(schTime, bottomTime);
+            } else {
+                stopsCount = pts.size();
             }
+            durationStr = calculateDuration(schTime, trueDestTime);
         } else {
-            bottomTime = schTime;
-            bottomStation = userOriginStation;
-            topStation = hasFilter ? userArrivingStation : originName;
+            trueDestTime = schTime;
+        }
 
-            if (service.previousCallingPoints != null && !service.previousCallingPoints.isEmpty()) {
-                List<StationDepartureResponse.CallingPoint> pts = service.previousCallingPoints.get(0).callingPoint;
-                if (hasFilter) {
-                    int originIndex = -1;
-                    for (int i = 0; i < pts.size(); i++) {
-                        if (pts.get(i).locationName.equalsIgnoreCase(userArrivingStation)) { originIndex = i; break; }
-                    }
-                    if (originIndex != -1) {
-                        stopsCount = pts.size() - originIndex;
-                        topTime = pts.get(originIndex).st;
-                    } else {
-                        stopsCount = pts.size();
-                        topTime = pts.get(0).st;
-                    }
+        if (isArrivals && service.previousCallingPoints != null && !service.previousCallingPoints.isEmpty()) {
+            List<StationDepartureResponse.CallingPoint> pts = service.previousCallingPoints.get(0).callingPoint;
+            if (hasFilter) {
+                int originIndex = -1;
+                for (int i = 0; i < pts.size(); i++) {
+                    if (pts.get(i).locationName.equalsIgnoreCase(userArrivingStation)) { originIndex = i; break; }
+                }
+                if (originIndex != -1) {
+                    stopsCount = pts.size() - originIndex;
                 } else {
                     stopsCount = pts.size();
-                    topTime = pts.get(0).st;
                 }
-                durationStr = calculateDuration(topTime, schTime);
+            } else {
+                stopsCount = pts.size();
             }
         }
 
-        itemHolder.tvDepTime.setText(topTime);
-        itemHolder.tvOriginStation.setText(topStation);
-        itemHolder.tvArrTime.setText(bottomTime);
-        itemHolder.tvDestStation.setText(bottomStation);
+        itemHolder.tvOriginStation.setText(trueOriginName);
+        itemHolder.tvDepTime.setText(trueOriginTime);
+        itemHolder.tvDestStation.setText(trueDestName);
+        itemHolder.tvArrTime.setText(trueDestTime);
 
-        itemHolder.tvDepTime.setPaintFlags(itemHolder.tvDepTime.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
-        itemHolder.tvDepTime.setVisibility(View.VISIBLE);
+        itemHolder.tvCurrentStationTime.setText(schTime);
+        itemHolder.tvPlatform.setText(service.platform != null ? "Plat " + service.platform : "Plat -");
+
+        itemHolder.tvCurrentStationTime.setPaintFlags(itemHolder.tvCurrentStationTime.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
+        itemHolder.tvCurrentStationTime.setTextColor(itemHolder.defaultSchColour);
         itemHolder.tvLiveStatus.setVisibility(View.VISIBLE);
 
         if (isEarlier) {
-            itemHolder.tvDepTime.setText(countdownText);
-            itemHolder.tvDepTime.setTextColor(Color.parseColor("#888888"));
+            itemHolder.tvCurrentStationTime.setText(countdownText);
+            itemHolder.tvCurrentStationTime.setTextColor(Color.parseColor("#888888"));
             itemHolder.tvLiveStatus.setVisibility(View.GONE);
             itemHolder.itemView.setAlpha(0.5f);
         } else {
             itemHolder.itemView.setAlpha(1.0f);
-            itemHolder.tvDepTime.setTextColor(itemHolder.defaultSchColour);
 
             if ("Cancelled".equalsIgnoreCase(estTime)) {
-                itemHolder.tvDepTime.setPaintFlags(itemHolder.tvDepTime.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+                itemHolder.tvCurrentStationTime.setPaintFlags(itemHolder.tvCurrentStationTime.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
                 itemHolder.tvLiveStatus.setText("Cancelled");
                 itemHolder.tvLiveStatus.setTextColor(Color.parseColor("#DE350B"));
 
             } else if ("Delayed".equalsIgnoreCase(estTime)) {
-                itemHolder.tvDepTime.setPaintFlags(itemHolder.tvDepTime.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+                itemHolder.tvCurrentStationTime.setPaintFlags(itemHolder.tvCurrentStationTime.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
                 itemHolder.tvLiveStatus.setText("Delayed");
                 itemHolder.tvLiveStatus.setTextColor(Color.parseColor("#FF8C00"));
 
             } else if ("On time".equalsIgnoreCase(estTime)) {
-                itemHolder.tvDepTime.setTextColor(itemHolder.defaultSchColour);
                 itemHolder.tvLiveStatus.setText("On time");
                 itemHolder.tvLiveStatus.setTextColor(Color.parseColor("#00875A"));
 
             } else {
-                itemHolder.tvDepTime.setPaintFlags(itemHolder.tvDepTime.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+                itemHolder.tvCurrentStationTime.setPaintFlags(itemHolder.tvCurrentStationTime.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
                 itemHolder.tvLiveStatus.setText("Exp " + estTime);
                 itemHolder.tvLiveStatus.setTextColor(Color.parseColor("#FF8C00"));
             }
         }
 
+        String callingText = "";
+        if (!isArrivals) {
+            callingText = hasFilter ? "Calling at " + userOriginStation + " and " + userArrivingStation : "Calling at " + userOriginStation;
+        } else {
+            callingText = hasFilter ? "Arriving at " + userOriginStation + " from " + userArrivingStation : "Arriving at " + userOriginStation;
+        }
+
         String detailsText = "";
         if (!durationStr.isEmpty()) detailsText += durationStr + " • ";
-        detailsText += stopsCount + (stopsCount == 1 ? " stop" : " stops");
+        if (stopsCount > 0) {
+            detailsText += stopsCount + (stopsCount == 1 ? " stop • " : " stops • ");
+        }
+        detailsText += callingText;
+
         itemHolder.tvServiceDetails.setText(detailsText);
 
         setAnimation(itemHolder.itemView, position);
 
+        String finalTrueDestName = trueDestName;
         itemHolder.itemView.setOnClickListener(v -> {
             Intent intent = new Intent(context, ServiceDetailsActivity.class);
             intent.putExtra("SERVICE_ID", service.serviceID);
-
-            String trainOrigin = (service.origin != null && !service.origin.isEmpty()) ? service.origin.get(0).locationName : "Unknown";
-            String trainDest = (service.destination != null && !service.destination.isEmpty()) ? service.destination.get(0).locationName : "Unknown";
 
             String uOrigin;
             String uDest;
 
             if (isArrivals) {
                 uDest = userOriginStation;
-                uOrigin = (userArrivingStation != null && !userArrivingStation.isEmpty() && !userArrivingStation.equals("Unknown")) ? userArrivingStation : trainOrigin;
+                uOrigin = (userArrivingStation != null && !userArrivingStation.isEmpty() && !userArrivingStation.equals("Unknown")) ? userArrivingStation : trueOriginName;
             } else {
                 uOrigin = userOriginStation;
-                uDest = (userArrivingStation != null && !userArrivingStation.isEmpty() && !userArrivingStation.equals("Unknown")) ? userArrivingStation : trainDest;
+                uDest = (userArrivingStation != null && !userArrivingStation.isEmpty() && !userArrivingStation.equals("Unknown")) ? userArrivingStation : finalTrueDestName;
             }
 
             intent.putExtra("USER_ORIGIN", uOrigin);
@@ -485,7 +488,7 @@ public class ServiceAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     public static class ItemViewHolder extends RecyclerView.ViewHolder {
         ImageView ivModeIcon;
-        TextView tvOperatorName, tvPlatform;
+        TextView tvOperatorName, tvCurrentStationTime, tvPlatform;
         View dotTop, timelineLine, dotBottom;
         TextView tvDepTime, tvOriginStation, tvArrTime, tvDestStation;
         TextView tvServiceDetails, tvLiveStatus;
@@ -495,6 +498,7 @@ public class ServiceAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             super(v);
             ivModeIcon = v.findViewById(R.id.ivModeIcon);
             tvOperatorName = v.findViewById(R.id.tvOperatorName);
+            tvCurrentStationTime = v.findViewById(R.id.tvCurrentStationTime);
             tvPlatform = v.findViewById(R.id.tvPlatform);
             dotTop = v.findViewById(R.id.dotTop);
             timelineLine = v.findViewById(R.id.timelineLine);

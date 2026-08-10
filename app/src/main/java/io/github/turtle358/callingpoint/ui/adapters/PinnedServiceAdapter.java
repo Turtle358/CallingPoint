@@ -54,14 +54,17 @@ public class PinnedServiceAdapter extends RecyclerView.Adapter<PinnedServiceAdap
             holder.ivModeIcon.setColorFilter(brandColour);
         }
 
-
         GradientDrawable pillBg = new GradientDrawable();
         boolean isLightColour = ColorUtils.calculateLuminance(brandColour) > 0.5;
         pillBg.setColor(brandColour);
         pillBg.setCornerRadius(holder.itemView.getContext().getResources().getDisplayMetrics().density * 8);
         holder.tvOperatorName.setBackground(pillBg);
         holder.tvOperatorName.setTextColor(isLightColour ? Color.BLACK : Color.WHITE);
-        holder.tvOperatorName.setText(service.operator);
+
+        if (service.operator != null && !service.operator.isEmpty()) {
+            String op = service.operator;
+            holder.tvOperatorName.setText(op.substring(0, 1).toUpperCase() + op.substring(1).toLowerCase());
+        }
 
         GradientDrawable dotBg = new GradientDrawable();
         dotBg.setShape(GradientDrawable.OVAL);
@@ -70,24 +73,30 @@ public class PinnedServiceAdapter extends RecyclerView.Adapter<PinnedServiceAdap
         holder.dotBottom.setBackground(dotBg);
         holder.timelineLine.setBackgroundColor(androidx.core.graphics.ColorUtils.setAlphaComponent(brandColour, 102));
 
-        String origin = service.locationName;
-        String topTime = service.std != null ? service.std : "--:--";
+        String schTime = service.std != null ? service.std : "--:--";
+        String currentStationName = service.locationName != null ? service.locationName : "Unknown";
 
-        String destination;
-        String bottomTime = "--:--";
-        if (service.subsequentCallingPoints != null && !service.subsequentCallingPoints.isEmpty()
-                && service.subsequentCallingPoints.get(0).callingPoint != null) {
-            List<ServiceDetailsResponse.TimelinePoint> subsequent = service.subsequentCallingPoints.get(0).callingPoint;
-            destination = subsequent.get(subsequent.size() - 1).locationName;
-            bottomTime = subsequent.get(subsequent.size() - 1).scheduledTime;
-        } else {
-            destination = service.locationName;
+        String trueOriginName = currentStationName;
+        String trueOriginTime = schTime;
+        if (service.previousCallingPoints != null && !service.previousCallingPoints.isEmpty() && service.previousCallingPoints.get(0).callingPoint != null) {
+            trueOriginName = service.previousCallingPoints.get(0).callingPoint.get(0).locationName;
+            trueOriginTime = service.previousCallingPoints.get(0).callingPoint.get(0).scheduledTime;
         }
 
-        holder.tvOriginStation.setText(origin);
-        holder.tvDestStation.setText(destination);
-        holder.tvDepTime.setText(topTime);
-        holder.tvArrTime.setText(bottomTime);
+        String trueDestName = currentStationName;
+        String trueDestTime = schTime;
+        if (service.subsequentCallingPoints != null && !service.subsequentCallingPoints.isEmpty() && service.subsequentCallingPoints.get(0).callingPoint != null) {
+            List<ServiceDetailsResponse.TimelinePoint> subsequent = service.subsequentCallingPoints.get(0).callingPoint;
+            trueDestName = subsequent.get(subsequent.size() - 1).locationName;
+            trueDestTime = subsequent.get(subsequent.size() - 1).scheduledTime;
+        }
+
+        holder.tvOriginStation.setText(trueOriginName);
+        holder.tvDepTime.setText(trueOriginTime);
+        holder.tvDestStation.setText(trueDestName);
+        holder.tvArrTime.setText(trueDestTime);
+
+        holder.tvCurrentStationTime.setText(schTime);
         holder.tvPlatform.setText(service.platform != null ? "Plat " + service.platform : "Plat -");
 
         List<ServiceDetailsResponse.TimelinePoint> entireJourney = new ArrayList<>();
@@ -124,23 +133,23 @@ public class PinnedServiceAdapter extends RecyclerView.Adapter<PinnedServiceAdap
             }
         }
 
-        holder.tvDepTime.setPaintFlags(holder.tvDepTime.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
-        holder.tvDepTime.setVisibility(View.VISIBLE);
+        holder.tvCurrentStationTime.setPaintFlags(holder.tvCurrentStationTime.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
+        holder.tvCurrentStationTime.setTextColor(holder.defaultSchColour);
         holder.tvLiveStatus.setVisibility(View.VISIBLE);
 
         if (trueNextStop != null) {
             String estTime = (trueNextStop.estimatedTime != null && !trueNextStop.estimatedTime.isEmpty()) ? trueNextStop.estimatedTime : "On time";
 
             if ("On time".equalsIgnoreCase(estTime)) {
-                holder.tvDepTime.setTextColor(holder.defaultSchColour);
+                holder.tvCurrentStationTime.setTextColor(holder.defaultSchColour);
                 holder.tvLiveStatus.setText("On time");
                 holder.tvLiveStatus.setTextColor(Color.parseColor("#00875A"));
             } else if ("Cancelled".equalsIgnoreCase(estTime)) {
-                holder.tvDepTime.setPaintFlags(holder.tvDepTime.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+                holder.tvCurrentStationTime.setPaintFlags(holder.tvCurrentStationTime.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
                 holder.tvLiveStatus.setText("Cancelled");
                 holder.tvLiveStatus.setTextColor(Color.parseColor("#DE350B"));
             } else {
-                holder.tvDepTime.setPaintFlags(holder.tvDepTime.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+                holder.tvCurrentStationTime.setPaintFlags(holder.tvCurrentStationTime.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
                 holder.tvLiveStatus.setText("Exp " + estTime);
                 holder.tvLiveStatus.setTextColor(Color.parseColor("#FF8C00"));
             }
@@ -152,32 +161,33 @@ public class PinnedServiceAdapter extends RecyclerView.Adapter<PinnedServiceAdap
                 ServiceDetailsResponse.TimelinePoint finalDest = entireJourney.get(entireJourney.size() - 1);
                 durationStr = calculateDuration(trueNextStop.scheduledTime, finalDest.scheduledTime);
             }
+            String callingText = "Calls at " + currentStationName;
 
             String detailsText = "";
             if (!durationStr.isEmpty()) detailsText += durationStr + " • ";
 
             if (stopsLeft > 0) {
                 detailsText += stopsLeft + (stopsLeft == 1 ? " stop • " : " stops • ");
-            } else {
-                detailsText += "Last stop • ";
             }
-            detailsText += "Next calling at " + trueNextStop.locationName;
+            detailsText += callingText;
 
             holder.tvServiceDetails.setText(detailsText);
 
         } else {
             holder.tvLiveStatus.setText("Terminated");
             holder.tvLiveStatus.setTextColor(Color.parseColor("#666666"));
-            holder.tvServiceDetails.setText("Last stop");
+            holder.tvServiceDetails.setText("Terminated at " + currentStationName);
         }
 
         setAnimation(holder.itemView, position);
+
+        final String finalDestName = trueDestName;
 
         holder.itemView.setOnClickListener(v -> {
             android.content.Intent intent = new android.content.Intent(context, ServiceDetailsActivity.class);
             intent.putExtra("SERVICE_ID", service.customServiceID);
             intent.putExtra("USER_ORIGIN", service.locationName);
-            intent.putExtra("USER_DESTINATION", destination);
+            intent.putExtra("USER_DESTINATION", finalDestName);
             context.startActivity(intent);
         });
     }
@@ -231,7 +241,7 @@ public class PinnedServiceAdapter extends RecyclerView.Adapter<PinnedServiceAdap
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
         ImageView ivModeIcon;
-        TextView tvOperatorName, tvPlatform;
+        TextView tvOperatorName, tvCurrentStationTime, tvPlatform;
         View dotTop, timelineLine, dotBottom;
         TextView tvDepTime, tvOriginStation, tvArrTime, tvDestStation;
         TextView tvServiceDetails, tvLiveStatus;
@@ -241,6 +251,7 @@ public class PinnedServiceAdapter extends RecyclerView.Adapter<PinnedServiceAdap
             super(v);
             ivModeIcon = v.findViewById(R.id.ivModeIcon);
             tvOperatorName = v.findViewById(R.id.tvOperatorName);
+            tvCurrentStationTime = v.findViewById(R.id.tvCurrentStationTime);
             tvPlatform = v.findViewById(R.id.tvPlatform);
             dotTop = v.findViewById(R.id.dotTop);
             timelineLine = v.findViewById(R.id.timelineLine);
