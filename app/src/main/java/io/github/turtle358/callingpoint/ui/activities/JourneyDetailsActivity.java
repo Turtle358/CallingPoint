@@ -320,6 +320,10 @@ public class JourneyDetailsActivity extends AppCompatActivity {
     public void onResume() {
         super.onResume();
         if (mapView != null) mapView.onResume();
+        JourneyOption journey = (JourneyOption) getIntent().getSerializableExtra("JOURNEY_OPTION");
+        if (journey != null && journey.legs != null && !journey.legs.isEmpty()) {
+            fetchLiveServiceDetails(journey);
+        }
     }
 
     @Override
