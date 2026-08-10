@@ -1,5 +1,6 @@
 package io.github.turtle358.callingpoint.ui.activities;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -52,7 +53,10 @@ public class JourneyDetailsActivity extends AppCompatActivity {
     private JourneyLegAdapter adapter;
     private final Map<String, ServiceDetailsResponse> liveDataMap = new HashMap<>();
     private MapView mapView;
+    private final android.os.Handler autoRefreshHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+    private Runnable autoRefreshRunnable;
 
+    @SuppressLint("ClickableViewAccessibility")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -320,9 +324,20 @@ public class JourneyDetailsActivity extends AppCompatActivity {
     public void onResume() {
         super.onResume();
         if (mapView != null) mapView.onResume();
+
         JourneyOption journey = (JourneyOption) getIntent().getSerializableExtra("JOURNEY_OPTION");
         if (journey != null && journey.legs != null && !journey.legs.isEmpty()) {
             fetchLiveServiceDetails(journey);
+
+            autoRefreshRunnable = new Runnable() {
+                @Override
+                public void run() {
+                    fetchLiveServiceDetails(journey);
+                    autoRefreshHandler.postDelayed(this, 30 * 1000);
+                }
+            };
+
+            autoRefreshHandler.postDelayed(autoRefreshRunnable, 30 * 1000);
         }
     }
 
@@ -330,6 +345,9 @@ public class JourneyDetailsActivity extends AppCompatActivity {
     public void onPause() {
         super.onPause();
         if (mapView != null) mapView.onPause();
+        if (autoRefreshHandler != null && autoRefreshRunnable != null) {
+            autoRefreshHandler.removeCallbacks(autoRefreshRunnable);
+        }
     }
 
     @Override
@@ -395,6 +413,12 @@ public class JourneyDetailsActivity extends AppCompatActivity {
 
                     if (adapter != null) {
                         adapter.updateLiveData(liveDataMap);
+                    }
+
+                    TextView tvLastUpdated = findViewById(R.id.tvLastUpdated);
+                    if (tvLastUpdated != null) {
+                        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.UK);
+                        tvLastUpdated.setText("Last updated: " + sdf.format(new java.util.Date()));
                     }
                 }
             }

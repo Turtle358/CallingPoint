@@ -15,9 +15,12 @@ import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import io.github.turtle358.callingpoint.R;
 import io.github.turtle358.callingpoint.models.JourneyLeg;
@@ -30,6 +33,10 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
     private final Map<String, ServiceDetailsResponse> liveDataMap = new HashMap<>();
     private final int COLOUR_FUTURE_LINE = Color.parseColor("#444444");
     private final int COLOUR_FUTURE_DOT = Color.parseColor("#888888");
+
+    private final Set<String> expandedBeforeSet = new HashSet<>();
+    private final Set<String> expandedAfterSet = new HashSet<>();
+    private final Map<String, Float> previousBiasMap = new HashMap<>();
 
     public JourneyLegAdapter(List<JourneyLeg> legs) {
         this.legs = legs;
@@ -59,7 +66,6 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
             holder.btnMapTransfer.setVisibility(View.VISIBLE);
 
             holder.tvTransferTitle.setText("Walk " + currentLeg.durationMinutes + " min");
-
             holder.ivTransferIcon.setImageResource(R.drawable.ic_walk);
 
             holder.cardTransfer.setOnClickListener(v -> {
@@ -99,65 +105,95 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
         holder.tvTrainDestination.setText("to " + currentLeg.trainDestination);
 
         if (holder.ivModeIcon != null) {
-            if(lookupName.equalsIgnoreCase("bus")) {
-                holder.ivModeIcon.setImageResource(R.drawable.ic_bus);
-            } else {
-                holder.ivModeIcon.setImageResource(R.drawable.ic_train);
-            }
+            holder.ivModeIcon.setImageResource(lookupName.equalsIgnoreCase("bus") ? R.drawable.ic_bus : R.drawable.ic_train);
         }
         holder.ivManagerLogo.setImageResource(TOCBrandHelper.getIconForToc(lookupName));
+        holder.ivManagerLogo.setOnClickListener(v -> TOCBrandHelper.showTOCInfoDialog(v.getContext(), lookupName));
 
-        holder.ivManagerLogo.setOnClickListener(v ->
-                TOCBrandHelper.showTOCInfoDialog(v.getContext(), lookupName)
-        );
-
-        ServiceDetailsResponse liveDetails = liveDataMap.get(currentLeg.serviceId);
-
-        String timeAgoStr = formatTimeAgo(currentLeg.lastCheckedLiveTime);
-
-        if (liveDetails != null) {
-            String updatedLocation = io.github.turtle358.callingpoint.utils.LiveLocationEngine.getLiveLocation(liveDetails);
-            if (!timeAgoStr.isEmpty()) {
-                if (updatedLocation != null && !updatedLocation.isEmpty()) {
-                    updatedLocation += " • " + timeAgoStr;
-                } else {
-                    updatedLocation = timeAgoStr;
-                }
-            }
-            holder.tvLiveLocation.setText(updatedLocation);
-            holder.tvLiveLocation.setVisibility(View.VISIBLE);
-            holder.tvLiveLocation.setTextColor(liveDetails.isCancelled ? Color.parseColor("#DE350B") : Color.parseColor("#00875A"));
-        } else {
-            String locationText = currentLeg.liveLocation != null ? currentLeg.liveLocation : "";
-            if (!timeAgoStr.isEmpty()) {
-                if (!locationText.isEmpty()) {
-                    locationText += " • " + timeAgoStr;
-                } else {
-                    locationText = timeAgoStr;
-                }
-            }
-            holder.tvLiveLocation.setText(locationText);
-            holder.tvLiveLocation.setVisibility(locationText.isEmpty() ? View.GONE : View.VISIBLE);
-            holder.tvLiveLocation.setTextColor(Color.parseColor("#888888"));
-        }
+        holder.tvLiveLocation.setVisibility(View.GONE);
 
         holder.layoutTimeline.removeAllViews();
         LayoutInflater inflater = LayoutInflater.from(holder.itemView.getContext());
         boolean[] previousPassed = {true};
+        ServiceDetailsResponse liveDetails = liveDataMap.get(currentLeg.serviceId);
+
+        ServiceDetailsResponse.TimelinePoint activeAtPoint = null;
+        ServiceDetailsResponse.TimelinePoint activeBetweenFrom = null;
+        ServiceDetailsResponse.TimelinePoint activeBetweenTo = null;
+        float currentBias = 0.5f;
+
+        Calendar now = Calendar.getInstance();
+        int currentMins = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE);
+
+        if (liveDetails != null && !liveDetails.isCancelled) {
+            List<ServiceDetailsResponse.TimelinePoint> fullRoute = buildFullRoute(liveDetails);
+            int lastPassedIdx = -1;
+
+            for (int i = 0; i < fullRoute.size(); i++) {
+                ServiceDetailsResponse.TimelinePoint pt = fullRoute.get(i);
+
+                String bestTime = pt.actualTime != null ? pt.actualTime : (pt.estimatedTime != null && !pt.estimatedTime.equalsIgnoreCase("On time") ? pt.estimatedTime : pt.scheduledTime);
+                int ptMins = timeToMins(bestTime);
+
+                if ("Arrived".equalsIgnoreCase(pt.estimatedTime)) {
+                    activeAtPoint = pt;
+                    lastPassedIdx = i;
+                } else if ("Departed".equalsIgnoreCase(pt.estimatedTime) || pt.actualTime != null) {
+                    lastPassedIdx = i;
+                } else if (ptMins != -1) {
+                    if (currentMins == ptMins) {
+                        activeAtPoint = pt;
+                        lastPassedIdx = i;
+                    } else if (currentMins > ptMins) {
+                        lastPassedIdx = i;
+                    }
+                }
+            }
+
+            if (activeAtPoint == null && lastPassedIdx >= 0 && lastPassedIdx < fullRoute.size() - 1) {
+                activeBetweenFrom = fullRoute.get(lastPassedIdx);
+                activeBetweenTo = fullRoute.get(lastPassedIdx + 1);
+
+                String t1 = activeBetweenFrom.actualTime != null ? activeBetweenFrom.actualTime : (activeBetweenFrom.estimatedTime != null && !activeBetweenFrom.estimatedTime.equalsIgnoreCase("On time") ? activeBetweenFrom.estimatedTime : activeBetweenFrom.scheduledTime);
+                String t2 = activeBetweenTo.estimatedTime != null && !activeBetweenTo.estimatedTime.equalsIgnoreCase("On time") ? activeBetweenTo.estimatedTime : activeBetweenTo.scheduledTime;
+
+                int m1 = timeToMins(t1);
+                int m2 = timeToMins(t2);
+
+                if (m1 != -1 && m2 != -1) {
+                    if (m2 < m1) m2 += 24 * 60;
+                    int cMins = currentMins;
+                    if (cMins < m1 - 12 * 60) cMins += 24 * 60;
+
+                    if (m2 == m1) {
+                        currentBias = 0.5f;
+                    } else {
+                        float bias = (float) (cMins - m1) / (m2 - m1);
+                        currentBias = Math.max(0.05f, Math.min(0.95f, bias));
+                    }
+                }
+            }
+        }
+
+        String safeServiceId = currentLeg.serviceId != null ? currentLeg.serviceId : "unknown";
 
         List<ServiceDetailsResponse.TimelinePoint> previousStops = getStopsBefore(liveDetails, currentLeg.fromStationName);
         if (!previousStops.isEmpty()) {
-            addToggleBtn(inflater, holder.layoutTimeline, previousStops.size() + " stations before boarding", false, previousPassed[0], brandColour, previousStops.size(), null);
+            boolean isBeforeExpanded = expandedBeforeSet.contains(safeServiceId);
+            addToggleBtn(inflater, holder.layoutTimeline, previousStops.size() + " stations before boarding", isBeforeExpanded, previousPassed[0], brandColour, previousStops.size(), () -> {
+                if (expandedBeforeSet.contains(safeServiceId)) expandedBeforeSet.remove(safeServiceId);
+                else expandedBeforeSet.add(safeServiceId);
+            });
 
             for (ServiceDetailsResponse.TimelinePoint stop : previousStops) {
-                View node = createTimelineNode(inflater, holder.layoutTimeline, stop.locationName, stop.scheduledTime, stop, false, false, brandColour, previousPassed, false);
-                node.setVisibility(View.GONE);
+                View node = createTimelineNode(inflater, holder.layoutTimeline, stop.locationName, stop.scheduledTime, stop, false, false, brandColour, previousPassed, false, activeAtPoint, activeBetweenFrom, activeBetweenTo, currentBias, safeServiceId);
+                node.setVisibility(isBeforeExpanded ? View.VISIBLE : View.GONE);
                 holder.layoutTimeline.addView(node);
             }
         }
 
         ServiceDetailsResponse.TimelinePoint boardingPoint = findLivePoint(liveDetails, currentLeg.fromStationName);
-        View originNode = createTimelineNode(inflater, holder.layoutTimeline, currentLeg.fromStationName, currentLeg.departureTime, boardingPoint, previousStops.isEmpty(), false, brandColour, previousPassed, true);
+        View originNode = createTimelineNode(inflater, holder.layoutTimeline, currentLeg.fromStationName, currentLeg.departureTime, boardingPoint, previousStops.isEmpty(), false, brandColour, previousPassed, true, activeAtPoint, activeBetweenFrom, activeBetweenTo, currentBias, safeServiceId);
         holder.layoutTimeline.addView(originNode);
 
         if (currentLeg.intermediateStops != null && !currentLeg.intermediateStops.isEmpty()) {
@@ -167,7 +203,7 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
 
             for (JourneyLeg.Stop stop : currentLeg.intermediateStops) {
                 ServiceDetailsResponse.TimelinePoint stopPoint = findLivePoint(liveDetails, stop.stationName);
-                View node = createTimelineNode(inflater, holder.layoutTimeline, stop.stationName, stop.time, stopPoint, false, false, brandColour, previousPassed, false);
+                View node = createTimelineNode(inflater, holder.layoutTimeline, stop.stationName, stop.time, stopPoint, false, false, brandColour, previousPassed, false, activeAtPoint, activeBetweenFrom, activeBetweenTo, currentBias, safeServiceId);
                 node.setVisibility(currentLeg.isExpanded ? View.VISIBLE : View.GONE);
                 holder.layoutTimeline.addView(node);
             }
@@ -176,17 +212,21 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
         ServiceDetailsResponse.TimelinePoint alightPoint = findLivePoint(liveDetails, currentLeg.toStationName);
         List<ServiceDetailsResponse.TimelinePoint> subsequentStops = getStopsAfter(liveDetails, currentLeg.toStationName);
 
-        View destNode = createTimelineNode(inflater, holder.layoutTimeline, currentLeg.toStationName, currentLeg.arrivalTime, alightPoint, false, subsequentStops.isEmpty(), brandColour, previousPassed, true);
+        View destNode = createTimelineNode(inflater, holder.layoutTimeline, currentLeg.toStationName, currentLeg.arrivalTime, alightPoint, false, subsequentStops.isEmpty(), brandColour, previousPassed, true, activeAtPoint, activeBetweenFrom, activeBetweenTo, currentBias, safeServiceId);
         holder.layoutTimeline.addView(destNode);
 
         if (!subsequentStops.isEmpty()) {
-            addToggleBtn(inflater, holder.layoutTimeline, "later stations", false, previousPassed[0], brandColour, subsequentStops.size(), null);
+            boolean isAfterExpanded = expandedAfterSet.contains(safeServiceId);
+            addToggleBtn(inflater, holder.layoutTimeline, "later stations", isAfterExpanded, previousPassed[0], brandColour, subsequentStops.size(), () -> {
+                if (expandedAfterSet.contains(safeServiceId)) expandedAfterSet.remove(safeServiceId);
+                else expandedAfterSet.add(safeServiceId);
+            });
 
             for (int i = 0; i < subsequentStops.size(); i++) {
                 ServiceDetailsResponse.TimelinePoint stop = subsequentStops.get(i);
                 boolean isFinalNode = (i == subsequentStops.size() - 1);
-                View node = createTimelineNode(inflater, holder.layoutTimeline, stop.locationName, stop.scheduledTime, stop, false, isFinalNode, brandColour, previousPassed, false);
-                node.setVisibility(View.GONE);
+                View node = createTimelineNode(inflater, holder.layoutTimeline, stop.locationName, stop.scheduledTime, stop, false, isFinalNode, brandColour, previousPassed, false, activeAtPoint, activeBetweenFrom, activeBetweenTo, currentBias, safeServiceId);
+                node.setVisibility(isAfterExpanded ? View.VISIBLE : View.GONE);
                 holder.layoutTimeline.addView(node);
             }
         }
@@ -202,26 +242,18 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
         }
     }
 
-    private String formatTimeAgo(String timeStr) {
-        if (timeStr == null || timeStr.isEmpty()) return "";
+    private int timeToMins(String time) {
+        if (time == null || time.equalsIgnoreCase("On time")) return -1;
+        time = time.replaceAll("[^0-9:]", "").trim();
+        if (!time.contains(":")) return -1;
         try {
-            long timestamp = Long.parseLong(timeStr);
-            long diffMins = (System.currentTimeMillis() - timestamp) / 60000;
-            if (diffMins <= 0) {
-                return "Live";
-            } else if (diffMins == 1) {
-                return "Updated 1 min ago";
-            } else {
-                return "Updated " + diffMins + " mins ago";
-            }
-        } catch (NumberFormatException e) {
-            return timeStr;
-        }
+            String[] p = time.split(":");
+            return Integer.parseInt(p[0]) * 60 + Integer.parseInt(p[1]);
+        } catch (Exception e) { return -1; }
     }
 
     private void addToggleBtn(LayoutInflater inflater, LinearLayout container, String label, boolean isExpanded, boolean isPassed, int brandColour, int childCountToToggle, Runnable onToggle) {
         View toggleBtn = inflater.inflate(R.layout.item_timeline_toggle, container, false);
-
         TextView tvToggleText = toggleBtn.findViewById(R.id.tvToggleText);
         View lineToggle = toggleBtn.findViewById(R.id.lineToggle);
 
@@ -235,7 +267,6 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
             v.setTag(willBeVisible);
 
             tvToggleText.setText(willBeVisible ? "Hide stations ∧" : "View " + label + " ∨");
-
             if (onToggle != null) onToggle.run();
 
             android.transition.AutoTransition transition = new android.transition.AutoTransition();
@@ -245,16 +276,13 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
             int btnIndex = container.indexOfChild(v);
             for (int i = 1; i <= childCountToToggle; i++) {
                 View child = container.getChildAt(btnIndex + i);
-                if (child != null) {
-                    child.setVisibility(willBeVisible ? View.VISIBLE : View.GONE);
-                }
+                if (child != null) child.setVisibility(willBeVisible ? View.VISIBLE : View.GONE);
             }
         });
-
         container.addView(toggleBtn);
     }
 
-    private View createTimelineNode(LayoutInflater inflater, LinearLayout container, String name, String schTime, ServiceDetailsResponse.TimelinePoint livePoint, boolean isFirst, boolean isLast, int brandColour, boolean[] previousPassed, boolean isMajorStop) {
+    private View createTimelineNode(LayoutInflater inflater, LinearLayout container, String name, String schTime, ServiceDetailsResponse.TimelinePoint livePoint, boolean isFirst, boolean isLast, int brandColour, boolean[] previousPassed, boolean isMajorStop, ServiceDetailsResponse.TimelinePoint activeAtPoint, ServiceDetailsResponse.TimelinePoint activeBetweenFrom, ServiceDetailsResponse.TimelinePoint activeBetweenTo, float currentBias, String serviceId) {
         View node = inflater.inflate(R.layout.item_timeline_node, container, false);
 
         TextView tvName = node.findViewById(R.id.tvStationName);
@@ -264,6 +292,10 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
         View lineTop = node.findViewById(R.id.lineTop);
         View lineBottom = node.findViewById(R.id.lineBottom);
         View dotStation = node.findViewById(R.id.dotStation);
+
+        ImageView iconTrainAt = node.findViewById(R.id.iconTrainAt);
+        ImageView iconTrainTop = node.findViewById(R.id.iconTrainTop);
+        ImageView iconTrainBottom = node.findViewById(R.id.iconTrainBottom);
 
         if (livePoint != null && livePoint.scheduledTime != null && !livePoint.scheduledTime.trim().isEmpty()) {
             if ("--:--".equals(schTime) || schTime == null || schTime.trim().isEmpty()) {
@@ -287,7 +319,6 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
 
         if (livePoint != null) {
             String statusTime = livePoint.actualTime != null ? livePoint.actualTime : livePoint.estimatedTime;
-
             if (livePoint.platform != null && !livePoint.platform.trim().isEmpty()) {
                 tvPlatform.setText("Platform " + livePoint.platform);
                 tvPlatform.setVisibility(View.VISIBLE);
@@ -297,6 +328,14 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
 
             if (livePoint.actualTime != null || "Arrived".equalsIgnoreCase(livePoint.estimatedTime) || "Departed".equalsIgnoreCase(livePoint.estimatedTime)) {
                 isPassed = true;
+            } else {
+                String bestTime = livePoint.estimatedTime != null && !livePoint.estimatedTime.equalsIgnoreCase("On time") ? livePoint.estimatedTime : livePoint.scheduledTime;
+                int ptMins = timeToMins(bestTime);
+                Calendar now = Calendar.getInstance();
+                int currentMins = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE);
+                if (ptMins != -1 && currentMins > ptMins) {
+                    isPassed = true;
+                }
             }
 
             if (livePoint.isCancelled) {
@@ -323,26 +362,21 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
         if (isPassed) {
             lineTop.setBackgroundColor(brandColour);
             lineBottom.setBackgroundColor(brandColour);
-
             android.graphics.drawable.GradientDrawable pastDot = new android.graphics.drawable.GradientDrawable();
             pastDot.setShape(android.graphics.drawable.GradientDrawable.OVAL);
             pastDot.setColor(brandColour);
             dotStation.setBackground(pastDot);
-
         } else if (previousPassed[0]) {
             lineTop.setBackgroundColor(brandColour);
             lineBottom.setBackgroundColor(COLOUR_FUTURE_LINE);
-
             android.graphics.drawable.GradientDrawable currentDot = new android.graphics.drawable.GradientDrawable();
             currentDot.setShape(android.graphics.drawable.GradientDrawable.OVAL);
             currentDot.setColor(Color.parseColor("#121212"));
             currentDot.setStroke(6, brandColour);
             dotStation.setBackground(currentDot);
-
         } else {
             lineTop.setBackgroundColor(COLOUR_FUTURE_LINE);
             lineBottom.setBackgroundColor(COLOUR_FUTURE_LINE);
-
             android.graphics.drawable.GradientDrawable futureDot = new android.graphics.drawable.GradientDrawable();
             futureDot.setShape(android.graphics.drawable.GradientDrawable.OVAL);
             futureDot.setColor(Color.parseColor("#121212"));
@@ -350,13 +384,80 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
             dotStation.setBackground(futureDot);
         }
 
+        if (iconTrainAt != null) {
+            iconTrainAt.setVisibility(View.GONE);
+            iconTrainAt.setImageTintList(android.content.res.ColorStateList.valueOf(brandColour));
+        }
+        if (iconTrainTop != null) {
+            iconTrainTop.setVisibility(View.GONE);
+            iconTrainTop.setImageTintList(android.content.res.ColorStateList.valueOf(brandColour));
+        }
+        if (iconTrainBottom != null) {
+            iconTrainBottom.setVisibility(View.GONE);
+            iconTrainBottom.setImageTintList(android.content.res.ColorStateList.valueOf(brandColour));
+        }
+
+        if (livePoint != null) {
+            if (activeAtPoint != null && livePoint.locationName.equalsIgnoreCase(activeAtPoint.locationName)) {
+                if (iconTrainAt != null) iconTrainAt.setVisibility(View.VISIBLE);
+            } else if (activeBetweenFrom != null && livePoint.locationName.equalsIgnoreCase(activeBetweenFrom.locationName)) {
+                if (currentBias <= 0.5f && iconTrainBottom != null) {
+                    iconTrainBottom.setVisibility(View.VISIBLE);
+                    androidx.constraintlayout.widget.ConstraintLayout.LayoutParams params = (androidx.constraintlayout.widget.ConstraintLayout.LayoutParams) iconTrainBottom.getLayoutParams();
+
+                    float targetBias = currentBias * 2f;
+                    String biasKey = serviceId + "_" + livePoint.locationName + "_bottom";
+                    float startBias = previousBiasMap.containsKey(biasKey) ? previousBiasMap.get(biasKey) : 0f;
+
+                    if (startBias != targetBias) {
+                        android.animation.ValueAnimator anim = android.animation.ValueAnimator.ofFloat(startBias, targetBias);
+                        anim.setDuration(1000);
+                        anim.setInterpolator(new android.view.animation.DecelerateInterpolator());
+                        anim.addUpdateListener(a -> {
+                            params.verticalBias = (float) a.getAnimatedValue();
+                            iconTrainBottom.setLayoutParams(params);
+                        });
+                        anim.start();
+                    } else {
+                        params.verticalBias = targetBias;
+                        iconTrainBottom.setLayoutParams(params);
+                    }
+                    previousBiasMap.put(biasKey, targetBias);
+                }
+            } else if (activeBetweenTo != null && livePoint.locationName.equalsIgnoreCase(activeBetweenTo.locationName)) {
+                if (currentBias > 0.5f && iconTrainTop != null) {
+                    iconTrainTop.setVisibility(View.VISIBLE);
+                    androidx.constraintlayout.widget.ConstraintLayout.LayoutParams params = (androidx.constraintlayout.widget.ConstraintLayout.LayoutParams) iconTrainTop.getLayoutParams();
+
+                    float targetBias = (currentBias - 0.5f) * 2f;
+                    String biasKey = serviceId + "_" + livePoint.locationName + "_top";
+                    float startBias = previousBiasMap.containsKey(biasKey) ? previousBiasMap.get(biasKey) : 0f;
+
+                    if (startBias != targetBias) {
+                        android.animation.ValueAnimator anim = android.animation.ValueAnimator.ofFloat(startBias, targetBias);
+                        anim.setDuration(1000);
+                        anim.setInterpolator(new android.view.animation.DecelerateInterpolator());
+                        anim.addUpdateListener(a -> {
+                            params.verticalBias = (float) a.getAnimatedValue();
+                            iconTrainTop.setLayoutParams(params);
+                        });
+                        anim.start();
+                    } else {
+                        params.verticalBias = targetBias;
+                        iconTrainTop.setLayoutParams(params);
+                    }
+                    previousBiasMap.put(biasKey, targetBias);
+                }
+            }
+        }
+
         previousPassed[0] = isPassed;
         return node;
     }
+
     private List<ServiceDetailsResponse.TimelinePoint> getStopsBefore(ServiceDetailsResponse liveData, String targetStation) {
         List<ServiceDetailsResponse.TimelinePoint> results = new ArrayList<>();
         if (liveData == null || targetStation == null) return results;
-
         List<ServiceDetailsResponse.TimelinePoint> fullRoute = buildFullRoute(liveData);
         for (ServiceDetailsResponse.TimelinePoint pt : fullRoute) {
             if (targetStation.equalsIgnoreCase(pt.locationName)) break;
@@ -368,15 +469,11 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
     private List<ServiceDetailsResponse.TimelinePoint> getStopsAfter(ServiceDetailsResponse liveData, String targetStation) {
         List<ServiceDetailsResponse.TimelinePoint> results = new ArrayList<>();
         if (liveData == null || targetStation == null) return results;
-
         boolean found = false;
         List<ServiceDetailsResponse.TimelinePoint> fullRoute = buildFullRoute(liveData);
         for (ServiceDetailsResponse.TimelinePoint pt : fullRoute) {
-            if (found) {
-                results.add(pt);
-            } else if (targetStation.equalsIgnoreCase(pt.locationName)) {
-                found = true;
-            }
+            if (found) results.add(pt);
+            else if (targetStation.equalsIgnoreCase(pt.locationName)) found = true;
         }
         return results;
     }
@@ -409,14 +506,12 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
     @Override
     public int getItemCount() { return legs != null ? legs.size() : 0; }
 
-
     static class LegViewHolder extends RecyclerView.ViewHolder {
         LinearLayout headerOperator, layoutTimeline;
         TextView tvOperatorName, tvTrainDestination, tvLiveLocation;
         CardView cardTransfer;
         TextView tvTransferTitle;
-        ImageView ivManagerLogo, btnMapTransfer, ivModeIcon;
-        ImageView ivTransferIcon;
+        ImageView ivManagerLogo, btnMapTransfer, ivModeIcon, ivTransferIcon;
 
         public LegViewHolder(@NonNull View itemView) {
             super(itemView);

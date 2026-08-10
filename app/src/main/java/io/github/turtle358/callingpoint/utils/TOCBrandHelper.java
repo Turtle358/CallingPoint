@@ -207,7 +207,7 @@ public class TOCBrandHelper {
             case "tfl":
                 return "Transport for London operates this service. It is part of the integrated London public transport network.";
             case "national":
-                return "This is a National Rail service, operating on the privatised UK railway network.";
+                return tocName + " is a National Rail service, operating on the privatised UK railway network.";
             case "gbr":
                 return "This service is currently operated by DfT Operator (DFTO) who will soon become Great British Railways, the publicly-owned railway.";
             case "scot":
@@ -219,11 +219,11 @@ public class TOCBrandHelper {
             case "eurostar":
                 return "This is a high-speed Eurostar service operating between the UK and mainland Europe.";
             case "open-access":
-                return "This is an open access operator. A private for profit company not part of the national rail network";
+                return tocName + " is an open access operator. A private for profit company not part of the national rail network";
             case "london buses":
                 return "This service is operated by London Buses, part of the Transport for London network.";
             default:
-                return "This is an independent train operator.";
+                return "This is an independent operator.";
         }
     }
 
