@@ -120,19 +120,60 @@ public class JourneyPlannerFragment extends Fragment {
                     }
 
                     @Override
-                    public void clearView(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
-                        super.clearView(recyclerView, viewHolder);
-                        if (adapter != null && manager != null) {
-                            manager.saveAllPinnedJourneys(adapter.getItems());
-                        }
-                    }
-
-                    @Override
                     public void onChildDraw(@NonNull android.graphics.Canvas c, @NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, float dX, float dY, int actionState, boolean isCurrentlyActive) {
                         if (actionState == androidx.recyclerview.widget.ItemTouchHelper.ACTION_STATE_SWIPE) {
                             drawSwipeBackground(c, viewHolder.itemView, dX);
+
+                            androidx.cardview.widget.CardView notchLeft = viewHolder.itemView.findViewById(R.id.notchLeft);
+                            androidx.cardview.widget.CardView notchRight = viewHolder.itemView.findViewById(R.id.notchRight);
+                            View notchLeftMask = viewHolder.itemView.findViewById(R.id.notchLeftMask);
+                            View notchRightMask = viewHolder.itemView.findViewById(R.id.notchRightMask);
+
+                            if (notchLeft != null && notchRight != null && notchLeftMask != null && notchRightMask != null) {
+                                int swipeColor = android.graphics.Color.parseColor("#FFB4AB");
+                                int defaultColor = androidx.core.content.ContextCompat.getColor(requireContext(), R.color.bg_screen);
+
+                                if (dX > 0) {
+                                    notchLeft.setCardBackgroundColor(swipeColor);
+                                    notchLeftMask.setBackgroundColor(swipeColor);
+                                    notchRight.setCardBackgroundColor(defaultColor);
+                                    notchRightMask.setBackgroundColor(defaultColor);
+                                } else if (dX < 0) {
+                                    notchLeft.setCardBackgroundColor(defaultColor);
+                                    notchLeftMask.setBackgroundColor(defaultColor);
+                                    notchRight.setCardBackgroundColor(swipeColor);
+                                    notchRightMask.setBackgroundColor(swipeColor);
+                                } else {
+                                    notchLeft.setCardBackgroundColor(defaultColor);
+                                    notchLeftMask.setBackgroundColor(defaultColor);
+                                    notchRight.setCardBackgroundColor(defaultColor);
+                                    notchRightMask.setBackgroundColor(defaultColor);
+                                }
+                            }
                         }
                         super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
+                    }
+
+                    @Override
+                    public void clearView(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
+                        super.clearView(recyclerView, viewHolder);
+
+                        androidx.cardview.widget.CardView notchLeft = viewHolder.itemView.findViewById(R.id.notchLeft);
+                        androidx.cardview.widget.CardView notchRight = viewHolder.itemView.findViewById(R.id.notchRight);
+                        View notchLeftMask = viewHolder.itemView.findViewById(R.id.notchLeftMask);
+                        View notchRightMask = viewHolder.itemView.findViewById(R.id.notchRightMask);
+
+                        if (notchLeft != null && notchRight != null && notchLeftMask != null && notchRightMask != null) {
+                            int defaultColor = androidx.core.content.ContextCompat.getColor(requireContext(), R.color.bg_screen);
+                            notchLeft.setCardBackgroundColor(defaultColor);
+                            notchLeftMask.setBackgroundColor(defaultColor);
+                            notchRight.setCardBackgroundColor(defaultColor);
+                            notchRightMask.setBackgroundColor(defaultColor);
+                        }
+
+                        if (adapter != null && manager != null) {
+                            manager.saveAllPinnedJourneys(adapter.getItems());
+                        }
                     }
                 });
 
@@ -144,13 +185,16 @@ public class JourneyPlannerFragment extends Fragment {
         paint.setColor(android.graphics.Color.parseColor("#FFB4AB"));
         paint.setAntiAlias(true);
 
-        float cornerRadius = itemView.getResources().getDisplayMetrics().density * 30;
+        float density = itemView.getResources().getDisplayMetrics().density;
+        float cornerRadius = 30 * density;
+        float horizontalMargin = 16 * density;
+        float bottomMargin = 12 * density;
 
         android.graphics.RectF background = new android.graphics.RectF(
-                itemView.getLeft(),
+                itemView.getLeft() + horizontalMargin,
                 itemView.getTop(),
-                itemView.getRight(),
-                itemView.getBottom()
+                itemView.getRight() - horizontalMargin,
+                itemView.getBottom() - bottomMargin
         );
 
         c.drawRoundRect(background, cornerRadius, cornerRadius, paint);
@@ -158,17 +202,19 @@ public class JourneyPlannerFragment extends Fragment {
         android.graphics.drawable.Drawable icon = androidx.core.content.ContextCompat.getDrawable(requireContext(), android.R.drawable.ic_menu_delete);
         if (icon != null) {
             icon.setTint(android.graphics.Color.parseColor("#690005"));
-            int iconMargin = (itemView.getHeight() - icon.getIntrinsicHeight()) / 2;
-            int iconTop = itemView.getTop() + (itemView.getHeight() - icon.getIntrinsicHeight()) / 2;
+
+            int backgroundHeight = (int) (background.bottom - background.top);
+            int iconTop = (int) background.top + (backgroundHeight - icon.getIntrinsicHeight()) / 2;
             int iconBottom = iconTop + icon.getIntrinsicHeight();
+            int iconMargin = (int) (16 * density);
 
             if (dX > 0) {
-                int iconLeft = itemView.getLeft() + iconMargin;
+                int iconLeft = (int) background.left + iconMargin;
                 int iconRight = iconLeft + icon.getIntrinsicWidth();
                 icon.setBounds(iconLeft, iconTop, iconRight, iconBottom);
                 icon.draw(c);
             } else if (dX < 0) {
-                int iconRight = itemView.getRight() - iconMargin;
+                int iconRight = (int) background.right - iconMargin;
                 int iconLeft = iconRight - icon.getIntrinsicWidth();
                 icon.setBounds(iconLeft, iconTop, iconRight, iconBottom);
                 icon.draw(c);

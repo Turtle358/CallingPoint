@@ -281,7 +281,7 @@
 
         <include
             android:id="@+id/shimmer_pinned_services_container"
-            layout="@layout/layout_shimmer_pinned_services_list" />
+            layout="@layout/layout_shimmer_services_list" />
 
         <LinearLayout
             android:id="@+id/layoutEmptyPinnedServices"

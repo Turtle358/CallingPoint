@@ -38,7 +38,7 @@ public class PinnedServiceAdapter extends RecyclerView.Adapter<PinnedServiceAdap
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View v = LayoutInflater.from(context).inflate(R.layout.item_pinned_service, parent, false);
+        View v = LayoutInflater.from(context).inflate(R.layout.item_service, parent, false);
         return new ViewHolder(v);
     }
 

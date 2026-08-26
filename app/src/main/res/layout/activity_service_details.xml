@@ -335,6 +335,52 @@
                             android:nestedScrollingEnabled="false" />
                     </LinearLayout>
                 </androidx.cardview.widget.CardView>
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/cardErrorState"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginHorizontal="12dp"
+                    android:layout_marginBottom="24dp"
+                    android:visibility="gone"
+                    app:cardBackgroundColor="@color/bg_card"
+                    app:cardCornerRadius="28dp"
+                    app:cardElevation="2dp"
+                    app:cardUseCompatPadding="true">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:gravity="center"
+                        android:paddingHorizontal="32dp"
+                        android:paddingVertical="48dp">
+
+                        <ImageView
+                            android:layout_width="64dp"
+                            android:layout_height="64dp"
+                            android:src="@drawable/ic_alert_diamond"
+                            app:tint="@color/text_secondary"
+                            android:alpha="0.4"
+                            android:layout_marginBottom="16dp"/>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Service Unavailable"
+                            android:textColor="@color/text_primary"
+                            android:textSize="20sp"
+                            android:textStyle="bold"
+                            android:layout_marginBottom="8dp"/>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textAlignment="center"
+                            android:text="Unable to load service details.\nPlease check your connection and try again."
+                            android:textColor="@color/text_secondary"
+                            android:textSize="16sp"/>
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
             </LinearLayout>
         </androidx.core.widget.NestedScrollView>
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>

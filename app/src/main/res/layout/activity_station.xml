@@ -128,7 +128,7 @@
 
                 <include
                     android:id="@+id/shimmer_view_container"
-                    layout="@layout/layout_shimmer_depatures_list" />
+                    layout="@layout/layout_shimmer_services_list" />
 
                 <TextView
                     android:id="@+id/tvEmptyState"

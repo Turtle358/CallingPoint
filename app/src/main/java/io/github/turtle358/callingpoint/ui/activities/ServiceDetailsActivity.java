@@ -63,6 +63,7 @@ public class ServiceDetailsActivity extends AppCompatActivity {
     private String serviceId = "";
     private String userOrigin;
     private String userDest;
+    private View cardErrorState;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -99,6 +100,7 @@ public class ServiceDetailsActivity extends AppCompatActivity {
         titleCallingPoints = findViewById(R.id.tvCallingPointsTitle);
         cardTflDisclaimer = findViewById(R.id.cardTflDisclaimer);
         shimmerTimeline = findViewById(R.id.shimmerTimeline);
+        cardErrorState = findViewById(R.id.cardErrorState);
 
         recyclerCoaches.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
         recyclerTimeline.setLayoutManager(new LinearLayoutManager(this));
@@ -145,6 +147,9 @@ public class ServiceDetailsActivity extends AppCompatActivity {
             public void onResponse(@NonNull Call<ServiceDetailsResponse> call, @NonNull Response<ServiceDetailsResponse> response) {
                 swipeRefreshLayout.setRefreshing(false);
                 if (response.isSuccessful() && response.body() != null) {
+                    if (cardErrorState != null) cardErrorState.setVisibility(View.GONE);
+                    if (cardCallingPoints != null) cardCallingPoints.setVisibility(View.VISIBLE);
+                    if (recyclerTimeline != null) recyclerTimeline.setVisibility(View.VISIBLE);
                     ServiceDetailsResponse data = response.body();
 
                     if (btnPinService != null) {
@@ -429,6 +434,8 @@ public class ServiceDetailsActivity extends AppCompatActivity {
     }
 
     private void renderStaticJourneyTimeline(List<String> stops, String operatorName) {
+        if (cardErrorState != null) cardErrorState.setVisibility(View.GONE);
+        if (cardCallingPoints != null) cardCallingPoints.setVisibility(View.VISIBLE);
         List<ServiceDetailsResponse.TimelinePoint> allPoints = new ArrayList<>();
 
         for (String stopName : stops) {
@@ -537,6 +544,8 @@ public class ServiceDetailsActivity extends AppCompatActivity {
     }
 
     private void renderTflTimeline(List<TflVehicleArrival> tflArrivals, List<String> journeyPlannerStops) {
+        if (cardErrorState != null) cardErrorState.setVisibility(View.GONE);
+        if (cardCallingPoints != null) cardCallingPoints.setVisibility(View.VISIBLE);
         SimpleDateFormat displayFormat = new SimpleDateFormat("HH:mm", Locale.UK);
         displayFormat.setTimeZone(TimeZone.getTimeZone("Europe/London"));
 
@@ -658,29 +667,25 @@ public class ServiceDetailsActivity extends AppCompatActivity {
         } else if (userOrigin != null) {
             tvHeaderDestination.setText(userOrigin + " Departures");
         } else {
-            tvHeaderDestination.setText("London Underground");
+            tvHeaderDestination.setText("Unknown Service");
         }
 
-        tvHeaderOperator.setText("Transport for London");
-        tvHeaderTime.setText("Live Tracker");
+        tvHeaderOperator.setText("");
+        tvHeaderTime.setText("");
         tvHeaderPlatform.setText("");
 
-        tvHeaderStatus.setText("Good Service");
-        tvHeaderStatus.setTextColor(Color.parseColor("#00875A"));
+        tvHeaderStatus.setText("Unavailable");
+        tvHeaderStatus.setTextColor(Color.parseColor("#DE350B"));
         tvHeaderStatus.setVisibility(View.VISIBLE);
 
         if (titleCallingPoints != null) titleCallingPoints.setVisibility(View.GONE);
         if (cardTflDisclaimer != null) cardTflDisclaimer.setVisibility(View.GONE);
         recyclerTimeline.setVisibility(View.GONE);
 
-        cardTrainDetails.setVisibility(View.VISIBLE);
-        TextView tvCardTitle = findViewById(R.id.tvCoachCapacity);
+        if (cardTrainDetails != null) cardTrainDetails.setVisibility(View.GONE);
+        if (cardCallingPoints != null) cardCallingPoints.setVisibility(View.GONE);
 
-        tvCardTitle.setText("Live calling points are not broadcast for Underground services. Please refer to station maps for routing.");
-        tvCardTitle.setTextSize(14f);
-        tvCardTitle.setTextColor(Color.parseColor("#666666"));
-
-        recyclerCoaches.setVisibility(View.GONE);
+        if (cardErrorState != null) cardErrorState.setVisibility(View.VISIBLE);
     }
 
     private String calculateDuration(String start, String end) {

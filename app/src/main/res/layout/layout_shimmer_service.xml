@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingBottom="12dp"
+    android:clipChildren="false"
+    android:clipToPadding="false">
+
+    <androidx.cardview.widget.CardView
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginHorizontal="16dp"
+        app:cardBackgroundColor="@color/bg_card"
+        app:cardCornerRadius="28dp"
+        app:cardElevation="2dp"
+        app:layout_constraintTop_toTopOf="@id/contentContainer"
+        app:layout_constraintBottom_toBottomOf="@id/contentContainer"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/contentContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        android:translationZ="3dp"
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <View
+            android:id="@+id/shimmerModeIcon"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="16dp"
+            android:background="#E0E0E0"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
+
+        <View
+            android:layout_width="100dp"
+            android:layout_height="22dp"
+            android:layout_marginStart="10dp"
+            android:background="#E0E0E0"
+            app:layout_constraintTop_toTopOf="@id/shimmerModeIcon"
+            app:layout_constraintBottom_toBottomOf="@id/shimmerModeIcon"
+            app:layout_constraintStart_toEndOf="@id/shimmerModeIcon" />
+
+        <View
+            android:id="@+id/shimmerPlatform"
+            android:layout_width="40dp"
+            android:layout_height="16dp"
+            android:layout_marginEnd="16dp"
+            android:background="#E0E0E0"
+            app:layout_constraintTop_toTopOf="@id/shimmerModeIcon"
+            app:layout_constraintBottom_toBottomOf="@id/shimmerModeIcon"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <View
+            android:layout_width="40dp"
+            android:layout_height="16dp"
+            android:layout_marginEnd="8dp"
+            android:background="#E0E0E0"
+            app:layout_constraintTop_toTopOf="@id/shimmerModeIcon"
+            app:layout_constraintBottom_toBottomOf="@id/shimmerModeIcon"
+            app:layout_constraintEnd_toStartOf="@id/shimmerPlatform" />
+
+        <View
+            android:id="@+id/shimmerDepTime"
+            android:layout_width="50dp"
+            android:layout_height="20dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="24dp"
+            android:background="#E0E0E0"
+            app:layout_constraintTop_toBottomOf="@id/shimmerModeIcon"
+            app:layout_constraintStart_toEndOf="@id/shimmerDotTop" />
+
+        <View
+            android:id="@+id/shimmerDotTop"
+            android:layout_width="8dp"
+            android:layout_height="8dp"
+            android:background="#E0E0E0"
+            app:layout_constraintTop_toTopOf="@id/shimmerDepTime"
+            app:layout_constraintBottom_toBottomOf="@id/shimmerDepTime"
+            app:layout_constraintStart_toStartOf="@id/shimmerModeIcon"
+            app:layout_constraintEnd_toEndOf="@id/shimmerModeIcon" />
+
+        <View
+            android:layout_width="160dp"
+            android:layout_height="20dp"
+            android:layout_marginStart="12dp"
+            android:background="#E0E0E0"
+            app:layout_constraintTop_toTopOf="@id/shimmerDepTime"
+            app:layout_constraintBottom_toBottomOf="@id/shimmerDepTime"
+            app:layout_constraintStart_toEndOf="@id/shimmerDepTime" />
+
+        <View
+            android:layout_width="2dp"
+            android:layout_height="0dp"
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="4dp"
+            android:background="#E0E0E0"
+            app:layout_constraintTop_toBottomOf="@id/shimmerDotTop"
+            app:layout_constraintBottom_toTopOf="@id/shimmerDotBottom"
+            app:layout_constraintStart_toStartOf="@id/shimmerModeIcon"
+            app:layout_constraintEnd_toEndOf="@id/shimmerModeIcon" />
+
+        <View
+            android:id="@+id/shimmerArrTime"
+            android:layout_width="50dp"
+            android:layout_height="20dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="20dp"
+            android:background="#E0E0E0"
+            app:layout_constraintTop_toBottomOf="@id/shimmerDepTime"
+            app:layout_constraintStart_toEndOf="@id/shimmerDotBottom" />
+
+        <View
+            android:id="@+id/shimmerDotBottom"
+            android:layout_width="8dp"
+            android:layout_height="8dp"
+            android:background="#E0E0E0"
+            app:layout_constraintTop_toTopOf="@id/shimmerArrTime"
+            app:layout_constraintBottom_toBottomOf="@id/shimmerArrTime"
+            app:layout_constraintStart_toStartOf="@id/shimmerModeIcon"
+            app:layout_constraintEnd_toEndOf="@id/shimmerModeIcon" />
+
+        <View
+            android:layout_width="140dp"
+            android:layout_height="20dp"
+            android:layout_marginStart="12dp"
+            android:background="#E0E0E0"
+            app:layout_constraintTop_toTopOf="@id/shimmerArrTime"
+            app:layout_constraintBottom_toBottomOf="@id/shimmerArrTime"
+            app:layout_constraintStart_toEndOf="@id/shimmerArrTime" />
+
+        <androidx.cardview.widget.CardView
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            app:cardBackgroundColor="@color/bg_screen"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="0dp"
+            android:outlineProvider="none"
+            android:translationX="-8dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="@id/dashedLine"
+            app:layout_constraintBottom_toBottomOf="@id/dashedLine">
+            <View android:layout_width="match_parent" android:layout_height="match_parent" android:background="@drawable/bg_notch_inner_shadow" />
+            <View android:layout_width="8dp" android:layout_height="match_parent" android:layout_gravity="start" android:background="@color/bg_screen" />
+        </androidx.cardview.widget.CardView>
+
+        <androidx.cardview.widget.CardView
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            app:cardBackgroundColor="@color/bg_screen"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="0dp"
+            android:outlineProvider="none"
+            android:translationX="8dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@id/dashedLine"
+            app:layout_constraintBottom_toBottomOf="@id/dashedLine">
+            <View android:layout_width="match_parent" android:layout_height="match_parent" android:background="@drawable/bg_notch_inner_shadow" />
+            <View android:layout_width="8dp" android:layout_height="match_parent" android:layout_gravity="end" android:background="@color/bg_screen" />
+        </androidx.cardview.widget.CardView>
+
+        <View
+            android:id="@+id/dashedLine"
+            android:layout_width="0dp"
+            android:layout_height="2dp"
+            android:layout_marginTop="24dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/bg_dashed_line"
+            android:layerType="software"
+            app:layout_constraintTop_toBottomOf="@id/shimmerArrTime"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <View
+            android:layout_width="120dp"
+            android:layout_height="14dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="16dp"
+            android:background="#E0E0E0"
+            app:layout_constraintTop_toBottomOf="@id/dashedLine"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>
