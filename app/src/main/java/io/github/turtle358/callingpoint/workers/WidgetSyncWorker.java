@@ -5,7 +5,7 @@ import androidx.annotation.NonNull;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
-import io.github.turtle358.callingpoint.utils.DisruptionSyncManager;
+import io.github.turtle358.callingpoint.utils.Disruptions.DisruptionSyncManager;
 
 public class WidgetSyncWorker extends Worker {
 

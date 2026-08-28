@@ -26,6 +26,7 @@ import java.util.Locale;
 import io.github.turtle358.callingpoint.R;
 import io.github.turtle358.callingpoint.models.DisruptionResponce;
 import io.github.turtle358.callingpoint.ui.activities.MainActivity;
+import io.github.turtle358.callingpoint.utils.Disruptions.DisruptionSyncManager;
 import io.github.turtle358.callingpoint.utils.TOCBrandHelper;
 
 public class AppWidgetProvider extends android.appwidget.AppWidgetProvider {
@@ -181,7 +182,7 @@ public class AppWidgetProvider extends android.appwidget.AppWidgetProvider {
 
             final PendingResult pendingResult = goAsync();
             new Thread(() -> {
-                io.github.turtle358.callingpoint.utils.DisruptionSyncManager.syncSync(context, null);
+                DisruptionSyncManager.syncSync(context, null);
                 pendingResult.finish();
             }).start();
         }

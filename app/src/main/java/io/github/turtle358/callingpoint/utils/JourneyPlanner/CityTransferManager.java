@@ -1,4 +1,4 @@
-package io.github.turtle358.callingpoint.utils;
+package io.github.turtle358.callingpoint.utils.JourneyPlanner;
 
 import java.util.HashMap;
 import java.util.Map;

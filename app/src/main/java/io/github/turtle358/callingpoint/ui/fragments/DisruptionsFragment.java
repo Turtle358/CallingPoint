@@ -15,7 +15,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
+
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -23,11 +23,9 @@ import java.util.List;
 import java.util.Locale;
 
 import io.github.turtle358.callingpoint.R;
-import io.github.turtle358.callingpoint.api.APIClient;
-import io.github.turtle358.callingpoint.api.NationalRailAPI;
 import io.github.turtle358.callingpoint.models.DisruptionResponce;
 import io.github.turtle358.callingpoint.ui.adapters.DisruptionAdapter;
-import io.github.turtle358.callingpoint.utils.DisruptionSyncManager;
+import io.github.turtle358.callingpoint.utils.Disruptions.DisruptionSyncManager;
 import io.github.turtle358.callingpoint.utils.WidgetPromoHelper;
 
 public class DisruptionsFragment extends Fragment {
@@ -201,8 +199,8 @@ public class DisruptionsFragment extends Fragment {
         swipeRefreshLayout.setRefreshing(true);
         liveIndicator.setText("◉ Syncing Real-Time Delays...");
 
-        io.github.turtle358.callingpoint.utils.DisruptionSyncManager.syncAsync(requireContext(),
-                new io.github.turtle358.callingpoint.utils.DisruptionSyncManager.SyncCallback() {
+        DisruptionSyncManager.syncAsync(requireContext(),
+                new DisruptionSyncManager.SyncCallback() {
 
                     @Override
                     public void onSuccess(List<DisruptionResponce.ServiceIndicator> tracked,

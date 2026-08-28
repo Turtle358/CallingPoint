@@ -23,7 +23,7 @@ import java.util.Locale;
 import io.github.turtle358.callingpoint.R;
 import io.github.turtle358.callingpoint.models.JourneyOption;
 import io.github.turtle358.callingpoint.ui.activities.JourneyDetailsActivity;
-import io.github.turtle358.callingpoint.utils.PinnedJourneyManager;
+import io.github.turtle358.callingpoint.utils.JourneyPlanner.PinnedJourneyManager;
 import io.github.turtle358.callingpoint.utils.TOCBrandHelper;
 
 public class PinnedJourneyAdapter extends RecyclerView.Adapter<PinnedJourneyAdapter.PinnedViewHolder> {

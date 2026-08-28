@@ -36,8 +36,9 @@ import java.util.regex.Pattern;
 
 import io.github.turtle358.callingpoint.R;
 import io.github.turtle358.callingpoint.models.IncidentResponse;
-import io.github.turtle358.callingpoint.utils.DisruptionSeverityManager;
-import io.github.turtle358.callingpoint.utils.DisruptionSeverityManager.Severity;
+import io.github.turtle358.callingpoint.utils.Disruptions.DisruptionSeverityManager;
+import io.github.turtle358.callingpoint.utils.Disruptions.DisruptionSeverityManager.Severity;
+import io.github.turtle358.callingpoint.utils.Disruptions.DisruptionSyncManager;
 import io.github.turtle358.callingpoint.utils.TOCBrandHelper;
 
 public class TOCDisruptionDetailActivity extends AppCompatActivity {
@@ -419,7 +420,7 @@ public class TOCDisruptionDetailActivity extends AppCompatActivity {
                 .putLong("LAST_SYNC_TIME", 0)
                 .apply();
 
-        io.github.turtle358.callingpoint.utils.DisruptionSyncManager.syncAsync(this, null);
+        DisruptionSyncManager.syncAsync(this, null);
     }
 
     private String extractVimeoId(String text) {

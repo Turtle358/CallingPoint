@@ -3,6 +3,7 @@ package io.github.turtle358.callingpoint.utils;
 import android.content.Context;
 import org.json.JSONObject;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -23,7 +24,7 @@ public class StationHelper {
                 byte[] buffer = new byte[size];
                 is.read(buffer);
                 is.close();
-                String jsonStr = new String(buffer, "UTF-8");
+                String jsonStr = new String(buffer, StandardCharsets.UTF_8);
                 stationsJson = new JSONObject(jsonStr);
             } catch (Exception e) {
                 e.printStackTrace();

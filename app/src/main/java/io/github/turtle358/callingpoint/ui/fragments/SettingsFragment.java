@@ -3,7 +3,6 @@ package io.github.turtle358.callingpoint.ui.fragments;
 import android.appwidget.AppWidgetManager;
 import android.content.ComponentName;
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
@@ -44,6 +43,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import io.github.turtle358.callingpoint.utils.Disruptions.DisruptionSyncManager;
 import io.github.turtle358.callingpoint.utils.StationHelper;
 import io.github.turtle358.callingpoint.utils.WidgetPromoHelper;
 import io.github.turtle358.callingpoint.widget.AppWidgetProvider;
@@ -238,7 +238,7 @@ public class SettingsFragment extends Fragment {
                 .putLong("LAST_SYNC_TIME", 0)
                 .apply();
 
-        io.github.turtle358.callingpoint.utils.DisruptionSyncManager.syncAsync(requireContext(), null);
+        DisruptionSyncManager.syncAsync(requireContext(), null);
     }
 
     private void setupAppIconControl(View view) {

@@ -14,6 +14,7 @@ import androidx.annotation.NonNull;
 import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -70,7 +71,7 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
 
             holder.cardTransfer.setOnClickListener(v -> {
                 try {
-                    String destQuery = java.net.URLEncoder.encode(currentLeg.toStationName + " Station, London", "UTF-8");
+                    String destQuery = java.net.URLEncoder.encode(currentLeg.toStationName + " Station, London", StandardCharsets.UTF_8);
                     String uriString = "https://www.google.com/maps/dir/?api=1&destination=" + destQuery + "&travelmode=walking";
                     android.content.Intent intent = new android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(uriString));
                     v.getContext().startActivity(intent);

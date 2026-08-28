@@ -28,6 +28,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.facebook.shimmer.ShimmerFrameLayout;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
@@ -37,11 +38,10 @@ import io.github.turtle358.callingpoint.R;
 import io.github.turtle358.callingpoint.models.JourneyOption;
 import io.github.turtle358.callingpoint.ui.adapters.JourneyAdapter;
 import io.github.turtle358.callingpoint.ui.adapters.StationAutoCompleteAdapter;
-import io.github.turtle358.callingpoint.utils.GraphManager;
-import io.github.turtle358.callingpoint.utils.JourneyPlannerEngine;
-import io.github.turtle358.callingpoint.utils.RecentStationsManager;
+import io.github.turtle358.callingpoint.utils.JourneyPlanner.GraphManager;
+import io.github.turtle358.callingpoint.utils.JourneyPlanner.JourneyPlannerEngine;
 import io.github.turtle358.callingpoint.utils.StationHelper;
-import io.github.turtle358.callingpoint.utils.TflJourneyPlannerEngine;
+import io.github.turtle358.callingpoint.utils.JourneyPlanner.TflJourneyPlannerEngine;
 
 public class JourneySearchActivity extends AppCompatActivity {
 
@@ -370,8 +370,8 @@ public class JourneySearchActivity extends AppCompatActivity {
 
     private void launchMapsRouting(String originName, String destName, String originCrs, String destCrs) {
         try {
-            String originSearch = java.net.URLEncoder.encode(originName + " Station, UK", "UTF-8");
-            String destSearch = java.net.URLEncoder.encode(destName + " Station, UK", "UTF-8");
+            String originSearch = java.net.URLEncoder.encode(originName + " Station, UK", StandardCharsets.UTF_8);
+            String destSearch = java.net.URLEncoder.encode(destName + " Station, UK", StandardCharsets.UTF_8);
 
             String uriString = "https://www.google.com/maps/dir/?api=1" +
                     "&origin=" + originSearch +

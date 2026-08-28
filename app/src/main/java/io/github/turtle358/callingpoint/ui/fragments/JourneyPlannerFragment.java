@@ -27,7 +27,7 @@ import io.github.turtle358.callingpoint.models.JourneyOption;
 import io.github.turtle358.callingpoint.models.Toc;
 import io.github.turtle358.callingpoint.ui.activities.JourneySearchActivity;
 import io.github.turtle358.callingpoint.ui.adapters.PinnedJourneyAdapter;
-import io.github.turtle358.callingpoint.utils.PinnedJourneyManager;
+import io.github.turtle358.callingpoint.utils.JourneyPlanner.PinnedJourneyManager;
 import io.github.turtle358.callingpoint.utils.TOCBrandHelper;
 
 public class JourneyPlannerFragment extends Fragment {

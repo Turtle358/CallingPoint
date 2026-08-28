@@ -71,7 +71,7 @@ public class StationActivity extends AppCompatActivity {
     private PinnedDataManager pinnedDataManager;
 
     private boolean isMessagesExpanded = false;
-    private List<UnifiedMessage> currentMessages = new ArrayList<>();
+    private final List<UnifiedMessage> currentMessages = new ArrayList<>();
 
     private ShimmerFrameLayout shimmerView;
 

@@ -1,4 +1,4 @@
-package io.github.turtle358.callingpoint.utils;
+package io.github.turtle358.callingpoint.utils.JourneyPlanner;
 
 import android.content.Context;
 import android.content.SharedPreferences;

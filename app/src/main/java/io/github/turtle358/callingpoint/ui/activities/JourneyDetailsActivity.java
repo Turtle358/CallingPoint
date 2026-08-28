@@ -40,8 +40,8 @@ import io.github.turtle358.callingpoint.models.JourneyOption;
 import io.github.turtle358.callingpoint.models.ServiceDetailsResponse;
 import io.github.turtle358.callingpoint.models.StationDepartureResponse;
 import io.github.turtle358.callingpoint.ui.adapters.JourneyLegAdapter;
-import io.github.turtle358.callingpoint.utils.LiveLocationEngine;
-import io.github.turtle358.callingpoint.utils.PinnedJourneyManager;
+import io.github.turtle358.callingpoint.utils.JourneyPlanner.LiveLocationEngine;
+import io.github.turtle358.callingpoint.utils.JourneyPlanner.PinnedJourneyManager;
 import io.github.turtle358.callingpoint.utils.StationHelper;
 import io.github.turtle358.callingpoint.utils.TOCBrandHelper;
 import retrofit2.Call;
@@ -236,7 +236,7 @@ public class JourneyDetailsActivity extends AppCompatActivity {
 
             findViewById(R.id.fabOpenExternalMap).setOnClickListener(v -> {
                 try {
-                    String destQuery = java.net.URLEncoder.encode(dest + " Station, London", "UTF-8");
+                    String destQuery = java.net.URLEncoder.encode(dest + " Station, London", StandardCharsets.UTF_8);
                     String uriString = "https://www.google.com/maps/dir/?api=1&destination=" + destQuery + "&travelmode=walking";
                     android.content.Intent intent = new android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(uriString));
                     startActivity(intent);

@@ -1,4 +1,4 @@
-package io.github.turtle358.callingpoint.utils;
+package io.github.turtle358.callingpoint.utils.Disruptions;
 
 import android.appwidget.AppWidgetManager;
 import android.content.ComponentName;
@@ -27,8 +27,9 @@ import io.github.turtle358.callingpoint.models.DisruptionResponce;
 import io.github.turtle358.callingpoint.models.IncidentResponse;
 import io.github.turtle358.callingpoint.models.IncidentSearchRequest;
 import io.github.turtle358.callingpoint.models.TflLineStatusResponse;
+import io.github.turtle358.callingpoint.utils.TOCBrandHelper;
 import io.github.turtle358.callingpoint.widget.AppWidgetProvider;
-import io.github.turtle358.callingpoint.utils.DisruptionSeverityManager.Severity;
+import io.github.turtle358.callingpoint.utils.Disruptions.DisruptionSeverityManager.Severity;
 import retrofit2.Response;
 
 public class DisruptionSyncManager {

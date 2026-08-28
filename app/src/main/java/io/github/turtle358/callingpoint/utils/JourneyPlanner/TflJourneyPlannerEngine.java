@@ -1,4 +1,4 @@
-package io.github.turtle358.callingpoint.utils;
+package io.github.turtle358.callingpoint.utils.JourneyPlanner;
 
 import android.os.Handler;
 import android.os.Looper;
@@ -23,6 +23,8 @@ import io.github.turtle358.callingpoint.models.JourneyLeg;
 import io.github.turtle358.callingpoint.models.JourneyOption;
 import io.github.turtle358.callingpoint.models.StationDepartureResponse;
 import io.github.turtle358.callingpoint.models.Toc;
+import io.github.turtle358.callingpoint.utils.StationHelper;
+import io.github.turtle358.callingpoint.utils.TOCBrandHelper;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
