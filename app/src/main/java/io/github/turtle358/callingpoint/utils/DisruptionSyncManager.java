@@ -28,6 +28,7 @@ import io.github.turtle358.callingpoint.models.IncidentResponse;
 import io.github.turtle358.callingpoint.models.IncidentSearchRequest;
 import io.github.turtle358.callingpoint.models.TflLineStatusResponse;
 import io.github.turtle358.callingpoint.widget.AppWidgetProvider;
+import io.github.turtle358.callingpoint.utils.DisruptionSeverityManager.Severity;
 import retrofit2.Response;
 
 public class DisruptionSyncManager {
@@ -100,39 +101,11 @@ public class DisruptionSyncManager {
                             continue;
                         }
 
-                        String currentSummary = incident.summary != null ? incident.summary.toLowerCase() : "";
-                        String currentDesc = incident.description != null ? incident.description.toLowerCase() : "";
-                        String simplifiedStatus = "Minor Disruption";
+                        Severity severity = DisruptionSeverityManager.classify(
+                                incident.summary,
+                                incident.description
+                        );
 
-                        boolean isEngineering = (currentSummary.contains("engineering work") || currentDesc.contains("engineering work")) && !(currentDesc.contains("overrun") || currentSummary.contains("overrunning"));
-
-                        boolean isStrike = currentSummary.contains("industrial action") ||
-                                currentDesc.contains("industrial action");
-
-                        boolean hasSevereDelay = false;
-                        java.util.regex.Pattern delayPattern = java.util.regex.Pattern.compile("(\\d+)\\s*(?:min|minute)");
-                        java.util.regex.Matcher matcher = delayPattern.matcher(currentSummary + " " + currentDesc);
-                        while (matcher.find()) {
-                            try {
-                                int minutes = Integer.parseInt(matcher.group(1));
-                                if (minutes >= 45) {
-                                    hasSevereDelay = true;
-                                    break;
-                                }
-                            } catch (NumberFormatException ignored) {}
-                        }
-
-                        if (isStrike) {
-                            simplifiedStatus = "Planned Industrial Action";
-                        } else if (isEngineering) {
-                            simplifiedStatus = "Planned Engineering Works";
-                        } else if (hasSevereDelay ||
-                                currentSummary.contains("major") ||
-                                currentSummary.contains("severe") ||
-                                currentSummary.contains("suspended") ||
-                                currentSummary.contains("do not travel")) {
-                            simplifiedStatus = "Major Disruption";
-                        }
                         Map<String, DisruptionResponce.ServiceIndicator> targetMap;
                         if (trackedSet.isEmpty() || trackedSet.contains(op.tocCode)) {
                             targetMap = trackedMap;
@@ -144,9 +117,9 @@ public class DisruptionSyncManager {
                             DisruptionResponce.ServiceIndicator si = new DisruptionResponce.ServiceIndicator();
                             si.tocCode = op.tocCode;
                             si.tocName = TOCBrandHelper.getNameForCode(op.tocCode);
-                            si.status = simplifiedStatus;
+                            si.status = severity.getStatusString();
 
-                            if (simplifiedStatus.equals("Planned Engineering Works")) {
+                            if (severity == Severity.ENGINEERING_WORKS) {
                                 si.plannedIncidents.add(incident);
                             } else {
                                 si.activeIncidents.add(incident);
@@ -154,14 +127,13 @@ public class DisruptionSyncManager {
                             targetMap.put(op.tocCode, si);
                         } else {
                             DisruptionResponce.ServiceIndicator existing = targetMap.get(op.tocCode);
+                            Severity existingSeverity = Severity.fromString(existing.status);
 
-                            if (simplifiedStatus.equals("Major Disruption")) {
-                                existing.status = "Major Disruption";
-                            } else if (simplifiedStatus.equals("Minor Disruption") && existing.status.equals("Planned Engineering Works")) {
-                                existing.status = "Minor Disruption";
+                            if (severity.getPriority() > existingSeverity.getPriority()) {
+                                existing.status = severity.getStatusString();
                             }
 
-                            if (simplifiedStatus.equals("Planned Engineering Works")) {
+                            if (severity == Severity.ENGINEERING_WORKS) {
                                 if (!existing.plannedIncidents.contains(incident)) {
                                     existing.plannedIncidents.add(incident);
                                 }
@@ -213,7 +185,7 @@ public class DisruptionSyncManager {
                             op.tocCode = opCode;
                             incident.affectedOperators.add(op);
 
-                            boolean isPlanned = (status.statusSeverity == 4 || status.statusSeverity == 5 || status.statusSeverity == 11);
+                            boolean isPlanned = DisruptionSeverityManager.isTflPlanned(status.statusSeverity);
 
                             if (isPlanned) {
                                 si.plannedIncidents.add(incident);

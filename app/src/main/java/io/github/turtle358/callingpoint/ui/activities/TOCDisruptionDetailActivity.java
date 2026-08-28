@@ -5,6 +5,7 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.text.method.LinkMovementMethod;
+import android.view.Gravity;
 import android.view.View;
 import android.webkit.WebChromeClient;
 import android.webkit.WebView;
@@ -20,6 +21,7 @@ import androidx.core.text.HtmlCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.graphics.ColorUtils;
 import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
 
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
@@ -34,6 +36,8 @@ import java.util.regex.Pattern;
 
 import io.github.turtle358.callingpoint.R;
 import io.github.turtle358.callingpoint.models.IncidentResponse;
+import io.github.turtle358.callingpoint.utils.DisruptionSeverityManager;
+import io.github.turtle358.callingpoint.utils.DisruptionSeverityManager.Severity;
 import io.github.turtle358.callingpoint.utils.TOCBrandHelper;
 
 public class TOCDisruptionDetailActivity extends AppCompatActivity {
@@ -125,8 +129,6 @@ public class TOCDisruptionDetailActivity extends AppCompatActivity {
 
         if (tocName != null) {
             tocIcon.setImageResource(TOCBrandHelper.getIconForToc(tocName));
-
-            // NEW POPUP DIALOG LOGIC
             tocIcon.setOnClickListener(v ->
                     TOCBrandHelper.showTOCInfoDialog(this, tocName)
             );
@@ -135,8 +137,8 @@ public class TOCDisruptionDetailActivity extends AppCompatActivity {
         Gson gson = new Gson();
         Type listType = new TypeToken<List<IncidentResponse>>(){}.getType();
 
-        List<io.github.turtle358.callingpoint.models.IncidentResponse> activeIncidents = gson.fromJson(activeJson, listType);
-        List<io.github.turtle358.callingpoint.models.IncidentResponse> plannedIncidents = gson.fromJson(plannedJson, listType);
+        List<IncidentResponse> activeIncidents = gson.fromJson(activeJson, listType);
+        List<IncidentResponse> plannedIncidents = gson.fromJson(plannedJson, listType);
 
         int totalValidItems = countValidIncidents(activeIncidents) + countValidIncidents(plannedIncidents);
         boolean autoExpand = (totalValidItems == 1);
@@ -156,10 +158,10 @@ public class TOCDisruptionDetailActivity extends AppCompatActivity {
         }
     }
 
-    private int countValidIncidents(List<io.github.turtle358.callingpoint.models.IncidentResponse> incidents) {
+    private int countValidIncidents(List<IncidentResponse> incidents) {
         if (incidents == null) return 0;
         int count = 0;
-        for (io.github.turtle358.callingpoint.models.IncidentResponse incident : incidents) {
+        for (IncidentResponse incident : incidents) {
             if (incident.description != null && !incident.description.trim().isEmpty()) {
                 count++;
             }
@@ -167,12 +169,12 @@ public class TOCDisruptionDetailActivity extends AppCompatActivity {
         return count;
     }
 
-    private void populateIncidents(LinearLayout container, List<io.github.turtle358.callingpoint.models.IncidentResponse> incidents, boolean autoExpand) {
+    private void populateIncidents(LinearLayout container, List<IncidentResponse> incidents, boolean autoExpand) {
         if (incidents == null || incidents.isEmpty()) return;
 
         float density = getResources().getDisplayMetrics().density;
 
-        for (io.github.turtle358.callingpoint.models.IncidentResponse incident : incidents) {
+        for (IncidentResponse incident : incidents) {
             if (incident.description == null || incident.description.trim().isEmpty()) continue;
 
             String chunk = incident.description.trim();
@@ -182,6 +184,8 @@ public class TOCDisruptionDetailActivity extends AppCompatActivity {
             chunk = chunk.replaceAll("<a[^>]*vimeo\\.com/\\d+[^>]*>.*?</a>", "");
             chunk = chunk.replaceAll("https?://(?:www\\.)?vimeo\\.com/\\d+", "");
 
+            Severity severity = DisruptionSeverityManager.classify(incident.summary, incident.description);
+
             androidx.cardview.widget.CardView card = new androidx.cardview.widget.CardView(this);
             LinearLayout.LayoutParams cardParams = new LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
@@ -189,38 +193,67 @@ public class TOCDisruptionDetailActivity extends AppCompatActivity {
             );
             cardParams.setMargins((int)(12 * density), 0, (int)(12 * density), (int)(8 * density));
             card.setLayoutParams(cardParams);
-            card.setRadius(12 * density);
+
+            card.setRadius(28 * density);
             card.setCardElevation(2 * density);
             card.setCardBackgroundColor(ContextCompat.getColor(this, R.color.bg_card));
             card.setUseCompatPadding(true);
 
             LinearLayout innerLayout = new LinearLayout(this);
             innerLayout.setOrientation(LinearLayout.VERTICAL);
-            innerLayout.setPadding((int)(16 * density), (int)(16 * density), (int)(16 * density), (int)(16 * density));
+            innerLayout.setPadding((int)(20 * density), (int)(20 * density), (int)(20 * density), (int)(20 * density));
 
-            LinearLayout headerLayout = new LinearLayout(this);
-            headerLayout.setOrientation(LinearLayout.HORIZONTAL);
-            headerLayout.setGravity(android.view.Gravity.TOP);
+            LinearLayout topRow = new LinearLayout(this);
+            topRow.setOrientation(LinearLayout.HORIZONTAL);
+            topRow.setGravity(Gravity.CENTER_VERTICAL);
 
-            TextView tvSummary = new TextView(this);
-            LinearLayout.LayoutParams summaryParams = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
-            tvSummary.setLayoutParams(summaryParams);
-            tvSummary.setText(incident.summary != null ? incident.summary : "Service Update");
-            tvSummary.setTextSize(15f);
-            tvSummary.setTypeface(null, android.graphics.Typeface.BOLD);
-            tvSummary.setTextColor(ContextCompat.getColor(this, R.color.text_primary));
-            tvSummary.setLineSpacing(0, 1.1f);
-            headerLayout.addView(tvSummary);
+            LinearLayout bannerContainer = new LinearLayout(this);
+            bannerContainer.setOrientation(LinearLayout.HORIZONTAL);
+            bannerContainer.setGravity(Gravity.CENTER_VERTICAL);
+
+            GradientDrawable bannerBg = new GradientDrawable();
+            bannerBg.setColor(ColorUtils.setAlphaComponent(severity.getAccentColor(), 38));
+            bannerBg.setCornerRadius(6 * density);
+            bannerContainer.setBackground(bannerBg);
+            bannerContainer.setPadding((int)(8 * density), (int)(4 * density), (int)(8 * density), (int)(4 * density));
+
+            TextView badgeSeverity = new TextView(this);
+            badgeSeverity.setText(severity.getStatusString().toUpperCase());
+            badgeSeverity.setTextSize(11f);
+            badgeSeverity.setTypeface(null, android.graphics.Typeface.BOLD);
+            badgeSeverity.setTextColor(severity.getAccentColor());
+            badgeSeverity.setLetterSpacing(0.03f);
+            bannerContainer.addView(badgeSeverity);
+
+            LinearLayout.LayoutParams bannerParams = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+            topRow.addView(bannerContainer, bannerParams);
+
+            View spacer = new View(this);
+            LinearLayout.LayoutParams spacerParams = new LinearLayout.LayoutParams(0, 0, 1f);
+            topRow.addView(spacer, spacerParams);
 
             ImageView arrowIcon = new ImageView(this);
             LinearLayout.LayoutParams arrowParams = new LinearLayout.LayoutParams((int)(24 * density), (int)(24 * density));
-            arrowParams.setMargins((int)(8 * density), 0, 0, 0);
+            arrowParams.setMargins((int)(12 * density), 0, 0, 0);
             arrowIcon.setLayoutParams(arrowParams);
             arrowIcon.setImageResource(R.drawable.ic_chevron_down);
             arrowIcon.setColorFilter(ContextCompat.getColor(this, R.color.text_secondary));
-            headerLayout.addView(arrowIcon);
+            topRow.addView(arrowIcon);
 
-            innerLayout.addView(headerLayout);
+            innerLayout.addView(topRow);
+
+            TextView tvSummary = new TextView(this);
+            LinearLayout.LayoutParams summaryParams = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+            summaryParams.setMargins(0, (int)(8 * density), 0, 0);
+            tvSummary.setLayoutParams(summaryParams);
+            tvSummary.setText(incident.summary != null ? incident.summary : "Service Update");
+            tvSummary.setTextSize(16f);
+            tvSummary.setTypeface(null, android.graphics.Typeface.BOLD);
+            tvSummary.setTextColor(ContextCompat.getColor(this, R.color.text_primary));
+            tvSummary.setLineSpacing(0, 1.2f);
+            innerLayout.addView(tvSummary);
 
             if (incident.affectedOperators != null && !incident.affectedOperators.isEmpty()) {
                 android.widget.HorizontalScrollView hsv = new android.widget.HorizontalScrollView(this);
@@ -228,13 +261,13 @@ public class TOCDisruptionDetailActivity extends AppCompatActivity {
 
                 LinearLayout.LayoutParams hsvParams = new LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-                hsvParams.setMargins(0, (int)(8 * density), 0, 0);
+                hsvParams.setMargins(0, (int)(12 * density), 0, 0);
                 hsv.setLayoutParams(hsvParams);
 
                 LinearLayout pillContainer = new LinearLayout(this);
                 pillContainer.setOrientation(LinearLayout.HORIZONTAL);
 
-                for (io.github.turtle358.callingpoint.models.IncidentResponse.AffectedOperator op : incident.affectedOperators) {
+                for (IncidentResponse.AffectedOperator op : incident.affectedOperators) {
                     TextView pill = new TextView(this);
                     String pillAcronym = TOCBrandHelper.getAcronymForCode(op.tocCode);
                     pill.setText(pillAcronym != null ? pillAcronym : op.tocCode);
@@ -243,22 +276,23 @@ public class TOCDisruptionDetailActivity extends AppCompatActivity {
                     pill.setTypeface(null, android.graphics.Typeface.BOLD);
                     pill.setPadding((int)(6 * density), (int)(2 * density), (int)(6 * density), (int)(2 * density));
 
-                    String tocName = TOCBrandHelper.getNameForCode(op.tocCode);
-                    int colour = TOCBrandHelper.getColourForToc(tocName);
+                    String opTocName = TOCBrandHelper.getNameForCode(op.tocCode);
+                    int colour = TOCBrandHelper.getColourForToc(opTocName);
 
-                    android.graphics.drawable.GradientDrawable gd = new android.graphics.drawable.GradientDrawable();
+                    GradientDrawable gd = new GradientDrawable();
                     gd.setColor(colour);
-                    gd.setCornerRadius(8 * density);
+                    gd.setCornerRadius(6 * density);
                     pill.setBackground(gd);
 
-                    boolean isLightColour = ColorUtils.calculateLuminance(colour) > 0.5;
-                    pill.setTextColor(isLightColour ? android.graphics.Color.BLACK : android.graphics.Color.WHITE);
+                    boolean isLight = ColorUtils.calculateLuminance(colour) > 0.5;
+                    pill.setTextColor(isLight ? Color.BLACK : Color.WHITE);
 
                     LinearLayout.LayoutParams pillParams = new LinearLayout.LayoutParams(
                             LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
                     pillParams.setMargins(0, 0, (int)(6 * density), 0);
                     pillContainer.addView(pill, pillParams);
                 }
+
                 hsv.addView(pillContainer);
                 innerLayout.addView(hsv);
             }
@@ -303,7 +337,7 @@ public class TOCDisruptionDetailActivity extends AppCompatActivity {
             bodyParams.setMargins(0, (int)(12 * density), 0, 0);
             tv.setLayoutParams(bodyParams);
             tv.setTextColor(ContextCompat.getColor(this, R.color.text_secondary));
-            tv.setLinkTextColor(android.graphics.Color.parseColor("#0A56F1"));
+            tv.setLinkTextColor(Color.parseColor("#0A56F1"));
             tv.setTextSize(14f);
             tv.setLineSpacing(0, 1.2f);
             tv.setMovementMethod(LinkMovementMethod.getInstance());
@@ -319,7 +353,6 @@ public class TOCDisruptionDetailActivity extends AppCompatActivity {
 
             final boolean[] isExpanded = {autoExpand};
             View.OnClickListener toggleListener = v -> {
-
                 android.transition.TransitionSet transition = new android.transition.TransitionSet();
                 transition.addTransition(new android.transition.Fade(android.transition.Fade.OUT).setDuration(100));
                 transition.addTransition(new android.transition.ChangeBounds().setDuration(250));
