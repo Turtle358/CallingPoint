@@ -111,4 +111,24 @@ public class StationHelper {
             return R.drawable.ic_train;
         }
     }
+
+    public static boolean areStationNamesEqual(String name1, String name2) {
+        if (name1 == null || name2 == null) return false;
+        return normalise(name1).equalsIgnoreCase(normalise(name2));
+    }
+
+    public static String normalise(String name) {
+        if (name == null) return "";
+        return name.toLowerCase()
+                .replace("'", "")
+                .replace("’", "")
+                .replace("(intl)", "international")
+                .replace(" intl", " international")
+                .replace(" underground station", "")
+                .replace(" rail station", "")
+                .replace(" station", "")
+                .replace(" & ", " and ")
+                .replaceAll("\\s+", " ")
+                .trim();
+    }
 }

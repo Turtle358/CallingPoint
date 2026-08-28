@@ -17,6 +17,7 @@ import java.util.List;
 
 import io.github.turtle358.callingpoint.R;
 import io.github.turtle358.callingpoint.models.ServiceDetailsResponse;
+import io.github.turtle358.callingpoint.utils.StationHelper;
 
 public class TimelineAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
@@ -89,8 +90,9 @@ public class TimelineAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
 
         for (int i = 0; i < allPoints.size(); i++) {
             ServiceDetailsResponse.TimelinePoint p = allPoints.get(i);
-            boolean matchesOrigin = userOrigin != null && (userOrigin.equalsIgnoreCase(p.locationName) || userOrigin.equalsIgnoreCase(p.crs));
-            boolean matchesDest = userDestination != null && (userDestination.equalsIgnoreCase(p.locationName) || userDestination.equalsIgnoreCase(p.crs));
+
+            boolean matchesOrigin = userOrigin != null && (StationHelper.areStationNamesEqual(userOrigin, p.locationName) || userOrigin.equalsIgnoreCase(p.crs));
+            boolean matchesDest = userDestination != null && (StationHelper.areStationNamesEqual(userDestination, p.locationName) || userDestination.equalsIgnoreCase(p.crs));
 
             if (phase == 0 && matchesOrigin) phase = 1;
 
