@@ -213,16 +213,16 @@ public class TOCDisruptionDetailActivity extends AppCompatActivity {
             bannerContainer.setGravity(Gravity.CENTER_VERTICAL);
 
             GradientDrawable bannerBg = new GradientDrawable();
-            bannerBg.setColor(ColorUtils.setAlphaComponent(severity.getAccentColor(), 38));
+            bannerBg.setColor(ColorUtils.setAlphaComponent(severity.accentColor, 38));
             bannerBg.setCornerRadius(6 * density);
             bannerContainer.setBackground(bannerBg);
             bannerContainer.setPadding((int)(8 * density), (int)(4 * density), (int)(8 * density), (int)(4 * density));
 
             TextView badgeSeverity = new TextView(this);
-            badgeSeverity.setText(severity.getStatusString().toUpperCase());
+            badgeSeverity.setText(severity.statusString.toUpperCase());
             badgeSeverity.setTextSize(11f);
             badgeSeverity.setTypeface(null, android.graphics.Typeface.BOLD);
-            badgeSeverity.setTextColor(severity.getAccentColor());
+            badgeSeverity.setTextColor(severity.accentColor);
             badgeSeverity.setLetterSpacing(0.03f);
             bannerContainer.addView(badgeSeverity);
 

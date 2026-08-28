@@ -84,7 +84,7 @@ public class DisruptionSyncManager {
         cal.add(Calendar.DAY_OF_YEAR, 2);
         String tomorrow = sdf.format(cal.getTime());
         IncidentSearchRequest request = new IncidentSearchRequest(today, tomorrow, new ArrayList<>());
-        NationalRailAPI api = APIClient.getClient().create(NationalRailAPI.class);
+        NationalRailAPI api = APIClient.getClient().<NationalRailAPI>create(NationalRailAPI.class);
 
         try {
             Response<List<IncidentResponse>> response = api.searchIncidents(request).execute();
@@ -118,7 +118,7 @@ public class DisruptionSyncManager {
                             DisruptionResponce.ServiceIndicator si = new DisruptionResponce.ServiceIndicator();
                             si.tocCode = op.tocCode;
                             si.tocName = TOCBrandHelper.getNameForCode(op.tocCode);
-                            si.status = severity.getStatusString();
+                            si.status = severity.statusString;
 
                             if (severity == Severity.ENGINEERING_WORKS) {
                                 si.plannedIncidents.add(incident);
@@ -130,8 +130,8 @@ public class DisruptionSyncManager {
                             DisruptionResponce.ServiceIndicator existing = targetMap.get(op.tocCode);
                             Severity existingSeverity = Severity.fromString(existing.status);
 
-                            if (severity.getPriority() > existingSeverity.getPriority()) {
-                                existing.status = severity.getStatusString();
+                            if (severity.priority > existingSeverity.priority) {
+                                existing.status = severity.statusString;
                             }
 
                             if (severity == Severity.ENGINEERING_WORKS) {
@@ -147,7 +147,7 @@ public class DisruptionSyncManager {
                     }
                 }
 
-                TflAPI tflApi = APIClient.getClient().create(TflAPI.class);
+                TflAPI tflApi = APIClient.getClient().<TflAPI>create(TflAPI.class);
                 try {
                     Response<List<TflLineStatusResponse>> tflResponse = tflApi.getLineStatus("tube,overground,dlr,elizabeth-line,tram").execute();
 

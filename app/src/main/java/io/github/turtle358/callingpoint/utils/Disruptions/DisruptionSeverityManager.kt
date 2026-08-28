@@ -1,99 +1,106 @@
-package io.github.turtle358.callingpoint.utils.Disruptions;
+package io.github.turtle358.callingpoint.utils.Disruptions
 
-import android.graphics.Color;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import android.graphics.Color
+import java.util.Locale
+import java.util.regex.Pattern
+import androidx.core.graphics.toColorInt
 
-public class DisruptionSeverityManager {
+object DisruptionSeverityManager {
+    private val DELAY_PATTERN: Pattern = Pattern.compile("(\\d+)\\s*(?:min|minute)")
 
-    private static final Pattern DELAY_PATTERN = Pattern.compile("(\\d+)\\s*(?:min|minute)");
+    @JvmStatic
+    fun classify(summary: String?, description: String?): Severity {
+        if (summary == null && description == null) return Severity.UNKNOWN
 
-    public enum Severity {
-        STRIKE("Planned Industrial Action", 4, Color.parseColor("#E056FD"), Color.parseColor("#2A1235")),
-        HIGH("Major Disruption", 3, Color.parseColor("#FF5252"), Color.parseColor("#331414")),
-        LOW("Minor Disruption", 2, Color.parseColor("#FFB74D"), Color.parseColor("#332410")),
-        ENGINEERING_WORKS("Planned Engineering Works", 1, Color.parseColor("#4FC3F7"), Color.parseColor("#102533")),
-        UNKNOWN("Minor Disruption", 0, Color.parseColor("#B0BEC5"), Color.parseColor("#212628"));
+        val lowerSummary = summary?.lowercase(Locale.getDefault()) ?: ""
+        val lowerDesc = description?.lowercase(Locale.getDefault()) ?: ""
+        val combined = lowerSummary + " " + lowerDesc
 
-        private final String statusString;
-        private final int priority;
-        private final int accentColor;
-        private final int backgroundColor;
+        val isOverrun = combined.contains("overrun") || combined.contains("overrunning")
 
-        Severity(String statusString, int priority, int accentColor, int backgroundColor) {
-            this.statusString = statusString;
-            this.priority = priority;
-            this.accentColor = accentColor;
-            this.backgroundColor = backgroundColor;
-        }
-
-        public String getStatusString() { return statusString; }
-        public int getPriority() { return priority; }
-        public int getAccentColor() { return accentColor; }
-        public int getBackgroundColor() { return backgroundColor; }
-
-        public static Severity fromString(String statusString) {
-            if (statusString == null) return UNKNOWN;
-            for (Severity s : values()) {
-                if (s.statusString.equals(statusString)) return s;
-            }
-            return UNKNOWN;
-        }
-    }
-
-    public static Severity classify(String summary, String description) {
-        if (summary == null && description == null) return Severity.UNKNOWN;
-
-        String lowerSummary = summary != null ? summary.toLowerCase() : "";
-        String lowerDesc = description != null ? description.toLowerCase() : "";
-        String combined = lowerSummary + " " + lowerDesc;
-
-        boolean isOverrun = combined.contains("overrun") || combined.contains("overrunning");
-
-        boolean isEngineering = (lowerSummary.contains("engineering")
+        val isEngineering = (lowerSummary.contains("engineering")
                 || lowerSummary.contains("upgrade work")
                 || lowerSummary.contains("track work")
                 || lowerSummary.contains("maintenance work")
                 || lowerDesc.contains("engineering work")
                 || lowerDesc.contains("engineering-works-explained"))
-                && !isOverrun;
+                && !isOverrun
 
-        boolean isStrike = lowerSummary.contains("industrial action")
+        val isStrike = lowerSummary.contains("industrial action")
                 || lowerSummary.contains("strike")
-                || (!isEngineering && (lowerDesc.contains("industrial action") || lowerDesc.contains("strike")));
+                || (!isEngineering && (lowerDesc.contains("industrial action") || lowerDesc.contains(
+            "strike"
+        )))
 
         if (isStrike) {
-            return Severity.STRIKE;
+            return Severity.STRIKE
         } else if (isEngineering) {
-            return Severity.ENGINEERING_WORKS;
+            return Severity.ENGINEERING_WORKS
         }
 
-        boolean hasSevereDelay = false;
-        Matcher matcher = DELAY_PATTERN.matcher(combined);
+        var hasSevereDelay = false
+        val matcher = DELAY_PATTERN.matcher(combined)
         while (matcher.find()) {
             try {
-                int minutes = Integer.parseInt(matcher.group(1));
+                val minutes = matcher.group(1).toInt()
                 if (minutes >= 45) {
-                    hasSevereDelay = true;
-                    break;
+                    hasSevereDelay = true
+                    break
                 }
-            } catch (NumberFormatException ignored) {}
+            } catch (ignored: NumberFormatException) {
+            }
         }
 
         if (hasSevereDelay ||
-                lowerSummary.contains("major") ||
-                lowerSummary.contains("severe") ||
-                lowerSummary.contains("suspended") ||
-                lowerSummary.contains("do not travel") ||
-                lowerSummary.contains("closed") ||
-                lowerSummary.contains("blocked")) {
-            return Severity.HIGH;
+            lowerSummary.contains("major") ||
+            lowerSummary.contains("severe") ||
+            lowerSummary.contains("suspended") ||
+            lowerSummary.contains("do not travel") ||
+            lowerSummary.contains("closed") ||
+            lowerSummary.contains("blocked")
+        ) {
+            return Severity.HIGH
         }
 
-        return Severity.LOW;
+        return Severity.LOW
     }
 
-    public static boolean isTflPlanned(int statusSeverity) {
-        return statusSeverity == 4 || statusSeverity == 5 || statusSeverity == 11;
+    @JvmStatic
+    fun isTflPlanned(statusSeverity: Int): Boolean {
+        return statusSeverity == 4 || statusSeverity == 5 || statusSeverity == 11
+    }
+
+    enum class Severity(
+        @JvmField val statusString: String,
+        @JvmField val priority: Int,
+        @JvmField val accentColor: Int,
+        val backgroundColor: Int
+    ) {
+        STRIKE(
+            "Planned Industrial Action",
+            4,
+            Color.parseColor("#E056FD"),
+            Color.parseColor("#2A1235")
+        ),
+        HIGH("Major Disruption", 3, Color.parseColor("#FF5252"), Color.parseColor("#331414")),
+        LOW("Minor Disruption", 2, Color.parseColor("#FFB74D"), Color.parseColor("#332410")),
+        ENGINEERING_WORKS(
+            "Planned Engineering Works",
+            1,
+            "#4FC3F7".toColorInt(),
+            "#102533".toColorInt()
+        ),
+        UNKNOWN("Minor Disruption", 0, "#B0BEC5".toColorInt(), "#212628".toColorInt());
+
+        companion object {
+            @JvmStatic
+            fun fromString(statusString: String?): Severity {
+                if (statusString == null) return Severity.UNKNOWN
+                for (s in entries) {
+                    if (s.statusString == statusString) return s
+                }
+                return Severity.UNKNOWN
+            }
+        }
     }
 }
