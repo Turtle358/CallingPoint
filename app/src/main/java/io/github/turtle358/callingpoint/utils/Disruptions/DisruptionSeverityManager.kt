@@ -77,20 +77,11 @@ object DisruptionSeverityManager {
         val backgroundColor: Int
     ) {
         STRIKE(
-            "Planned Industrial Action",
-            4,
-            Color.parseColor("#E056FD"),
-            Color.parseColor("#2A1235")
-        ),
-        HIGH("Major Disruption", 3, Color.parseColor("#FF5252"), Color.parseColor("#331414")),
-        LOW("Minor Disruption", 2, Color.parseColor("#FFB74D"), Color.parseColor("#332410")),
-        ENGINEERING_WORKS(
-            "Planned Engineering Works",
-            1,
-            "#4FC3F7".toColorInt(),
-            "#102533".toColorInt()
-        ),
-        UNKNOWN("Minor Disruption", 0, "#B0BEC5".toColorInt(), "#212628".toColorInt());
+            "Planned Industrial Action", 4, "#E056FD".toColorInt(), "#2A1235".toColorInt()),
+        HIGH("Major Disruption", 3, "#FF5252".toColorInt(), "#331414".toColorInt()),
+        LOW("Minor Disruption", 2, "#FFB74D".toColorInt(), "#332410".toColorInt()),
+        ENGINEERING_WORKS("Planned Engineering Works",1,"#4FC3F7".toColorInt(),"#102533".toColorInt()),
+        UNKNOWN("Information", 0, "#4FC3F7".toColorInt(), "#102533".toColorInt());
 
         companion object {
             @JvmStatic

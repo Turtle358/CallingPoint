@@ -229,33 +229,79 @@ public class JourneyPlannerFragment extends Fragment {
         CardView cardDelayRepayHub = view.findViewById(R.id.cardDelayRepayHub);
 
         List<Toc> visibleTocs = TOCBrandHelper.getVisibleTocs();
-        List<Toc> validTocs = new ArrayList<>();
+        List<Toc> nationalRail = new ArrayList<>();
+        List<Toc> tflServices = new ArrayList<>();
 
         for (Toc toc : visibleTocs) {
             if (toc.delayRepayUrl != null && !toc.delayRepayUrl.isEmpty()) {
-                validTocs.add(toc);
+                String manager = TOCBrandHelper.getManagerForToc(toc.name);
+                boolean isTfl = "tfl".equalsIgnoreCase(manager) ||
+                        "tfl-national".equalsIgnoreCase(manager) ||
+                        "london buses".equalsIgnoreCase(manager);
+                if (isTfl) {
+                    tflServices.add(toc);
+                } else {
+                    nationalRail.add(toc);
+                }
             }
         }
 
+        List<Toc> validTocs = new ArrayList<>(nationalRail);
+        if (!nationalRail.isEmpty() && !tflServices.isEmpty()) {
+            Toc separator = new Toc();
+            separator.code = "SEPARATOR";
+            separator.name = "Transport for London";
+            validTocs.add(separator);
+        }
+        validTocs.addAll(tflServices);
+
         recyclerDelayRepay.setLayoutManager(new LinearLayoutManager(requireContext()));
         recyclerDelayRepay.setAdapter(new RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+
+            private static final int TYPE_ITEM = 0;
+            private static final int TYPE_SEPARATOR = 1;
+
+            @Override
+            public int getItemViewType(int position) {
+                if ("SEPARATOR".equals(validTocs.get(position).code)) {
+                    return TYPE_SEPARATOR;
+                }
+                return TYPE_ITEM;
+            }
+
             @NonNull
             @Override
             public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-                View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_disruption, parent, false);
-                return new RecyclerView.ViewHolder(v) {};
+                if (viewType == TYPE_SEPARATOR) {
+                    View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_separator, parent, false);
+                    return new RecyclerView.ViewHolder(v) {};
+                } else {
+                    View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_disruption, parent, false);
+                    return new RecyclerView.ViewHolder(v) {};
+                }
             }
 
             @Override
             public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
                 Toc toc = validTocs.get(position);
+
+                if (getItemViewType(position) == TYPE_SEPARATOR) {
+                    TextView tvSeparatorTitle = holder.itemView.findViewById(R.id.tvSeparatorTitle);
+                    if (tvSeparatorTitle != null) tvSeparatorTitle.setText(toc.name);
+
+                    ImageView ivSeparatorArrow = holder.itemView.findViewById(R.id.ivSeparatorArrow);
+                    if (ivSeparatorArrow != null) ivSeparatorArrow.setVisibility(View.GONE);
+
+                    holder.itemView.setOnClickListener(null);
+                    return;
+                }
+
                 TextView tvName = holder.itemView.findViewById(R.id.tvTocName);
                 TextView tvCode = holder.itemView.findViewById(R.id.tvTocCode);
                 TextView tvStatus = holder.itemView.findViewById(R.id.tvStatus);
 
                 tvName.setText(toc.name);
                 tvCode.setText(toc.acronym != null ? toc.acronym : toc.code);
-                System.out.println(toc.name+ " | " + toc.delayRepayMinTime + " | " + toc.delayRepayMessage);
 
                 if(!Objects.equals(toc.delayRepayMessage, "")) {
                     tvStatus.setText(toc.delayRepayMessage);

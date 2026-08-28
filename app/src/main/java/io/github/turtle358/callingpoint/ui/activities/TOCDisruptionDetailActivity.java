@@ -141,6 +141,22 @@ public class TOCDisruptionDetailActivity extends AppCompatActivity {
         List<IncidentResponse> activeIncidents = gson.fromJson(activeJson, listType);
         List<IncidentResponse> plannedIncidents = gson.fromJson(plannedJson, listType);
 
+        if (activeIncidents != null) {
+            activeIncidents.sort((a, b) -> {
+                int priorityA = DisruptionSeverityManager.classify(a.summary, a.description).priority;
+                int priorityB = DisruptionSeverityManager.classify(b.summary, b.description).priority;
+                return Integer.compare(priorityB, priorityA);
+            });
+        }
+
+        if (plannedIncidents != null) {
+            plannedIncidents.sort((a, b) -> {
+                int priorityA = DisruptionSeverityManager.classify(a.summary, a.description).priority;
+                int priorityB = DisruptionSeverityManager.classify(b.summary, b.description).priority;
+                return Integer.compare(priorityB, priorityA);
+            });
+        }
+
         int totalValidItems = countValidIncidents(activeIncidents) + countValidIncidents(plannedIncidents);
         boolean autoExpand = (totalValidItems == 1);
 

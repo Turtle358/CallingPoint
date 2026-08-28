@@ -199,11 +199,7 @@ public class ServiceAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         pillBg.setCornerRadius(itemHolder.itemView.getContext().getResources().getDisplayMetrics().density * 8);
         itemHolder.tvOperatorName.setBackground(pillBg);
         itemHolder.tvOperatorName.setTextColor(isLightColour ? Color.BLACK : Color.WHITE);
-
-        if (service.operatorName != null && !service.operatorName.isEmpty()) {
-            String op = service.operatorName;
-            itemHolder.tvOperatorName.setText(op.substring(0, 1).toUpperCase() + op.substring(1).toLowerCase());
-        }
+        itemHolder.tvOperatorName.setText(service.operatorName);
 
         GradientDrawable dotBg = new GradientDrawable();
         dotBg.setShape(GradientDrawable.OVAL);
