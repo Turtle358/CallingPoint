@@ -7,6 +7,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -347,26 +348,41 @@ public class StationActivity extends AppCompatActivity {
 
     private View createMessageView(UnifiedMessage msg) {
         View view = getLayoutInflater().inflate(R.layout.item_station_message, containerStationMessages, false);
-        View colorBar = view.findViewById(R.id.severityColourBar);
-        TextView tvSeverity = view.findViewById(R.id.tvSeverityLabel);
+        LinearLayout badgeContainer = view.findViewById(R.id.badgeContainer);
+        TextView tvSeverityBadge = view.findViewById(R.id.tvSeverityBadge);
         TextView tvContent = view.findViewById(R.id.tvMessageContent);
 
-        tvSeverity.setText(msg.category + " • " + msg.severity);
+        float density = getResources().getDisplayMetrics().density;
+
+        int accentColor;
+        switch (msg.severityWeight) {
+            case 4:
+            case 3:
+                accentColor = android.graphics.Color.parseColor("#FF5252");
+                break;
+            case 2:
+                accentColor = android.graphics.Color.parseColor("#FFB74D");
+                break;
+            default:
+                accentColor = android.graphics.Color.parseColor("#4FC3F7");
+                break;
+        }
+
+        android.graphics.drawable.GradientDrawable badgeBg = new android.graphics.drawable.GradientDrawable();
+        badgeBg.setColor(androidx.core.graphics.ColorUtils.setAlphaComponent(accentColor, 38));
+        badgeBg.setCornerRadius(6 * density);
+        badgeContainer.setBackground(badgeBg);
+
+        tvSeverityBadge.setText((msg.category + " • " + msg.severity).toUpperCase());
+        tvSeverityBadge.setTextColor(accentColor);
+
         String cleanHtml = msg.text.replace("\\n", "<br/>");
         tvContent.setText(HtmlCompat.fromHtml(cleanHtml, HtmlCompat.FROM_HTML_MODE_COMPACT));
         tvContent.setMovementMethod(LinkMovementMethod.getInstance());
-
-        int colour;
-        switch (msg.severityWeight) {
-            case 4: colour = 0xFFD32F2F; break;
-            case 3: colour = 0xFFD32F2F; break;
-            case 2: colour = 0xFFFBC02D; break;
-            default: colour = 0xFF1976D2; break;
-        }
-        colorBar.setBackgroundColor(colour);
+        tvContent.setLinkTextColor(android.graphics.Color.parseColor("#0A56F1"));
 
         final boolean[] isCardExpanded = {false};
-        View.OnClickListener expandClickListener = v -> {
+        View.OnClickListener toggleListener = v -> {
             android.transition.AutoTransition transition = new android.transition.AutoTransition();
             transition.setDuration(200);
             TransitionManager.beginDelayedTransition((ViewGroup) rootView, transition);
@@ -375,11 +391,12 @@ public class StationActivity extends AppCompatActivity {
             if (isCardExpanded[0]) {
                 tvContent.setMaxLines(Integer.MAX_VALUE);
             } else {
-                tvContent.setMaxLines(5);
+                tvContent.setMaxLines(3);
             }
         };
-        view.setOnClickListener(expandClickListener);
-        tvContent.setOnClickListener(expandClickListener);
+
+        view.setOnClickListener(toggleListener);
+        tvContent.setOnClickListener(toggleListener);
 
         return view;
     }
