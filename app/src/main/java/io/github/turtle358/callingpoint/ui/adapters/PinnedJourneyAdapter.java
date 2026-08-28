@@ -101,15 +101,12 @@ public class PinnedJourneyAdapter extends RecyclerView.Adapter<PinnedJourneyAdap
 
             if (primaryBrand.equalsIgnoreCase("bus")) {
                 holder.ivModeIcon.setImageResource(R.drawable.ic_bus);
-                holder.ivModeIcon.setColorFilter(brandColour);
             } else if (primaryBrand.equalsIgnoreCase("walk")) {
                 holder.ivModeIcon.setImageResource(R.drawable.ic_walk);
-                holder.ivModeIcon.setColorFilter(brandColour);
             } else if (TOCBrandHelper.getManagerForToc(primaryBrand).equalsIgnoreCase("gbr") || TOCBrandHelper.getManagerForToc(primaryBrand).equalsIgnoreCase("national")) {
                 holder.ivModeIcon.setImageResource(R.drawable.ic_national_rail);
             } else {
                 holder.ivModeIcon.setImageResource(TOCBrandHelper.getIconForToc(primaryBrand));
-                holder.ivModeIcon.setColorFilter(brandColour);
             }
 
         }

@@ -191,7 +191,6 @@ public class ServiceAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             itemHolder.ivModeIcon.setImageResource(R.drawable.ic_national_rail);
         } else {
             itemHolder.ivModeIcon.setImageResource(TOCBrandHelper.getIconForToc(service.operatorName));
-            itemHolder.ivModeIcon.setColorFilter(brandColour);
         }
 
         GradientDrawable pillBg = new GradientDrawable();

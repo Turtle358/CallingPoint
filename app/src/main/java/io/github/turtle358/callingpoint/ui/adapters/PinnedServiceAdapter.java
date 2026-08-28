@@ -51,7 +51,6 @@ public class PinnedServiceAdapter extends RecyclerView.Adapter<PinnedServiceAdap
             holder.ivModeIcon.setImageResource(R.drawable.ic_national_rail);
         } else {
             holder.ivModeIcon.setImageResource(TOCBrandHelper.getIconForToc(service.operator));
-            holder.ivModeIcon.setColorFilter(brandColour);
         }
 
         GradientDrawable pillBg = new GradientDrawable();

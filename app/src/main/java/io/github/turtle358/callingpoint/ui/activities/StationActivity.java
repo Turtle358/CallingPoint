@@ -370,7 +370,7 @@ public class StationActivity extends AppCompatActivity {
 
         android.graphics.drawable.GradientDrawable badgeBg = new android.graphics.drawable.GradientDrawable();
         badgeBg.setColor(androidx.core.graphics.ColorUtils.setAlphaComponent(accentColor, 38));
-        badgeBg.setCornerRadius(28 * density);
+        badgeBg.setCornerRadius(8 * density);
         badgeContainer.setBackground(badgeBg);
 
         tvSeverityBadge.setText((msg.category + " • " + msg.severity).toUpperCase());

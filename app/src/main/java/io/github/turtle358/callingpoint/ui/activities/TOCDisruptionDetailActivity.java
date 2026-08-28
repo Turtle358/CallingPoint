@@ -214,7 +214,7 @@ public class TOCDisruptionDetailActivity extends AppCompatActivity {
 
             GradientDrawable bannerBg = new GradientDrawable();
             bannerBg.setColor(ColorUtils.setAlphaComponent(severity.accentColor, 38));
-            bannerBg.setCornerRadius(28 * density);
+            bannerBg.setCornerRadius(8 * density);
             bannerContainer.setBackground(bannerBg);
             bannerContainer.setPadding((int)(8 * density), (int)(4 * density), (int)(8 * density), (int)(4 * density));
 
@@ -282,7 +282,7 @@ public class TOCDisruptionDetailActivity extends AppCompatActivity {
 
                     GradientDrawable gd = new GradientDrawable();
                     gd.setColor(colour);
-                    gd.setCornerRadius(28 * density);
+                    gd.setCornerRadius(7 * density);
                     pill.setBackground(gd);
 
                     boolean isLight = ColorUtils.calculateLuminance(colour) > 0.5;

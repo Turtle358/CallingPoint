@@ -52,7 +52,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="10dp"
             android:layout_marginEnd="12dp"
-            android:paddingHorizontal="10dp"
+            android:paddingHorizontal="8dp"
             android:paddingVertical="4dp"
             android:text="Operator"
             android:textColor="#FFFFFF"
