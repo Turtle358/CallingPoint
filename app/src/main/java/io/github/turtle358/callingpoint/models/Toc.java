@@ -6,6 +6,7 @@ public class Toc {
     public String acronym;
     public String name;
     public String colour;
+    public String secondary_colour;
     public String manager;
     public int shown;
     public String delayRepayUrl;

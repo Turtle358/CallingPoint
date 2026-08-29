@@ -50,6 +50,7 @@ public class TOCDisruptionDetailActivity extends AppCompatActivity {
     boolean isLightColour;
 
     int brandColour;
+    int secondaryColour;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -71,6 +72,7 @@ public class TOCDisruptionDetailActivity extends AppCompatActivity {
         String tocStatus = getIntent().getStringExtra("TOC_STATUS");
 
         brandColour = TOCBrandHelper.getColourForToc(tocName);
+        secondaryColour = TOCBrandHelper.getSecondaryColourForToc(tocName);
 
         if (topHeaderBar != null) {
             topHeaderBar.setBackgroundColor(brandColour);
@@ -294,15 +296,12 @@ public class TOCDisruptionDetailActivity extends AppCompatActivity {
                     pill.setPadding((int)(6 * density), (int)(2 * density), (int)(6 * density), (int)(2 * density));
 
                     String opTocName = TOCBrandHelper.getNameForCode(op.tocCode);
-                    int colour = TOCBrandHelper.getColourForToc(opTocName);
 
                     GradientDrawable gd = new GradientDrawable();
-                    gd.setColor(colour);
+                    gd.setColor(brandColour);
                     gd.setCornerRadius(7 * density);
                     pill.setBackground(gd);
-
-                    boolean isLight = ColorUtils.calculateLuminance(colour) > 0.5;
-                    pill.setTextColor(isLight ? Color.BLACK : Color.WHITE);
+                    pill.setTextColor(secondaryColour);
 
                     LinearLayout.LayoutParams pillParams = new LinearLayout.LayoutParams(
                             LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);

@@ -31,7 +31,6 @@ public class PinnedJourneyAdapter extends RecyclerView.Adapter<PinnedJourneyAdap
     private final Context context;
     private final List<JourneyOption> pinnedJourneys;
     private final PinnedJourneyManager manager;
-    boolean isLightColour;
 
     public PinnedJourneyAdapter(Context context, List<JourneyOption> pinnedJourneys) {
         this.context = context;
@@ -75,13 +74,13 @@ public class PinnedJourneyAdapter extends RecyclerView.Adapter<PinnedJourneyAdap
             }
 
             int brandColour = TOCBrandHelper.getColourForToc(primaryBrand);
+            int secondaryColour = TOCBrandHelper.getSecondaryColourForToc(primaryBrand);
 
             GradientDrawable pillBg = new GradientDrawable();
             pillBg.setColor(brandColour);
-            isLightColour = ColorUtils.calculateLuminance(brandColour) > 0.5;
             pillBg.setCornerRadius(holder.itemView.getContext().getResources().getDisplayMetrics().density * 8);
             holder.tvOperatorName.setBackground(pillBg);
-            holder.tvOperatorName.setTextColor(isLightColour ? Color.BLACK : Color.WHITE);
+            holder.tvOperatorName.setTextColor(secondaryColour);
 
             if (primaryBrand.equalsIgnoreCase("bus")) {
                 holder.tvOperatorName.setText("London Bus");

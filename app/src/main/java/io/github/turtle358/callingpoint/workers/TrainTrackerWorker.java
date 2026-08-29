@@ -89,11 +89,11 @@ public class TrainTrackerWorker extends Worker {
         android.widget.RemoteViews expandedView = new android.widget.RemoteViews(appContext.getPackageName(), R.layout.notification_custom_train);
 
         int brandColour = TOCBrandHelper.getColourForToc(data.operator);
-        boolean isLightColour = ColorUtils.calculateLuminance(brandColour) > 0.5;
+        int secondaryColour = TOCBrandHelper.getSecondaryColourForToc(data.operator);
 
         expandedView.setImageViewResource(R.id.notifLogo, TOCBrandHelper.getIconForToc(data.operator));
         expandedView.setInt(R.id.notifOperatorPillBg, "setColorFilter", brandColour);
-        expandedView.setTextColor(R.id.notifOperatorName, isLightColour ? Color.BLACK : Color.WHITE);
+        expandedView.setTextColor(R.id.notifOperatorName, secondaryColour);
         expandedView.setTextViewText(R.id.notifOperatorName, data.operator);
         expandedView.setTextViewText(R.id.notifPlatform, (data.platform != null && !data.platform.isEmpty()) ? "Plat " + data.platform : "Plat -");
 

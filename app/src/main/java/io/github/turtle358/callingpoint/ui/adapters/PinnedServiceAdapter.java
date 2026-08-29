@@ -47,6 +47,7 @@ public class PinnedServiceAdapter extends RecyclerView.Adapter<PinnedServiceAdap
         ServiceDetailsResponse service = liveServices.get(position);
 
         int brandColour = TOCBrandHelper.getColourForToc(service.operator);
+        int secondaryColour = TOCBrandHelper.getSecondaryColourForToc(service.operator);
         if (Objects.equals(TOCBrandHelper.getManagerForToc(service.operator), "gbr") || Objects.equals(TOCBrandHelper.getManagerForToc(service.operator), "national")) {
             holder.ivModeIcon.setImageResource(R.drawable.ic_national_rail);
         } else {
@@ -54,11 +55,10 @@ public class PinnedServiceAdapter extends RecyclerView.Adapter<PinnedServiceAdap
         }
 
         GradientDrawable pillBg = new GradientDrawable();
-        boolean isLightColour = ColorUtils.calculateLuminance(brandColour) > 0.5;
         pillBg.setColor(brandColour);
         pillBg.setCornerRadius(holder.itemView.getContext().getResources().getDisplayMetrics().density * 8);
         holder.tvOperatorName.setBackground(pillBg);
-        holder.tvOperatorName.setTextColor(isLightColour ? Color.BLACK : Color.WHITE);
+        holder.tvOperatorName.setTextColor(secondaryColour);
 
         if (service.operator != null && !service.operator.isEmpty()) {
             String op = service.operator;

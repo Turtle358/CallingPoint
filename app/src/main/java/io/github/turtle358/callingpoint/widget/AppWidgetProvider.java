@@ -149,6 +149,7 @@ public class AppWidgetProvider extends android.appwidget.AppWidgetProvider {
 
     private void updatePill(RemoteViews views, int textId, DisruptionResponce.ServiceIndicator toc) {
         int colour = TOCBrandHelper.getColourForToc(toc.tocName);
+        int secondaryColour = TOCBrandHelper.getSecondaryColourForToc(toc.tocName);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             views.setColorStateList(textId, "setBackgroundTintList", ColorStateList.valueOf(colour));
         }
@@ -158,8 +159,7 @@ public class AppWidgetProvider extends android.appwidget.AppWidgetProvider {
 
         views.setViewVisibility(textId, View.VISIBLE);
 
-        boolean isLightColour = ColorUtils.calculateLuminance(colour) > 0.5;
-        views.setTextColor(textId, isLightColour ? Color.BLACK : Color.WHITE);
+        views.setTextColor(textId, secondaryColour);
     }
 
     @Override

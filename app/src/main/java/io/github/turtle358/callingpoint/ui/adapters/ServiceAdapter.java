@@ -187,6 +187,7 @@ public class ServiceAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         boolean isEarlier = earlierServices.contains(service);
 
         int brandColour = TOCBrandHelper.getColourForToc(service.operatorName);
+        int secondaryColour = TOCBrandHelper.getSecondaryColourForToc(service.operatorName);
         if (Objects.equals(TOCBrandHelper.getManagerForToc(service.operatorName), "gbr") || Objects.equals(TOCBrandHelper.getManagerForToc(service.operatorName), "national")) {
             itemHolder.ivModeIcon.setImageResource(R.drawable.ic_national_rail);
         } else {
@@ -194,11 +195,10 @@ public class ServiceAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         }
 
         GradientDrawable pillBg = new GradientDrawable();
-        boolean isLightColour = ColorUtils.calculateLuminance(brandColour) > 0.5;
         pillBg.setColor(brandColour);
         pillBg.setCornerRadius(itemHolder.itemView.getContext().getResources().getDisplayMetrics().density * 8);
         itemHolder.tvOperatorName.setBackground(pillBg);
-        itemHolder.tvOperatorName.setTextColor(isLightColour ? Color.BLACK : Color.WHITE);
+        itemHolder.tvOperatorName.setTextColor(secondaryColour);
         itemHolder.tvOperatorName.setText(service.operatorName);
 
         GradientDrawable dotBg = new GradientDrawable();

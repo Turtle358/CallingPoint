@@ -51,6 +51,7 @@ public class TOCBrandHelper {
                 t.acronym = obj.optString("acronym", t.code);
                 t.name = obj.getString("name");
                 t.colour = obj.getString("colour");
+                t.secondary_colour = obj.optString("secondary_colour", "#ffffff");
                 t.manager = obj.getString("manager");
                 t.shown = obj.optInt("shown", 1);
                 t.delayRepayUrl = obj.optString("delayRepayUrl", null);
@@ -165,6 +166,23 @@ public class TOCBrandHelper {
             e.printStackTrace();
         }
         return Color.parseColor("#333333");
+    }
+
+    public static int getSecondaryColourForToc(String tocName) {
+        String lowerName = tocName.toLowerCase();
+        if (lowerName.contains("bus") || lowerName.contains("walk")) {
+            return Color.parseColor("#FFFFFF");
+        }
+
+        try {
+            Toc t = getTocByName(tocName);
+            if (t != null && t.secondary_colour != null) {
+                return Color.parseColor(t.secondary_colour);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return Color.parseColor("#FFFFFF");
     }
 
     public static String getManagerForToc(String tocName) {

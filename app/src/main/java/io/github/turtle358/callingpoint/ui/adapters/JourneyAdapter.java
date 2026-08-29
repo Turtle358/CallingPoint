@@ -24,7 +24,6 @@ public class JourneyAdapter extends RecyclerView.Adapter<JourneyAdapter.ViewHold
 
     private List<JourneyOption> routes;
     private final OnJourneyClickListener listener;
-    boolean isLightColour;
 
     public interface OnJourneyClickListener {
         void onJourneyClick(JourneyOption route);
@@ -76,13 +75,13 @@ public class JourneyAdapter extends RecyclerView.Adapter<JourneyAdapter.ViewHold
             }
 
             int brandColour = TOCBrandHelper.getColourForToc(primaryBrand);
+            int secondaryColour = TOCBrandHelper.getSecondaryColourForToc(primaryBrand);
 
             GradientDrawable pillBg = new GradientDrawable();
             pillBg.setColor(brandColour);
-            isLightColour = ColorUtils.calculateLuminance(brandColour) > 0.5;
             pillBg.setCornerRadius(holder.itemView.getContext().getResources().getDisplayMetrics().density * 8);
             holder.tvOperatorName.setBackground(pillBg);
-            holder.tvOperatorName.setTextColor(isLightColour ? Color.BLACK : Color.WHITE);
+            holder.tvOperatorName.setTextColor(secondaryColour);
 
             if (primaryBrand != null && !primaryBrand.isEmpty()) {
                 if (primaryBrand.equalsIgnoreCase("bus")) {
