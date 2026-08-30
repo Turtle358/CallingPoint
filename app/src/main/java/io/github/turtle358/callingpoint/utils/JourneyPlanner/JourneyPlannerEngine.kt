@@ -1,251 +1,370 @@
-package io.github.turtle358.callingpoint.utils.JourneyPlanner;
+package io.github.turtle358.callingpoint.utils.JourneyPlanner
 
-import android.os.Handler;
-import android.os.Looper;
-import android.util.Log;
+import android.os.Handler
+import android.os.Looper
+import android.util.Log
+import io.github.turtle358.callingpoint.api.APIClient
+import io.github.turtle358.callingpoint.api.NationalRailAPI
+import io.github.turtle358.callingpoint.models.JourneyLeg
+import io.github.turtle358.callingpoint.models.JourneyOption
+import io.github.turtle358.callingpoint.models.ServiceDetailsResponse
+import io.github.turtle358.callingpoint.models.ServiceDetailsResponse.TimelinePoint
+import io.github.turtle358.callingpoint.models.StationDepartureResponse
+import io.github.turtle358.callingpoint.models.StationDepartureResponse.TrainService
+import io.github.turtle358.callingpoint.utils.JourneyPlanner.CityTransferManager.TransferInfo
+import io.github.turtle358.callingpoint.utils.JourneyPlanner.LiveLocationEngine.getLiveLocation
+import io.github.turtle358.callingpoint.utils.StationHelper
+import java.util.Locale
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-import io.github.turtle358.callingpoint.api.APIClient;
-import io.github.turtle358.callingpoint.api.NationalRailAPI;
-import io.github.turtle358.callingpoint.models.JourneyLeg;
-import io.github.turtle358.callingpoint.models.JourneyOption;
-import io.github.turtle358.callingpoint.models.ServiceDetailsResponse;
-import io.github.turtle358.callingpoint.models.StationDepartureResponse;
-import io.github.turtle358.callingpoint.utils.StationHelper;
-import retrofit2.Response;
-
-public class JourneyPlannerEngine {
-
-    private static final String TAG = "JourneyPlanner";
-    private static Map<String, String> crsToNameMap = null;
-
-    public interface JourneyCallback {
-        void onJourneysFound(List<JourneyOption> journeys);
-        void onError(String message);
-        void onStatusUpdate(String message);
+class JourneyPlannerEngine(private val graphManager: GraphManager) {
+    interface JourneyCallback {
+        fun onJourneysFound(journeys: MutableList<JourneyOption?>?)
+        fun onError(message: String?)
+        fun onStatusUpdate(message: String?)
     }
 
-    private final NationalRailAPI api;
-    private final GraphManager graphManager;
-    private final ExecutorService executor;
-    private final Handler mainHandler;
+    private val api: NationalRailAPI
+    private val executor: ExecutorService
+    private val mainHandler: Handler
 
-    private Map<String, StationDepartureResponse> boardCache;
-    private Map<String, ServiceDetailsResponse> detailCache;
+    private var boardCache: MutableMap<String?, StationDepartureResponse?>? = null
+    private var detailCache: MutableMap<String?, ServiceDetailsResponse?>? = null
 
-    public JourneyPlannerEngine(GraphManager graphManager) {
-        this.api = APIClient.getClient().create(NationalRailAPI.class);
-        this.graphManager = graphManager;
-        this.executor = Executors.newSingleThreadExecutor();
-        this.mainHandler = new Handler(Looper.getMainLooper());
+    init {
+        this.api = APIClient.getClient().create<NationalRailAPI>(NationalRailAPI::class.java)
+        this.executor = Executors.newSingleThreadExecutor()
+        this.mainHandler = Handler(Looper.getMainLooper())
     }
 
-    public void findRoutes(String originCrs, String destCrs, JourneyCallback callback) {
-        executor.execute(() -> {
-            boardCache = new HashMap<>();
-            detailCache = new HashMap<>();
-            List<JourneyOption> foundJourneys = new ArrayList<>();
-
+    fun findRoutes(originCrs: String?, destCrs: String, callback: JourneyCallback) {
+        executor.execute {
+            boardCache = HashMap()
+            detailCache = HashMap()
+            val foundJourneys: MutableList<JourneyOption?> = ArrayList()
             try {
-                mainHandler.post(() -> callback.onStatusUpdate("Checking for direct trains..."));
-                findDirect(originCrs, destCrs, foundJourneys);
+                mainHandler.post { callback.onStatusUpdate("Checking for direct trains...") }
+                findDirect(originCrs, destCrs, foundJourneys)
 
-                if (foundJourneys.size() < 5) {
-                    mainHandler.post(() -> callback.onStatusUpdate("Checking 1-change connections..."));
-                    findOneChange(originCrs, destCrs, foundJourneys);
+                if (foundJourneys.size < 5) {
+                    mainHandler.post { callback.onStatusUpdate("Checking 1-change connections...") }
+                    findOneChange(originCrs, destCrs, foundJourneys)
                 }
 
-                if (foundJourneys.size() < 3) {
-                    mainHandler.post(() -> callback.onStatusUpdate("Checking cross-city transfers..."));
-                    findCrossCity(originCrs, destCrs, foundJourneys);
+                if (foundJourneys.size < 3) {
+                    mainHandler.post { callback.onStatusUpdate("Checking cross-city transfers...") }
+                    findCrossCity(originCrs, destCrs, foundJourneys)
                 }
 
-                if (foundJourneys.size() < 3) {
-                    mainHandler.post(() -> callback.onStatusUpdate("Deep searching 2-change routes..."));
-                    findTwoChange(originCrs, destCrs, foundJourneys);
+                if (foundJourneys.size < 3) {
+                    mainHandler.post { callback.onStatusUpdate("Deep searching 2-change routes...") }
+                    findTwoChange(originCrs, destCrs, foundJourneys)
                 }
 
-                foundJourneys.sort((j1, j2) -> {
-                    String arr1 = j1.arriveTime != null ? j1.arriveTime : "23:59";
-                    String arr2 = j2.arriveTime != null ? j2.arriveTime : "23:59";
-                    return arr1.compareTo(arr2);
-                });
-                mainHandler.post(() -> callback.onJourneysFound(foundJourneys));
-
-            } catch (Exception e) {
-                Log.e(TAG, "Network error during search", e);
-                mainHandler.post(() -> callback.onError("Network error: " + e.getMessage()));
+                foundJourneys.sortWith(Comparator { j1: JourneyOption?, j2: JourneyOption? ->
+                    val arr1 = if (j1!!.arriveTime != null) j1.arriveTime else "23:59"
+                    val arr2 = if (j2!!.arriveTime != null) j2.arriveTime else "23:59"
+                    arr1.compareTo(arr2)
+                })
+                mainHandler.post { callback.onJourneysFound(foundJourneys) }
+            } catch (e: Exception) {
+                Log.e(TAG, "Network error during search", e)
+                mainHandler.post { callback.onError("Network error: " + e.message) }
             }
-        });
-    }
-
-    private String getBestTime(String scheduled, String estimated) {
-        if (estimated == null || estimated.trim().isEmpty()) return scheduled;
-        if (estimated.equalsIgnoreCase("On time")) return scheduled;
-        if (estimated.equalsIgnoreCase("Delayed") || estimated.equalsIgnoreCase("Cancelled")) {
-            return null;
         }
-        return estimated;
     }
 
-    private void findDirect(String originCrs, String destCrs, List<JourneyOption> results) {
-        StationDepartureResponse directRes = getBoard(originCrs, 25, destCrs);
+    private fun getBestTime(scheduled: String?, estimated: String?): String? {
+        if (estimated == null || estimated.trim { it <= ' ' }.isEmpty()) return scheduled
+        if (estimated.equals("On time", ignoreCase = true)) return scheduled
+        if (estimated.equals("Delayed", ignoreCase = true) || estimated.equals(
+                "Cancelled",
+                ignoreCase = true
+            )
+        ) {
+            return null
+        }
+        return estimated
+    }
+
+    private fun findDirect(
+        originCrs: String?,
+        destCrs: String,
+        results: MutableList<JourneyOption?>
+    ) {
+        val directRes = getBoard(originCrs, 25, destCrs)
         if (directRes != null && directRes.trainServices != null) {
-            for (StationDepartureResponse.TrainService service : directRes.trainServices) {
+            for (service in directRes.trainServices) {
+                val depTime = getBestTime(service.std, service.etd)
+                if (depTime == null) continue
 
-                String depTime = getBestTime(service.std, service.etd);
-                if (depTime == null) continue;
+                val arrTime = getPreciseArrivalTime(service.serviceID, destCrs)
+                if (arrTime == null) continue
 
-                String arrTime = getPreciseArrivalTime(service.serviceID, destCrs);
-                if (arrTime == null) continue;
+                val destName =
+                    if (service.destination != null && !service.destination.isEmpty()) service.destination.get(
+                        0
+                    ).locationName else destCrs
+                val intermediateStops =
+                    extractIntermediateStops(service.serviceID, originCrs, destCrs)
 
-                String destName = (service.destination != null && !service.destination.isEmpty()) ? service.destination.get(0).locationName : destCrs;
-                List<JourneyLeg.Stop> intermediateStops = extractIntermediateStops(service.serviceID, originCrs, destCrs);
+                val legs: MutableList<JourneyLeg> = ArrayList<JourneyLeg>()
+                legs.add(
+                    JourneyLeg(
+                        originCrs,
+                        getStationName(originCrs),
+                        destCrs,
+                        getStationName(destCrs),
+                        destName,
+                        service.std,
+                        arrTime,
+                        service.operatorName,
+                        service.serviceID,
+                        "TRAIN",
+                        intermediateStops,
+                        getLiveLocationStatus(service.serviceID),
+                        service.etd
+                    )
+                )
 
-                List<JourneyLeg> legs = new ArrayList<>();
-                legs.add(new JourneyLeg(originCrs, getStationName(originCrs), destCrs, getStationName(destCrs), destName, service.std, arrTime, service.operatorName, service.serviceID, "TRAIN", intermediateStops, getLiveLocationStatus(service.serviceID), service.etd));
-
-                results.add(new JourneyOption(legs));
-                graphManager.addConnection(originCrs, destCrs);
+                results.add(JourneyOption(legs))
+                graphManager.addConnection(originCrs, destCrs)
             }
         }
     }
 
-    private void findOneChange(String originCrs, String destCrs, List<JourneyOption> results) {
-        StationDepartureResponse allDepRes = getBoard(originCrs, 20, null);
-        if (allDepRes == null || allDepRes.trainServices == null) return;
+    private fun findOneChange(
+        originCrs: String?,
+        destCrs: String,
+        results: MutableList<JourneyOption?>
+    ) {
+        val allDepRes = getBoard(originCrs, 20, null)
+        if (allDepRes == null || allDepRes.trainServices == null) return
 
-        List<String> hubs = getPrioritizedHubs(allDepRes.trainServices, originCrs);
-        int hubCount = 0;
+        val hubs = getPrioritizedHubs(allDepRes.trainServices, originCrs)
+        var hubCount = 0
 
-        for (String hubCrs : hubs) {
-            if (hubCrs.equals(destCrs) || hubCrs.equals(originCrs)) continue;
-            if (hubCount++ >= 8) break;
+        for (hubCrs in hubs) {
+            if (hubCrs == destCrs || hubCrs == originCrs) continue
+            if (hubCount++ >= 8) break
 
-            StationDepartureResponse leg2Res = getBoard(hubCrs, 50, destCrs);
+            val leg2Res = getBoard(hubCrs, 50, destCrs)
             if (leg2Res != null && leg2Res.trainServices != null) {
+                var leg1Count = 0
+                for (t1 in allDepRes.trainServices) {
+                    if (leg1Count++ >= 6) break
 
-                int leg1Count = 0;
-                for (StationDepartureResponse.TrainService t1 : allDepRes.trainServices) {
-                    if (leg1Count++ >= 6) break;
+                    val t1Dep = getBestTime(t1.std, t1.etd)
+                    if (t1Dep == null) continue
 
-                    String t1Dep = getBestTime(t1.std, t1.etd);
-                    if (t1Dep == null) continue;
+                    if (getPreciseArrivalTime(t1.serviceID, destCrs) != null) continue
 
-                    if (getPreciseArrivalTime(t1.serviceID, destCrs) != null) continue;
+                    val t1ArrTime = getPreciseArrivalTime(t1.serviceID, hubCrs)
+                    if (t1ArrTime == null) continue
 
-                    String t1ArrTime = getPreciseArrivalTime(t1.serviceID, hubCrs);
-                    if (t1ArrTime == null) continue;
-
-                    for (StationDepartureResponse.TrainService t2 : leg2Res.trainServices) {
-                        String t2DepTime = getBestTime(t2.std, t2.etd);
-                        if (t2DepTime == null) continue;
+                    for (t2 in leg2Res.trainServices) {
+                        val t2DepTime = getBestTime(t2.std, t2.etd)
+                        if (t2DepTime == null) continue
 
                         if (hasValidTransferTime(t1ArrTime, t2DepTime, 5, 180)) {
-                            String t2ArrTime = getPreciseArrivalTime(t2.serviceID, destCrs);
-                            if (t2ArrTime == null) continue;
+                            val t2ArrTime = getPreciseArrivalTime(t2.serviceID, destCrs)
+                            if (t2ArrTime == null) continue
 
-                            String t1Dest = (t1.destination != null && !t1.destination.isEmpty()) ? t1.destination.get(0).locationName : hubCrs;
-                            String t2Dest = (t2.destination != null && !t2.destination.isEmpty()) ? t2.destination.get(0).locationName : destCrs;
+                            val t1Dest =
+                                if (t1.destination != null && !t1.destination.isEmpty()) t1.destination.get(
+                                    0
+                                ).locationName else hubCrs
+                            val t2Dest =
+                                if (t2.destination != null && !t2.destination.isEmpty()) t2.destination.get(
+                                    0
+                                ).locationName else destCrs
 
-                            List<JourneyLeg.Stop> stops1 = extractIntermediateStops(t1.serviceID, originCrs, hubCrs);
-                            List<JourneyLeg.Stop> stops2 = extractIntermediateStops(t2.serviceID, hubCrs, destCrs);
+                            val stops1 = extractIntermediateStops(t1.serviceID, originCrs, hubCrs)
+                            val stops2 = extractIntermediateStops(t2.serviceID, hubCrs, destCrs)
 
-                            List<JourneyLeg> legs = new ArrayList<>();
-                            legs.add(new JourneyLeg(originCrs, getStationName(originCrs), hubCrs, getStationName(hubCrs), t1Dest, t1.std, t1ArrTime, t1.operatorName, t1.serviceID, "TRAIN", stops1, getLiveLocationStatus(t1.serviceID), t1.etd));
-                            legs.add(new JourneyLeg(hubCrs, getStationName(hubCrs), destCrs, getStationName(destCrs), t2Dest, t2.std, t2ArrTime, t2.operatorName, t2.serviceID, "TRAIN", stops2, getLiveLocationStatus(t2.serviceID), t2.etd));
+                            val legs: MutableList<JourneyLeg> = ArrayList<JourneyLeg>()
+                            legs.add(
+                                JourneyLeg(
+                                    originCrs,
+                                    getStationName(originCrs),
+                                    hubCrs,
+                                    getStationName(hubCrs),
+                                    t1Dest,
+                                    t1.std,
+                                    t1ArrTime,
+                                    t1.operatorName,
+                                    t1.serviceID,
+                                    "TRAIN",
+                                    stops1,
+                                    getLiveLocationStatus(t1.serviceID),
+                                    t1.etd
+                                )
+                            )
+                            legs.add(
+                                JourneyLeg(
+                                    hubCrs,
+                                    getStationName(hubCrs),
+                                    destCrs,
+                                    getStationName(destCrs),
+                                    t2Dest,
+                                    t2.std,
+                                    t2ArrTime,
+                                    t2.operatorName,
+                                    t2.serviceID,
+                                    "TRAIN",
+                                    stops2,
+                                    getLiveLocationStatus(t2.serviceID),
+                                    t2.etd
+                                )
+                            )
 
                             if (isLogicalJourney(legs)) {
-                                results.add(new JourneyOption(legs));
-                                graphManager.addConnection(originCrs, hubCrs);
-                                graphManager.addConnection(hubCrs, destCrs);
-                                break;
+                                results.add(JourneyOption(legs))
+                                graphManager.addConnection(originCrs, hubCrs)
+                                graphManager.addConnection(hubCrs, destCrs)
+                                break
                             }
                         }
                     }
-                    if (results.size() >= 10) return;
+                    if (results.size >= 10) return
                 }
             }
         }
     }
 
-    private void findTwoChange(String originCrs, String destCrs, List<JourneyOption> results) {
-        StationDepartureResponse allOrigin = getBoard(originCrs, 15, null);
-        if (allOrigin == null || allOrigin.trainServices == null) return;
+    private fun findTwoChange(
+        originCrs: String?,
+        destCrs: String,
+        results: MutableList<JourneyOption?>
+    ) {
+        val allOrigin = getBoard(originCrs, 15, null)
+        if (allOrigin == null || allOrigin.trainServices == null) return
 
-        List<String> hub1s = getPrioritizedHubs(allOrigin.trainServices, originCrs);
-        int h1Count = 0;
+        val hub1s = getPrioritizedHubs(allOrigin.trainServices, originCrs)
+        var h1Count = 0
 
-        for (String hub1 : hub1s) {
-            if (hub1.equals(destCrs) || hub1.equals(originCrs)) continue;
-            if (h1Count++ >= 5) break;
+        for (hub1 in hub1s) {
+            if (hub1 == destCrs || hub1 == originCrs) continue
+            if (h1Count++ >= 5) break
 
-            StationDepartureResponse allHub1 = getBoard(hub1, 20, null);
-            if (allHub1 == null || allHub1.trainServices == null) continue;
+            val allHub1 = getBoard(hub1, 20, null)
+            if (allHub1 == null || allHub1.trainServices == null) continue
 
-            List<String> hub2s = getPrioritizedHubs(allHub1.trainServices, hub1);
-            int h2Count = 0;
+            val hub2s = getPrioritizedHubs(allHub1.trainServices, hub1)
+            var h2Count = 0
 
-            for (String hub2 : hub2s) {
-                if (hub2.equals(destCrs) || hub2.equals(originCrs) || hub2.equals(hub1)) continue;
-                if (h2Count++ >= 10) break;
+            for (hub2 in hub2s) {
+                if (hub2 == destCrs || hub2 == originCrs || hub2 == hub1) continue
+                if (h2Count++ >= 10) break
 
-                StationDepartureResponse hub2ToDest = getBoard(hub2, 30, destCrs);
-                if (hub2ToDest == null || hub2ToDest.trainServices == null || hub2ToDest.trainServices.isEmpty()) continue;
+                val hub2ToDest = getBoard(hub2, 30, destCrs)
+                if (hub2ToDest == null || hub2ToDest.trainServices == null || hub2ToDest.trainServices.isEmpty()) continue
 
-                for (StationDepartureResponse.TrainService t1 : allOrigin.trainServices) {
-                    if (getBestTime(t1.std, t1.etd) == null) continue;
-                    if (getPreciseArrivalTime(t1.serviceID, destCrs) != null) continue;
-                    if (getPreciseArrivalTime(t1.serviceID, hub2) != null) continue;
+                for (t1 in allOrigin.trainServices) {
+                    if (getBestTime(t1.std, t1.etd) == null) continue
+                    if (getPreciseArrivalTime(t1.serviceID, destCrs) != null) continue
+                    if (getPreciseArrivalTime(t1.serviceID, hub2) != null) continue
 
-                    String t1ArrTime = getPreciseArrivalTime(t1.serviceID, hub1);
-                    if (t1ArrTime == null) continue;
+                    val t1ArrTime = getPreciseArrivalTime(t1.serviceID, hub1)
+                    if (t1ArrTime == null) continue
 
-                    for (StationDepartureResponse.TrainService t2 : allHub1.trainServices) {
-                        String t2DepTime = getBestTime(t2.std, t2.etd);
-                        if (t2DepTime == null) continue;
-                        if (getPreciseArrivalTime(t2.serviceID, destCrs) != null) continue;
+                    for (t2 in allHub1.trainServices) {
+                        val t2DepTime = getBestTime(t2.std, t2.etd)
+                        if (t2DepTime == null) continue
+                        if (getPreciseArrivalTime(t2.serviceID, destCrs) != null) continue
 
                         if (hasValidTransferTime(t1ArrTime, t2DepTime, 5, 120)) {
-                            String t2ArrTime = getPreciseArrivalTime(t2.serviceID, hub2);
-                            if (t2ArrTime == null) continue;
+                            val t2ArrTime = getPreciseArrivalTime(t2.serviceID, hub2)
+                            if (t2ArrTime == null) continue
 
-                            for (StationDepartureResponse.TrainService t3 : hub2ToDest.trainServices) {
-                                String t3DepTime = getBestTime(t3.std, t3.etd);
-                                if (t3DepTime == null) continue;
+                            for (t3 in hub2ToDest.trainServices) {
+                                val t3DepTime = getBestTime(t3.std, t3.etd)
+                                if (t3DepTime == null) continue
 
                                 if (hasValidTransferTime(t2ArrTime, t3DepTime, 5, 120)) {
-                                    String t3ArrTime = getPreciseArrivalTime(t3.serviceID, destCrs);
-                                    if (t3ArrTime == null) continue;
+                                    val t3ArrTime = getPreciseArrivalTime(t3.serviceID, destCrs)
+                                    if (t3ArrTime == null) continue
 
-                                    String t1Dest = (t1.destination != null && !t1.destination.isEmpty()) ? t1.destination.get(0).locationName : hub1;
-                                    String t2Dest = (t2.destination != null && !t2.destination.isEmpty()) ? t2.destination.get(0).locationName : hub2;
-                                    String t3Dest = (t3.destination != null && !t3.destination.isEmpty()) ? t3.destination.get(0).locationName : destCrs;
+                                    val t1Dest =
+                                        if (t1.destination != null && !t1.destination.isEmpty()) t1.destination.get(
+                                            0
+                                        ).locationName else hub1
+                                    val t2Dest =
+                                        if (t2.destination != null && !t2.destination.isEmpty()) t2.destination.get(
+                                            0
+                                        ).locationName else hub2
+                                    val t3Dest =
+                                        if (t3.destination != null && !t3.destination.isEmpty()) t3.destination.get(
+                                            0
+                                        ).locationName else destCrs
 
-                                    List<JourneyLeg.Stop> stops1 = extractIntermediateStops(t1.serviceID, originCrs, hub1);
-                                    List<JourneyLeg.Stop> stops2 = extractIntermediateStops(t2.serviceID, hub1, hub2);
-                                    List<JourneyLeg.Stop> stops3 = extractIntermediateStops(t3.serviceID, hub2, destCrs);
+                                    val stops1 =
+                                        extractIntermediateStops(t1.serviceID, originCrs, hub1)
+                                    val stops2 = extractIntermediateStops(t2.serviceID, hub1, hub2)
+                                    val stops3 =
+                                        extractIntermediateStops(t3.serviceID, hub2, destCrs)
 
-                                    List<JourneyLeg> legs = new ArrayList<>();
-                                    legs.add(new JourneyLeg(originCrs, getStationName(originCrs), hub1, getStationName(hub1), t1Dest, t1.std, t1ArrTime, t1.operatorName, t1.serviceID, "TRAIN", stops1, getLiveLocationStatus(t1.serviceID), t1.etd));
-                                    legs.add(new JourneyLeg(hub1, getStationName(hub1), hub2, getStationName(hub2), t2Dest, t2.std, t2ArrTime, t2.operatorName, t2.serviceID, "TRAIN", stops2, getLiveLocationStatus(t2.serviceID), t2.etd));
-                                    legs.add(new JourneyLeg(hub2, getStationName(hub2), destCrs, getStationName(destCrs), t3Dest, t3.std, t3ArrTime, t3.operatorName, t3.serviceID, "TRAIN", stops3, getLiveLocationStatus(t3.serviceID), t3.etd));
+                                    val legs: MutableList<JourneyLeg> = ArrayList<JourneyLeg>()
+                                    legs.add(
+                                        JourneyLeg(
+                                            originCrs,
+                                            getStationName(originCrs),
+                                            hub1,
+                                            getStationName(hub1),
+                                            t1Dest,
+                                            t1.std,
+                                            t1ArrTime,
+                                            t1.operatorName,
+                                            t1.serviceID,
+                                            "TRAIN",
+                                            stops1,
+                                            getLiveLocationStatus(t1.serviceID),
+                                            t1.etd
+                                        )
+                                    )
+                                    legs.add(
+                                        JourneyLeg(
+                                            hub1,
+                                            getStationName(hub1),
+                                            hub2,
+                                            getStationName(hub2),
+                                            t2Dest,
+                                            t2.std,
+                                            t2ArrTime,
+                                            t2.operatorName,
+                                            t2.serviceID,
+                                            "TRAIN",
+                                            stops2,
+                                            getLiveLocationStatus(t2.serviceID),
+                                            t2.etd
+                                        )
+                                    )
+                                    legs.add(
+                                        JourneyLeg(
+                                            hub2,
+                                            getStationName(hub2),
+                                            destCrs,
+                                            getStationName(destCrs),
+                                            t3Dest,
+                                            t3.std,
+                                            t3ArrTime,
+                                            t3.operatorName,
+                                            t3.serviceID,
+                                            "TRAIN",
+                                            stops3,
+                                            getLiveLocationStatus(t3.serviceID),
+                                            t3.etd
+                                        )
+                                    )
 
                                     if (isLogicalJourney(legs)) {
-                                        results.add(new JourneyOption(legs));
-                                        graphManager.addConnection(originCrs, hub1);
-                                        graphManager.addConnection(hub1, hub2);
-                                        graphManager.addConnection(hub2, destCrs);
-                                        if (results.size() >= 10) return;
-                                        break;
+                                        results.add(JourneyOption(legs))
+                                        graphManager.addConnection(originCrs, hub1)
+                                        graphManager.addConnection(hub1, hub2)
+                                        graphManager.addConnection(hub2, destCrs)
+                                        if (results.size >= 10) return
+                                        break
                                     }
                                 }
                             }
@@ -256,65 +375,125 @@ public class JourneyPlannerEngine {
         }
     }
 
-    private void findCrossCity(String originCrs, String destCrs, List<JourneyOption> results) {
-        StationDepartureResponse allOrigin = getBoard(originCrs, 20, null);
-        if (allOrigin == null || allOrigin.trainServices == null) return;
+    private fun findCrossCity(
+        originCrs: String?,
+        destCrs: String,
+        results: MutableList<JourneyOption?>
+    ) {
+        val allOrigin = getBoard(originCrs, 20, null)
+        if (allOrigin == null || allOrigin.trainServices == null) return
 
-        Set<String> terminalsReached = new HashSet<>();
+        val terminalsReached: MutableSet<String> = HashSet<String>()
 
-        for (StationDepartureResponse.TrainService t1 : allOrigin.trainServices) {
-            String destCode = (t1.destination != null && !t1.destination.isEmpty()) ? t1.destination.get(0).crs : null;
-            if (destCode != null && !CityTransferManager.getTransfersFrom(destCode).isEmpty()) {
-                terminalsReached.add(destCode);
+        for (t1 in allOrigin.trainServices) {
+            val destCode =
+                if (t1.destination != null && !t1.destination.isEmpty()) t1.destination.get(0).crs else null
+            if (destCode != null && !CityTransferManager.getTransfersFrom(destCode)?.isEmpty()!!) {
+                terminalsReached.add(destCode)
             }
         }
 
-        for (String terminal1 : terminalsReached) {
-            Map<String, CityTransferManager.TransferInfo> possibleTransfers = CityTransferManager.getTransfersFrom(terminal1);
+        for (terminal1 in terminalsReached) {
+            val possibleTransfers = CityTransferManager.getTransfersFrom(terminal1)
 
-            for (Map.Entry<String, CityTransferManager.TransferInfo> transfer : possibleTransfers.entrySet()) {
-                String terminal2 = transfer.getKey();
-                CityTransferManager.TransferInfo transferInfo = transfer.getValue();
+            for (transfer in possibleTransfers?.entries!!) {
+                val terminal2 = transfer.key
+                val transferInfo: TransferInfo = transfer.value!!
 
-                StationDepartureResponse term2Board = getBoard(terminal2, 30, destCrs);
-                if (term2Board == null || term2Board.trainServices == null) continue;
+                val term2Board = getBoard(terminal2, 30, destCrs)
+                if (term2Board == null || term2Board.trainServices == null) continue
 
-                for (StationDepartureResponse.TrainService t1 : allOrigin.trainServices) {
-                    if (getBestTime(t1.std, t1.etd) == null) continue;
-                    if (getPreciseArrivalTime(t1.serviceID, destCrs) != null) continue;
+                for (t1 in allOrigin.trainServices) {
+                    if (getBestTime(t1.std, t1.etd) == null) continue
+                    if (getPreciseArrivalTime(t1.serviceID, destCrs) != null) continue
 
-                    String t1ArrTime = getPreciseArrivalTime(t1.serviceID, terminal1);
-                    if (t1ArrTime == null) continue;
+                    val t1ArrTime = getPreciseArrivalTime(t1.serviceID, terminal1)
+                    if (t1ArrTime == null) continue
 
-                    String transferStartTime = addMinutesToTime(t1ArrTime, 3);
+                    val transferStartTime = addMinutesToTime(t1ArrTime, 3)
 
-                    String arrivedAtTerm2Time = addMinutesToTime(transferStartTime, transferInfo.timeMins);
+                    val arrivedAtTerm2Time =
+                        addMinutesToTime(transferStartTime, transferInfo.timeMins)
 
-                    for (StationDepartureResponse.TrainService t2 : term2Board.trainServices) {
-                        String t2DepTime = getBestTime(t2.std, t2.etd);
-                        if (t2DepTime == null) continue;
+                    for (t2 in term2Board.trainServices) {
+                        val t2DepTime = getBestTime(t2.std, t2.etd)
+                        if (t2DepTime == null) continue
 
                         if (hasValidTransferTime(arrivedAtTerm2Time, t2DepTime, 3, 120)) {
+                            val t2ArrTime = getPreciseArrivalTime(t2.serviceID, destCrs)
+                            if (t2ArrTime == null) continue
 
-                            String t2ArrTime = getPreciseArrivalTime(t2.serviceID, destCrs);
-                            if (t2ArrTime == null) continue;
+                            val t1TrainDest =
+                                if (t1.destination != null && !t1.destination.isEmpty()) t1.destination.get(
+                                    0
+                                ).locationName else terminal1
+                            val t2TrainDest =
+                                if (t2.destination != null && !t2.destination.isEmpty()) t2.destination.get(
+                                    0
+                                ).locationName else destCrs
 
-                            String t1TrainDest = (t1.destination != null && !t1.destination.isEmpty()) ? t1.destination.get(0).locationName : terminal1;
-                            String t2TrainDest = (t2.destination != null && !t2.destination.isEmpty()) ? t2.destination.get(0).locationName : destCrs;
+                            val stops1 =
+                                extractIntermediateStops(t1.serviceID, originCrs, terminal1)
+                            val stops2 = extractIntermediateStops(t2.serviceID, terminal2, destCrs)
 
-                            List<JourneyLeg.Stop> stops1 = extractIntermediateStops(t1.serviceID, originCrs, terminal1);
-                            List<JourneyLeg.Stop> stops2 = extractIntermediateStops(t2.serviceID, terminal2, destCrs);
+                            val legs: MutableList<JourneyLeg> = ArrayList<JourneyLeg>()
+                            legs.add(
+                                JourneyLeg(
+                                    originCrs,
+                                    getStationName(originCrs),
+                                    terminal1,
+                                    getStationName(terminal1),
+                                    t1TrainDest,
+                                    t1.std,
+                                    t1ArrTime,
+                                    t1.operatorName,
+                                    t1.serviceID,
+                                    "TRAIN",
+                                    stops1,
+                                    getLiveLocationStatus(t1.serviceID),
+                                    t1.etd
+                                )
+                            )
+                            legs.add(
+                                JourneyLeg(
+                                    terminal1,
+                                    getStationName(terminal1),
+                                    terminal2,
+                                    getStationName(terminal2),
+                                    getStationName(terminal2),
+                                    transferStartTime,
+                                    arrivedAtTerm2Time,
+                                    transferInfo.operatorName,
+                                    transferInfo.serviceId,
+                                    "TRANSFER",
+                                    ArrayList<JourneyLeg.Stop?>(),
+                                    null,
+                                    null
+                                )
+                            )
 
-                            List<JourneyLeg> legs = new ArrayList<>();
-                            legs.add(new JourneyLeg(originCrs, getStationName(originCrs), terminal1, getStationName(terminal1), t1TrainDest, t1.std, t1ArrTime, t1.operatorName, t1.serviceID, "TRAIN", stops1, getLiveLocationStatus(t1.serviceID), t1.etd));
-                            legs.add(new JourneyLeg(terminal1, getStationName(terminal1), terminal2, getStationName(terminal2), getStationName(terminal2), transferStartTime, arrivedAtTerm2Time, transferInfo.operatorName, transferInfo.serviceId, "TRANSFER", new ArrayList<>(), null, null));
-
-                            legs.add(new JourneyLeg(terminal2, getStationName(terminal2), destCrs, getStationName(destCrs), t2TrainDest, t2.std, t2ArrTime, t2.operatorName, t2.serviceID, "TRAIN", stops2, getLiveLocationStatus(t2.serviceID), t2.etd));
+                            legs.add(
+                                JourneyLeg(
+                                    terminal2,
+                                    getStationName(terminal2),
+                                    destCrs,
+                                    getStationName(destCrs),
+                                    t2TrainDest,
+                                    t2.std,
+                                    t2ArrTime,
+                                    t2.operatorName,
+                                    t2.serviceID,
+                                    "TRAIN",
+                                    stops2,
+                                    getLiveLocationStatus(t2.serviceID),
+                                    t2.etd
+                                )
+                            )
 
                             if (isLogicalJourney(legs)) {
-                                results.add(new JourneyOption(legs));
-                                if (results.size() >= 10) return;
-                                break;
+                                results.add(JourneyOption(legs))
+                                if (results.size >= 10) return
+                                break
                             }
                         }
                     }
@@ -323,211 +502,248 @@ public class JourneyPlannerEngine {
         }
     }
 
-    private boolean isLogicalJourney(List<JourneyLeg> legs) {
-        Set<String> visitedStations = new HashSet<>();
-        Set<String> usedServices = new HashSet<>();
-        String lastStation = null;
+    private fun isLogicalJourney(legs: MutableList<JourneyLeg>): Boolean {
+        val visitedStations: MutableSet<String?> = HashSet<String?>()
+        val usedServices: MutableSet<String?> = HashSet<String?>()
+        var lastStation: String? = null
 
-        for (JourneyLeg leg : legs) {
-            if ("TRANSFER".equals(leg.transportMode) || "TUBE/WALK".equals(leg.transportMode)) {
-                lastStation = leg.toStationName;
-                continue;
+        for (leg in legs) {
+            if ("TRANSFER" == leg.transportMode || "TUBE/WALK" == leg.transportMode) {
+                lastStation = leg.toStationName
+                continue
             }
 
             if (leg.serviceId != null) {
-                if (!usedServices.add(leg.serviceId)) return false;
+                if (!usedServices.add(leg.serviceId)) return false
             }
 
-            if (lastStation == null || !lastStation.equalsIgnoreCase(leg.fromStationName)) {
-                if (!visitedStations.add(leg.fromStationName.toLowerCase())) return false;
+            if (lastStation == null || !lastStation.equals(
+                    leg.fromStationName,
+                    ignoreCase = true
+                )
+            ) {
+                if (!visitedStations.add(leg.fromStationName.lowercase(Locale.getDefault()))) return false
             }
 
-            for (JourneyLeg.Stop stop : leg.intermediateStops) {
-                if (!visitedStations.add(stop.stationName.toLowerCase())) return false;
+            for (stop in leg.intermediateStops) {
+                if (!visitedStations.add(stop.stationName.lowercase(Locale.getDefault()))) return false
             }
 
-            if (!visitedStations.add(leg.toStationName.toLowerCase())) return false;
-            lastStation = leg.toStationName;
+            if (!visitedStations.add(leg.toStationName.lowercase(Locale.getDefault()))) return false
+            lastStation = leg.toStationName
         }
 
-        return true;
+        return true
     }
 
-    private StationDepartureResponse getBoard(String crs, int rows, String filter) {
-        String cacheKey = crs + "_" + rows + "_" + (filter != null ? filter : "ALL");
-        if (boardCache.containsKey(cacheKey)) return boardCache.get(cacheKey);
+    private fun getBoard(crs: String?, rows: Int, filter: String?): StationDepartureResponse? {
+        val cacheKey = crs + "_" + rows + "_" + (if (filter != null) filter else "ALL")
+        if (boardCache!!.containsKey(cacheKey)) return boardCache!!.get(cacheKey)
 
         try {
-            String filterType = filter != null ? "to" : null;
-            Response<StationDepartureResponse> res = api.getStationDepartures(crs, rows, filter, filterType, 0, 120).execute();
+            val filterType = if (filter != null) "to" else null
+            val res = api.getStationDepartures(crs, rows, filter, filterType, 0, 120).execute()
             if (res.isSuccessful() && res.body() != null) {
-                boardCache.put(cacheKey, res.body());
-                return res.body();
+                boardCache!!.put(cacheKey, res.body())
+                return res.body()
             }
-        } catch (Exception e) {
-            Log.e(TAG, "Cache miss/fail for board: " + cacheKey);
+        } catch (e: Exception) {
+            Log.e(TAG, "Cache miss/fail for board: " + cacheKey)
         }
-        return null;
+        return null
     }
 
-    private String getPreciseArrivalTime(String serviceId, String targetCrs) {
-        ServiceDetailsResponse details = null;
+    private fun getPreciseArrivalTime(serviceId: String?, targetCrs: String): String? {
+        var details: ServiceDetailsResponse? = null
 
-        if (detailCache.containsKey(serviceId)) {
-            details = detailCache.get(serviceId);
+        if (detailCache!!.containsKey(serviceId)) {
+            details = detailCache!!.get(serviceId)
         } else {
             try {
-                Response<ServiceDetailsResponse> res = api.getServiceDetails(serviceId).execute();
+                val res = api.getServiceDetails(serviceId).execute()
                 if (res.isSuccessful() && res.body() != null) {
-                    details = res.body();
-                    detailCache.put(serviceId, details);
+                    details = res.body()
+                    detailCache!!.put(serviceId, details)
                 }
-            } catch (Exception e) { Log.e(TAG, "Failed details for " + serviceId); }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed details for " + serviceId)
+            }
         }
 
         if (details != null) {
             if (details.subsequentCallingPoints != null && !details.subsequentCallingPoints.isEmpty()) {
-                for (ServiceDetailsResponse.TimelinePoint cp : details.subsequentCallingPoints.get(0).callingPoint) {
-                    String cpCrs = cp.crs != null ? cp.crs : StationHelper.getCrsFromName(cp.locationName);
-                    if (targetCrs.equalsIgnoreCase(cpCrs)) {
-                        return getBestTime(cp.scheduledTime, cp.estimatedTime);
+                for (cp in details.subsequentCallingPoints.get(0).callingPoint) {
+                    val cpCrs =
+                        if (cp.crs != null) cp.crs else StationHelper.getCrsFromName(cp.locationName)
+                    if (targetCrs.equals(cpCrs, ignoreCase = true)) {
+                        return getBestTime(cp.scheduledTime, cp.estimatedTime)
                     }
                 }
             }
-            String destCrs = details.crs != null ? details.crs : StationHelper.getCrsFromName(details.locationName);
-            if (targetCrs.equalsIgnoreCase(destCrs)) {
-                return getBestTime(details.sta, details.eta);
+            val destCrs =
+                if (details.crs != null) details.crs else StationHelper.getCrsFromName(details.locationName)
+            if (targetCrs.equals(destCrs, ignoreCase = true)) {
+                return getBestTime(details.sta, details.eta)
             }
         }
-        return null;
+        return null
     }
 
-    private List<JourneyLeg.Stop> extractIntermediateStops(String serviceId, String fromCrs, String toCrs) {
-        List<JourneyLeg.Stop> stops = new ArrayList<>();
-        ServiceDetailsResponse details = detailCache.get(serviceId);
-        if (details == null) return stops;
+    private fun extractIntermediateStops(
+        serviceId: String?,
+        fromCrs: String?,
+        toCrs: String?
+    ): MutableList<JourneyLeg.Stop?> {
+        val stops: MutableList<JourneyLeg.Stop?> = ArrayList<JourneyLeg.Stop?>()
+        val details = detailCache!!.get(serviceId)
+        if (details == null) return stops
 
-        List<ServiceDetailsResponse.TimelinePoint> allPoints = new ArrayList<>();
+        val allPoints: MutableList<TimelinePoint> = ArrayList<TimelinePoint>()
 
         if (details.previousCallingPoints != null && !details.previousCallingPoints.isEmpty()) {
-            allPoints.addAll(details.previousCallingPoints.get(0).callingPoint);
+            allPoints.addAll(details.previousCallingPoints.get(0).callingPoint)
         }
 
-        ServiceDetailsResponse.TimelinePoint currentStation = new ServiceDetailsResponse.TimelinePoint();
-        currentStation.locationName = details.locationName;
-        currentStation.crs = details.crs != null ? details.crs : StationHelper.getCrsFromName(details.locationName);
-        currentStation.scheduledTime = details.std != null ? details.std : details.sta;
-        currentStation.estimatedTime = details.etd != null ? details.etd : details.eta;
-        allPoints.add(currentStation);
+        val currentStation = TimelinePoint()
+        currentStation.locationName = details.locationName
+        currentStation.crs =
+            if (details.crs != null) details.crs else StationHelper.getCrsFromName(details.locationName)
+        currentStation.scheduledTime = if (details.std != null) details.std else details.sta
+        currentStation.estimatedTime = if (details.etd != null) details.etd else details.eta
+        allPoints.add(currentStation)
 
         if (details.subsequentCallingPoints != null && !details.subsequentCallingPoints.isEmpty()) {
-            allPoints.addAll(details.subsequentCallingPoints.get(0).callingPoint);
+            allPoints.addAll(details.subsequentCallingPoints.get(0).callingPoint)
         }
 
-        boolean isRecording = false;
-        for (ServiceDetailsResponse.TimelinePoint cp : allPoints) {
-            String cpCrs = cp.crs != null ? cp.crs : StationHelper.getCrsFromName(cp.locationName);
-            if (cpCrs == null) continue;
+        var isRecording = false
+        for (cp in allPoints) {
+            val cpCrs =
+                if (cp.crs != null) cp.crs else StationHelper.getCrsFromName(cp.locationName)
+            if (cpCrs == null) continue
 
-            if (cpCrs.equalsIgnoreCase(toCrs)) {
-                break;
+            if (cpCrs.equals(toCrs, ignoreCase = true)) {
+                break
             }
 
             if (isRecording) {
-                String time = getBestTime(cp.scheduledTime, cp.estimatedTime);
-                if (time == null) time = "Cancelled";
-                stops.add(new JourneyLeg.Stop(cp.locationName, time));
+                var time = getBestTime(cp.scheduledTime, cp.estimatedTime)
+                if (time == null) time = "Cancelled"
+                stops.add(JourneyLeg.Stop(cp.locationName, time))
             }
 
-            if (cpCrs.equalsIgnoreCase(fromCrs)) {
-                isRecording = true;
+            if (cpCrs.equals(fromCrs, ignoreCase = true)) {
+                isRecording = true
             }
         }
-        return stops;
+        return stops
     }
 
-    private String getLiveLocationStatus(String serviceId) {
-        ServiceDetailsResponse details = detailCache.get(serviceId);
+    private fun getLiveLocationStatus(serviceId: String?): String? {
+        val details = detailCache!!.get(serviceId)
         if (details != null) {
-            return LiveLocationEngine.getLiveLocation(details);
+            return getLiveLocation(details)
         }
-        return null;
+        return null
     }
 
-    private List<String> getPrioritizedHubs(List<StationDepartureResponse.TrainService> services, String origin) {
-        List<String> prioritizedHubs = new ArrayList<>();
-        Set<String> seen = new HashSet<>();
+    private fun getPrioritizedHubs(
+        services: MutableList<TrainService>?,
+        origin: String?
+    ): MutableList<String> {
+        val prioritizedHubs: MutableList<String> = ArrayList<String>()
+        val seen: MutableSet<String?> = HashSet<String?>()
 
-        for (String knownHub : graphManager.getConnections(origin)) {
-            if (seen.add(knownHub)) prioritizedHubs.add(knownHub);
+        for (knownHub in graphManager.getConnections(origin)!!) {
+            if (seen.add(knownHub)) knownHub?.let { prioritizedHubs.add(it) }
         }
 
         if (services != null) {
-            for (StationDepartureResponse.TrainService service : services) {
+            for (service in services) {
                 if (service.destination != null && !service.destination.isEmpty()) {
-                    String destCrsCode = service.destination.get(0).crs;
+                    val destCrsCode = service.destination.get(0).crs
                     if (destCrsCode != null && seen.add(destCrsCode)) {
-                        prioritizedHubs.add(destCrsCode);
+                        prioritizedHubs.add(destCrsCode)
                     }
                 }
             }
         }
-        return prioritizedHubs;
+        return prioritizedHubs
     }
 
-    private boolean hasValidTransferTime(String arrival, String departure, int minMins, int maxMins) {
-        if (arrival == null || departure == null || !arrival.contains(":") || !departure.contains(":")) return false;
+    private fun hasValidTransferTime(
+        arrival: String?,
+        departure: String?,
+        minMins: Int,
+        maxMins: Int
+    ): Boolean {
+        if (arrival == null || departure == null || !arrival.contains(":") || !departure.contains(":")) return false
         try {
-            String[] arrParts = arrival.split(":");
-            String[] depParts = departure.split(":");
+            val arrParts: Array<String?> =
+                arrival.split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+            val depParts: Array<String?> =
+                departure.split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
 
-            int arrMins = Integer.parseInt(arrParts[0].trim()) * 60 + Integer.parseInt(arrParts[1].trim());
-            int depMins = Integer.parseInt(depParts[0].trim()) * 60 + Integer.parseInt(depParts[1].trim());
+            val arrMins =
+                arrParts[0]!!.trim { it <= ' ' }.toInt() * 60 + arrParts[1]!!.trim { it <= ' ' }
+                    .toInt()
+            val depMins =
+                depParts[0]!!.trim { it <= ' ' }.toInt() * 60 + depParts[1]!!.trim { it <= ' ' }
+                    .toInt()
 
-            int diff = depMins - arrMins;
-            if (diff < 0) diff += 24 * 60;
+            var diff = depMins - arrMins
+            if (diff < 0) diff += 24 * 60
 
-            return diff >= minMins && diff <= maxMins;
-        } catch (Exception e) {
-            return false;
+            return diff >= minMins && diff <= maxMins
+        } catch (e: Exception) {
+            return false
         }
     }
 
-    private String addMinutesToTime(String time, int minsToAdd) {
-        if (time == null || !time.contains(":")) return "00:00";
+    private fun addMinutesToTime(time: String?, minsToAdd: Int): String {
+        if (time == null || !time.contains(":")) return "00:00"
         try {
-            String[] parts = time.split(":");
-            int mins = Integer.parseInt(parts[0].trim()) * 60 + Integer.parseInt(parts[1].trim()) + minsToAdd;
-            int h = (mins / 60) % 24;
-            int m = mins % 60;
-            return String.format("%02d:%02d", h, m);
-        } catch (Exception e) { return time; }
+            val parts: Array<String?> =
+                time.split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+            val mins = parts[0]!!.trim { it <= ' ' }.toInt() * 60 + parts[1]!!.trim { it <= ' ' }
+                .toInt() + minsToAdd
+            val h = (mins / 60) % 24
+            val m = mins % 60
+            return String.format("%02d:%02d", h, m)
+        } catch (e: Exception) {
+            return time
+        }
     }
 
-    public void shutdown() {
-        executor.shutdown();
+    fun shutdown() {
+        executor.shutdown()
     }
 
-    private String getStationName(String crs) {
-        if (crs == null) return "";
-        String upperCrs = crs.toUpperCase();
+    private fun getStationName(crs: String?): String? {
+        if (crs == null) return ""
+        val upperCrs = crs.uppercase(Locale.getDefault())
 
-        String directName = StationHelper.getNameFromCode(upperCrs);
+        val directName = StationHelper.getNameFromCode(upperCrs)
         if (directName != null && !directName.isEmpty()) {
-            return directName;
+            return directName
         }
         if (crsToNameMap == null) {
-            crsToNameMap = new HashMap<>();
-            List<String> allNames = StationHelper.getStationNames();
+            crsToNameMap = HashMap<String?, String?>()
+            val allNames = StationHelper.getStationNames()
             if (allNames != null) {
-                for (String name : allNames) {
-                    String code = StationHelper.getCrsFromName(name);
+                for (name in allNames) {
+                    val code = StationHelper.getCrsFromName(name)
                     if (code != null) {
-                        crsToNameMap.put(code.toUpperCase(), name);
+                        crsToNameMap!!.put(code.uppercase(Locale.getDefault()), name)
                     }
                 }
             }
         }
-        return crsToNameMap.getOrDefault(upperCrs, upperCrs);
+        return crsToNameMap!!.getOrDefault(upperCrs, upperCrs)
+    }
+
+    companion object {
+        private const val TAG = "JourneyPlanner"
+        private var crsToNameMap: MutableMap<String?, String?>? = null
     }
 }

@@ -1,323 +1,366 @@
-package io.github.turtle358.callingpoint.utils.JourneyPlanner;
+package io.github.turtle358.callingpoint.utils.JourneyPlanner
 
-import android.os.Handler;
-import android.os.Looper;
+import android.os.Handler
+import android.os.Looper
+import com.google.gson.JsonObject
+import io.github.turtle358.callingpoint.api.APIClient
+import io.github.turtle358.callingpoint.api.NationalRailAPI
+import io.github.turtle358.callingpoint.api.TflAPI
+import io.github.turtle358.callingpoint.models.JourneyLeg
+import io.github.turtle358.callingpoint.models.JourneyOption
+import io.github.turtle358.callingpoint.utils.JourneyPlanner.JourneyPlannerEngine.JourneyCallback
+import io.github.turtle358.callingpoint.utils.StationHelper
+import io.github.turtle358.callingpoint.utils.TOCBrandHelper
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+import kotlin.math.abs
+import kotlin.math.max
+import kotlin.math.min
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
+class TflJourneyPlannerEngine {
+    private val tflApi: TflAPI
+    private val nationalRailApi: NationalRailAPI
+    private val mainHandler: Handler
+    private val executor: ExecutorService?
 
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
-import java.util.Locale;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-import io.github.turtle358.callingpoint.api.APIClient;
-import io.github.turtle358.callingpoint.api.NationalRailAPI;
-import io.github.turtle358.callingpoint.api.TflAPI;
-import io.github.turtle358.callingpoint.models.JourneyLeg;
-import io.github.turtle358.callingpoint.models.JourneyOption;
-import io.github.turtle358.callingpoint.models.StationDepartureResponse;
-import io.github.turtle358.callingpoint.models.Toc;
-import io.github.turtle358.callingpoint.utils.StationHelper;
-import io.github.turtle358.callingpoint.utils.TOCBrandHelper;
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
-
-public class TflJourneyPlannerEngine {
-
-    private final TflAPI tflApi;
-    private final NationalRailAPI nationalRailApi;
-    private final Handler mainHandler;
-    private final ExecutorService executor;
-
-    public TflJourneyPlannerEngine() {
-        this.tflApi = APIClient.getClient().create(TflAPI.class);
-        this.nationalRailApi = APIClient.getClient().create(NationalRailAPI.class);
-        this.mainHandler = new Handler(Looper.getMainLooper());
-        this.executor = Executors.newSingleThreadExecutor();
+    init {
+        this.tflApi = APIClient.getClient().create(TflAPI::class.java)
+        this.nationalRailApi =
+            APIClient.getClient().create(NationalRailAPI::class.java)
+        this.mainHandler = Handler(Looper.getMainLooper())
+        this.executor = Executors.newSingleThreadExecutor()
     }
 
-    public void findRoutes(String fromNaptan, String toNaptan, String date, String time, String timeIs, JourneyPlannerEngine.JourneyCallback callback) {
-        mainHandler.post(() -> callback.onStatusUpdate("Searching TfL network..."));
+    fun findRoutes(
+        fromNaptan: String?,
+        toNaptan: String?,
+        date: String?,
+        time: String?,
+        timeIs: String?,
+        callback: JourneyCallback
+    ) {
+        mainHandler.post( { callback.onStatusUpdate("Searching TfL network...") })
 
-        tflApi.getJourneyResults(fromNaptan, toNaptan, false, date, time, timeIs).enqueue(new Callback<JsonObject>() {
-            @Override
-            public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    executor.execute(() -> {
-                        try {
-                            List<JourneyOption> options = parseTflResponse(response.body());
+        tflApi.getJourneyResults(fromNaptan, toNaptan, false, date, time, timeIs)
+            .enqueue(object : Callback<JsonObject?> {
+                override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
+                    if (response.isSuccessful && response.body() != null) {
+                        executor!!.execute( {
+                            try {
+                                val options = parseTflResponse(response.body()!!)
 
-                            if (isToday(date)) {
-                                mainHandler.post(() -> callback.onStatusUpdate("Matching National Rail services..."));
-                                enrichNationalRailServices(options);
-                            }
-
-                            mainHandler.post(() -> {
-                                if (options.isEmpty()) {
-                                    callback.onError("No TfL routes found.");
-                                } else {
-                                    callback.onJourneysFound(options);
+                                if (isToday(date)) {
+                                    mainHandler.post { callback.onStatusUpdate("Matching National Rail services...") }
+                                    enrichNationalRailServices(options)
                                 }
-                            });
-                        } catch (Exception e) {
-                            mainHandler.post(() -> callback.onError("Error processing journey data."));
-                        }
-                    });
-                } else {
-                    mainHandler.post(() -> callback.onError("TfL Planner unavailable."));
-                }
-            }
 
-            @Override
-            public void onFailure(Call<JsonObject> call, Throwable t) {
-                mainHandler.post(() -> callback.onError("Network error contacting TfL."));
-            }
-        });
+                                mainHandler.post {
+                                    if (options.isEmpty()) {
+                                        callback.onError("No TfL routes found.")
+                                    } else {
+                                        callback.onJourneysFound(options as MutableList<JourneyOption?>?)
+                                    }
+                                }
+                            } catch (_: Exception) {
+                                mainHandler.post { callback.onError("Error processing journey data.") }
+                            }
+                        })
+                    } else {
+                        mainHandler.post { callback.onError("TfL Planner unavailable.") }
+                    }
+                }
+
+                override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
+                    mainHandler.post { callback.onError("Network error contacting TfL.") }
+                }
+            })
     }
 
-    private boolean isToday(String dateStr) {
-        if (dateStr == null || dateStr.trim().isEmpty()) {
-            return true;
+    private fun isToday(dateStr: String?): Boolean {
+        if (dateStr == null || dateStr.trim { it <= ' ' }.isEmpty()) {
+            return true
         }
         try {
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd", Locale.UK);
-            String todayStr = sdf.format(new Date());
-            return todayStr.equals(dateStr.trim());
-        } catch (Exception e) {
-            return true;
+            val sdf = SimpleDateFormat("yyyyMMdd", Locale.UK)
+            val todayStr = sdf.format(Date())
+            return todayStr == dateStr.trim { it <= ' ' }
+        } catch (_: Exception) {
+            return true
         }
     }
 
-    private void enrichNationalRailServices(List<JourneyOption> options) {
-        for (JourneyOption option : options) {
-            if (option.legs == null) continue;
-            for (JourneyLeg leg : option.legs) {
-                if (!"TRAIN".equals(leg.transportMode)) continue;
+    private fun enrichNationalRailServices(options: MutableList<JourneyOption>) {
+        for (option in options) {
+            if (option.legs == null) continue
+            for (leg in option.legs) {
+                if ("TRAIN" != leg.transportMode) continue
 
-                String fromCrs = resolveCrs(leg.fromStationName);
-                String toCrs = resolveCrs(leg.toStationName);
+                val fromCrs = resolveCrs(leg.fromStationName)
+                val toCrs = resolveCrs(leg.toStationName)
 
                 if (fromCrs != null && toCrs != null) {
                     try {
-                        int timeOffset = calculateTimeOffset(leg.departureTime);
+                        val timeOffset = calculateTimeOffset(leg.departureTime)
 
-                        Response<StationDepartureResponse> res = nationalRailApi
-                                .getStationDepartures(fromCrs, 40, toCrs, "to", timeOffset, 120)
-                                .execute();
+                        val res = nationalRailApi
+                            .getStationDepartures(fromCrs, 40, toCrs, "to", timeOffset, 120)
+                            .execute()
 
-                        if (res.isSuccessful() && res.body() != null && res.body().trainServices != null) {
-                            for (StationDepartureResponse.TrainService service : res.body().trainServices) {
-                                if (service.std != null && isTimeMatching(service.std, leg.departureTime, 2)) {
-                                    leg.serviceId = service.serviceID;
+                        if (res.isSuccessful() && res.body() != null && res.body()!!.trainServices != null) {
+                            for (service in res.body()!!.trainServices) {
+                                if (service.std != null && isTimeMatching(
+                                        service.std,
+                                        leg.departureTime,
+                                        2
+                                    )
+                                ) {
+                                    leg.serviceId = service.serviceID
 
                                     if (service.operatorName != null && !service.operatorName.isEmpty()) {
-                                        Toc matchedToc = TOCBrandHelper.getTocByName(service.operatorName);
+                                        val matchedToc =
+                                            TOCBrandHelper.getTocByName(service.operatorName)
                                         if (matchedToc != null) {
-                                            leg.operatorName = matchedToc.name;
+                                            leg.operatorName = matchedToc.name
                                         }
                                     }
-                                    break;
+                                    break
                                 }
                             }
                         }
-
-                    } catch (Exception e) {
+                    } catch (_: Exception) {
                     }
                 }
             }
         }
     }
 
-    private String resolveCrs(String stationName) {
-        if (stationName == null) return null;
-        String crs = StationHelper.getCrsFromName(stationName);
+    private fun resolveCrs(stationName: String?): String? {
+        if (stationName == null) return null
+        var crs = StationHelper.getCrsFromName(stationName)
         if (crs == null && stationName.startsWith("London ")) {
-            crs = StationHelper.getCrsFromName(stationName.replace("London ", ""));
+            crs = StationHelper.getCrsFromName(stationName.replace("London ", ""))
         }
         if (crs == null && !stationName.startsWith("London ")) {
-            crs = StationHelper.getCrsFromName("London " + stationName);
+            crs = StationHelper.getCrsFromName("London " + stationName)
         }
-        return crs;
+        return crs
     }
 
-    private int calculateTimeOffset(String departureTimeStr) {
-        if (departureTimeStr == null || !departureTimeStr.contains(":")) return 0;
+    private fun calculateTimeOffset(departureTimeStr: String?): Int {
+        if (departureTimeStr == null || !departureTimeStr.contains(":")) return 0
         try {
-            String[] parts = departureTimeStr.split(":");
-            int depMins = Integer.parseInt(parts[0].trim()) * 60 + Integer.parseInt(parts[1].trim());
+            val parts =
+                departureTimeStr.split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+            val depMins =
+                parts[0].trim { it <= ' ' }.toInt() * 60 + parts[1].trim { it <= ' ' }.toInt()
 
-            Calendar now = Calendar.getInstance();
-            int currentMins = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE);
+            val now = Calendar.getInstance()
+            val currentMins = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE)
 
-            int diff = depMins - currentMins;
+            val diff = depMins - currentMins
 
-            int offset = diff - 10;
-            return Math.max(-120, Math.min(120, offset));
-        } catch (Exception e) {
-            return 0;
+            val offset = diff - 10
+            return max(-120, min(120, offset))
+        } catch (_: Exception) {
+            return 0
         }
     }
 
-    private boolean isTimeMatching(String time1, String time2, int toleranceMins) {
+    private fun isTimeMatching(time1: String, time2: String, toleranceMins: Int): Boolean {
         try {
-            String[] p1 = time1.trim().split(":");
-            String[] p2 = time2.trim().split(":");
+            val p1 = time1.trim { it <= ' ' }.split(":".toRegex()).dropLastWhile { it.isEmpty() }
+                .toTypedArray()
+            val p2 = time2.trim { it <= ' ' }.split(":".toRegex()).dropLastWhile { it.isEmpty() }
+                .toTypedArray()
 
-            int m1 = Integer.parseInt(p1[0].trim()) * 60 + Integer.parseInt(p1[1].trim());
-            int m2 = Integer.parseInt(p2[0].trim()) * 60 + Integer.parseInt(p2[1].trim());
+            val m1 = p1[0].trim { it <= ' ' }.toInt() * 60 + p1[1].trim { it <= ' ' }.toInt()
+            val m2 = p2[0].trim { it <= ' ' }.toInt() * 60 + p2[1].trim { it <= ' ' }.toInt()
 
-            return Math.abs(m1 - m2) <= toleranceMins;
-        } catch (Exception e) {
-            return time1.trim().equalsIgnoreCase(time2.trim());
+            return abs(m1 - m2) <= toleranceMins
+        } catch (e: Exception) {
+            return time1.trim { it <= ' ' }.equals(time2.trim { it <= ' ' }, ignoreCase = true)
         }
     }
 
-    private List<JourneyOption> parseTflResponse(JsonObject root) {
-        List<JourneyOption> options = new ArrayList<>();
-        if (!root.has("journeys")) return options;
+    private fun parseTflResponse(root: JsonObject): MutableList<JourneyOption> {
+        val options: MutableList<JourneyOption> = ArrayList<JourneyOption>()
+        if (!root.has("journeys")) return options
 
-        JsonArray journeys = root.getAsJsonArray("journeys");
-        for (JsonElement jElem : journeys) {
-            JsonObject jObj = jElem.getAsJsonObject();
-            if (!jObj.has("legs")) continue;
+        val journeys = root.getAsJsonArray("journeys")
+        for (jElem in journeys) {
+            val jObj = jElem.getAsJsonObject()
+            if (!jObj.has("legs")) continue
 
-            String journeyStartDate = null;
+            var journeyStartDate: String? = null
             if (jObj.has("startDateTime")) {
-                journeyStartDate = jObj.get("startDateTime").getAsString();
+                journeyStartDate = jObj.get("startDateTime").getAsString()
             }
 
-            JsonArray legsData = jObj.getAsJsonArray("legs");
-            List<JourneyLeg> parsedLegs = new ArrayList<>();
+            val legsData = jObj.getAsJsonArray("legs")
+            val parsedLegs: MutableList<JourneyLeg?> = ArrayList<JourneyLeg?>()
 
-            for (JsonElement legElem : legsData) {
-                JsonObject legObj = legElem.getAsJsonObject();
+            for (legElem in legsData) {
+                val legObj = legElem.getAsJsonObject()
 
-                JsonObject depPoint = legObj.getAsJsonObject("departurePoint");
-                JsonObject arrPoint = legObj.getAsJsonObject("arrivalPoint");
-                JsonObject modeInfo = legObj.getAsJsonObject("mode");
+                val depPoint = legObj.getAsJsonObject("departurePoint")
+                val arrPoint = legObj.getAsJsonObject("arrivalPoint")
+                val modeInfo = legObj.getAsJsonObject("mode")
 
-                String fromName = depPoint.has("commonName") ? depPoint.get("commonName").getAsString() : "Unknown";
-                String toName = arrPoint.has("commonName") ? arrPoint.get("commonName").getAsString() : "Unknown";
+                var fromName = if (depPoint.has("commonName")) depPoint.get("commonName")
+                    .getAsString() else "Unknown"
+                var toName = if (arrPoint.has("commonName")) arrPoint.get("commonName")
+                    .getAsString() else "Unknown"
 
-                String modeId = modeInfo.has("id") ? modeInfo.get("id").getAsString() : "unknown";
-                String specificLineId = modeId;
-                String depTimeStr = legObj.has("departureTime") ? legObj.get("departureTime").getAsString() : "";
-                String arrTimeStr = legObj.has("arrivalTime") ? legObj.get("arrivalTime").getAsString() : "";
-                String depTime = extractTime(depTimeStr);
-                String arrTime = extractTime(arrTimeStr);
+                val modeId = if (modeInfo.has("id")) modeInfo.get("id").getAsString() else "unknown"
+                var specificLineId = modeId
+                val depTimeStr = if (legObj.has("departureTime")) legObj.get("departureTime")
+                    .getAsString() else ""
+                val arrTimeStr =
+                    if (legObj.has("arrivalTime")) legObj.get("arrivalTime").getAsString() else ""
+                val depTime = extractTime(depTimeStr)
+                val arrTime = extractTime(arrTimeStr)
 
-                String dest = toName;
+                var dest: String? = toName
 
                 if (legObj.has("routeOptions")) {
-                    JsonArray routeOptions = legObj.getAsJsonArray("routeOptions");
+                    val routeOptions = legObj.getAsJsonArray("routeOptions")
                     if (routeOptions.size() > 0) {
-                        JsonObject firstOption = routeOptions.get(0).getAsJsonObject();
+                        val firstOption = routeOptions.get(0).getAsJsonObject()
 
-                        if (firstOption.has("directions") && firstOption.getAsJsonArray("directions").size() > 0) {
-                            dest = firstOption.getAsJsonArray("directions").get(0).getAsString();
+                        if (firstOption.has("directions") && firstOption.getAsJsonArray("directions")
+                                .size() > 0
+                        ) {
+                            dest = firstOption.getAsJsonArray("directions").get(0).getAsString()
                         }
 
                         if (firstOption.has("lineIdentifier")) {
-                            JsonObject lineIdentifier = firstOption.getAsJsonObject("lineIdentifier");
+                            val lineIdentifier = firstOption.getAsJsonObject("lineIdentifier")
                             if (lineIdentifier.has("id")) {
-                                specificLineId = lineIdentifier.get("id").getAsString();
+                                specificLineId = lineIdentifier.get("id").getAsString()
                             }
                         }
                     }
                 }
 
-                String operatorName;
-                String transportMode;
+                val operatorName: String?
+                val transportMode: String?
 
-                if ("bus".equalsIgnoreCase(modeId)) {
-                    transportMode = "BUS";
-                    operatorName = "Bus " + specificLineId.toUpperCase();
-                } else if ("walking".equalsIgnoreCase(modeId)) {
-                    transportMode = "TUBE/WALK";
-                    operatorName = "Walking";
-                } else if ("tube".equalsIgnoreCase(modeId) || "dlr".equalsIgnoreCase(modeId)
-                        || "overground".equalsIgnoreCase(modeId) || "tram".equalsIgnoreCase(modeId)
-                        || "elizabeth-line".equalsIgnoreCase(modeId) || "cable-car".equalsIgnoreCase(modeId)) {
-                    transportMode = "TUBE";
-                    operatorName = formatOperatorSlug(specificLineId) + " Line";
+                if ("bus".equals(modeId, ignoreCase = true)) {
+                    transportMode = "BUS"
+                    operatorName = "Bus " + specificLineId.uppercase(Locale.getDefault())
+                } else if ("walking".equals(modeId, ignoreCase = true)) {
+                    transportMode = "TUBE/WALK"
+                    operatorName = "Walking"
+                } else if ("tube".equals(modeId, ignoreCase = true) || "dlr".equals(
+                        modeId,
+                        ignoreCase = true
+                    )
+                    || "overground".equals(modeId, ignoreCase = true) || "tram".equals(
+                        modeId,
+                        ignoreCase = true
+                    )
+                    || "elizabeth-line".equals(modeId, ignoreCase = true) || "cable-car".equals(
+                        modeId,
+                        ignoreCase = true
+                    )
+                ) {
+                    transportMode = "TUBE"
+                    operatorName = formatOperatorSlug(specificLineId) + " Line"
                 } else {
-                    transportMode = "TRAIN";
-                    String tocCode = TOCBrandHelper.getTocCodeForTflId(specificLineId);
-                    Toc toc = TOCBrandHelper.getTocByName(tocCode);
-                    if (toc == null) toc = TOCBrandHelper.getTocByName(specificLineId);
-                    operatorName = (toc != null) ? toc.name : formatOperatorSlug(specificLineId);
+                    transportMode = "TRAIN"
+                    val tocCode = TOCBrandHelper.getTocCodeForTflId(specificLineId)
+                    var toc = TOCBrandHelper.getTocByName(tocCode)
+                    if (toc == null) toc = TOCBrandHelper.getTocByName(specificLineId)
+                    operatorName = if (toc != null) toc.name else formatOperatorSlug(specificLineId)
                 }
 
-                fromName = fromName.replace(" Underground Station", "").replace(" Rail Station", "");
-                toName = toName.replace(" Underground Station", "").replace(" Rail Station", "");
+                fromName = fromName.replace(" Underground Station", "").replace(" Rail Station", "")
+                toName = toName.replace(" Underground Station", "").replace(" Rail Station", "")
 
-                List<JourneyLeg.Stop> intermediateStops = new ArrayList<>();
+                val intermediateStops: MutableList<JourneyLeg.Stop?> = ArrayList<JourneyLeg.Stop?>()
                 if (legObj.has("path")) {
-                    JsonObject pathObj = legObj.getAsJsonObject("path");
+                    val pathObj = legObj.getAsJsonObject("path")
                     if (pathObj.has("stopPoints")) {
-                        JsonArray stopPointsArray = pathObj.getAsJsonArray("stopPoints");
+                        val stopPointsArray = pathObj.getAsJsonArray("stopPoints")
 
-                        for (JsonElement stopElem : stopPointsArray) {
-                            JsonObject stopPointObj = stopElem.getAsJsonObject();
-                            String stopName = stopPointObj.has("name") ? stopPointObj.get("name").getAsString() : "Unknown";
-                            stopName = stopName.replace(" Underground Station", "").replace(" Rail Station", "");
+                        for (stopElem in stopPointsArray) {
+                            val stopPointObj = stopElem.getAsJsonObject()
+                            var stopName = if (stopPointObj.has("name")) stopPointObj.get("name")
+                                .getAsString() else "Unknown"
+                            stopName = stopName.replace(" Underground Station", "")
+                                .replace(" Rail Station", "")
 
-                            if (!stopName.equalsIgnoreCase(fromName) && !stopName.equalsIgnoreCase(toName)) {
-                                intermediateStops.add(new JourneyLeg.Stop(stopName, "--:--"));
+                            if (!stopName.equals(fromName, ignoreCase = true) && !stopName.equals(
+                                    toName,
+                                    ignoreCase = true
+                                )
+                            ) {
+                                intermediateStops.add(JourneyLeg.Stop(stopName, "--:--"))
                             }
                         }
                     }
                 }
 
-                JourneyLeg leg = new JourneyLeg(
-                        depPoint.has("naptanId") ? depPoint.get("naptanId").getAsString() : "", fromName,
-                        arrPoint.has("naptanId") ? arrPoint.get("naptanId").getAsString() : "", toName,
-                        dest, depTime, arrTime, operatorName, null, transportMode, intermediateStops, null, depTime
-                );
-                parsedLegs.add(leg);
+                val leg = JourneyLeg(
+                    if (depPoint.has("naptanId")) depPoint.get("naptanId").getAsString() else "",
+                    fromName,
+                    if (arrPoint.has("naptanId")) arrPoint.get("naptanId").getAsString() else "",
+                    toName,
+                    dest,
+                    depTime,
+                    arrTime,
+                    operatorName,
+                    null,
+                    transportMode,
+                    intermediateStops,
+                    null,
+                    depTime
+                )
+                parsedLegs.add(leg)
             }
             if (!parsedLegs.isEmpty()) {
-                JourneyOption option = new JourneyOption(parsedLegs);
-                option.departureDate = journeyStartDate;
-                options.add(option);
+                val option = JourneyOption(parsedLegs)
+                option.departureDate = journeyStartDate
+                options.add(option)
             }
         }
-        return options;
+        return options
     }
 
-    private String formatOperatorSlug(String slug) {
-        if (slug == null || slug.isEmpty()) return "National Rail";
-        String[] words = slug.replace("-", " ").split("\\s+");
-        StringBuilder sb = new StringBuilder();
-        for (String w : words) {
-            if (w.length() > 0) {
-                sb.append(Character.toUpperCase(w.charAt(0)))
-                        .append(w.substring(1).toLowerCase())
-                        .append(" ");
+    private fun formatOperatorSlug(slug: String?): String {
+        if (slug == null || slug.isEmpty()) return "National Rail"
+        val words = slug.replace("-", " ").split("\\s+".toRegex()).dropLastWhile { it.isEmpty() }
+            .toTypedArray()
+        val sb = StringBuilder()
+        for (w in words) {
+            if (w.length > 0) {
+                sb.append(w.get(0).uppercaseChar())
+                    .append(w.substring(1).lowercase(Locale.getDefault()))
+                    .append(" ")
             }
         }
-        return sb.toString().trim();
+        return sb.toString().trim { it <= ' ' }
     }
 
-    private String extractTime(String isoDate) {
-        if (isoDate == null || isoDate.length() < 16) return "--:--";
+    private fun extractTime(isoDate: String?): String {
+        if (isoDate == null || isoDate.length < 16) return "--:--"
         try {
-            return isoDate.substring(11, 16);
-        } catch (Exception e) {
-            return "--:--";
+            return isoDate.substring(11, 16)
+        } catch (e: Exception) {
+            return "--:--"
         }
     }
 
-    public void shutdown() {
+    fun shutdown() {
         if (executor != null) {
-            executor.shutdown();
+            executor.shutdown()
         }
     }
 }

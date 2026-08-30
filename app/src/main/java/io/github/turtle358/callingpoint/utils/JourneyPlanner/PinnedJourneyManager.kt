@@ -1,96 +1,98 @@
-package io.github.turtle358.callingpoint.utils.JourneyPlanner;
+package io.github.turtle358.callingpoint.utils.JourneyPlanner
 
-import android.content.Context;
-import android.content.SharedPreferences;
+import android.content.Context
+import android.content.SharedPreferences
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import io.github.turtle358.callingpoint.models.JourneyOption
 
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
+class PinnedJourneyManager(context: Context) {
+    private val prefs: SharedPreferences
+    private val gson: Gson
 
-import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-
-import io.github.turtle358.callingpoint.models.JourneyOption;
-
-public class PinnedJourneyManager {
-
-    private static final String PREF_NAME = "pinned_journeys_prefs";
-    private static final String KEY_JOURNEYS = "saved_journeys_list";
-    private final SharedPreferences prefs;
-    private final Gson gson;
-
-    public PinnedJourneyManager(Context context) {
-        prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
-        gson = new Gson();
+    init {
+        prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+        gson = Gson()
     }
 
-    public void saveAllPinnedJourneys(List<JourneyOption> journeys) {
-        prefs.edit().putString(KEY_JOURNEYS, gson.toJson(journeys)).apply();
+    fun saveAllPinnedJourneys(journeys: MutableList<JourneyOption?>?) {
+        prefs.edit().putString(KEY_JOURNEYS, gson.toJson(journeys)).apply()
     }
 
-    public void saveJourney(JourneyOption journey) {
-        List<JourneyOption> currentList = getPinnedJourneys();
-        for (JourneyOption existing : currentList) {
-            if (existing.departTime.equals(journey.departTime) &&
-                    existing.duration.equals(journey.duration) &&
-                    Objects.equals(existing.departureDate, journey.departureDate)) {
-                return;
+    fun saveJourney(journey: JourneyOption) {
+        val currentList = this.pinnedJourneys
+        for (existing in currentList) {
+            if (existing.departTime == journey.departTime &&
+                existing.duration == journey.duration &&
+                existing.departureDate == journey.departureDate
+            ) {
+                return
             }
         }
-        currentList.add(journey);
-        prefs.edit().putString(KEY_JOURNEYS, gson.toJson(currentList)).apply();
+        currentList.add(journey)
+        prefs.edit().putString(KEY_JOURNEYS, gson.toJson(currentList)).apply()
     }
 
-    public void removeJourney(JourneyOption journeyToRemove) {
-        List<JourneyOption> currentList = getPinnedJourneys();
-        currentList.removeIf(j -> j.departTime.equals(journeyToRemove.departTime) &&
-                j.duration.equals(journeyToRemove.duration) &&
-                Objects.equals(j.departureDate, journeyToRemove.departureDate));
-        prefs.edit().putString(KEY_JOURNEYS, gson.toJson(currentList)).apply();
-    }
-
-    public List<JourneyOption> getPinnedJourneys() {
-        String json = prefs.getString(KEY_JOURNEYS, null);
-        if (json == null || json.isEmpty()) {
-            return new ArrayList<>();
+    fun removeJourney(journeyToRemove: JourneyOption) {
+        val currentList = this.pinnedJourneys
+        currentList.removeIf { j: JourneyOption? ->
+            j!!.departTime == journeyToRemove.departTime &&
+                    j.duration == journeyToRemove.duration &&
+                    j.departureDate == journeyToRemove.departureDate
         }
-        Type type = new TypeToken<List<JourneyOption>>() {}.getType();
-        return gson.fromJson(json, type);
+        prefs.edit().putString(KEY_JOURNEYS, gson.toJson(currentList)).apply()
     }
 
-    public boolean isJourneyPinned(JourneyOption journey) {
-        List<JourneyOption> currentList = getPinnedJourneys();
-        for (JourneyOption existing : currentList) {
-            if (existing.departTime.equals(journey.departTime) &&
-                    existing.duration.equals(journey.duration) &&
-                    Objects.equals(existing.departureDate, journey.departureDate)) {
-                return true;
+    val pinnedJourneys: MutableList<JourneyOption>
+        get() {
+            val json =
+                prefs.getString(KEY_JOURNEYS, null)
+            if (json == null || json.isEmpty()) {
+                return ArrayList<JourneyOption>()
+            }
+            val type = object :
+                TypeToken<MutableList<JourneyOption?>?>() {}.getType()
+            return gson.fromJson<MutableList<JourneyOption?>>(json, type) as MutableList<JourneyOption>
+        }
+
+    fun isJourneyPinned(journey: JourneyOption): Boolean {
+        val currentList = this.pinnedJourneys
+        for (existing in currentList) {
+            if (existing.departTime == journey.departTime &&
+                existing.duration == journey.duration &&
+                existing.departureDate == journey.departureDate
+            ) {
+                return true
             }
         }
-        return false;
+        return false
     }
 
-    public void toggleJourneyPin(JourneyOption journey) {
+    fun toggleJourneyPin(journey: JourneyOption) {
         if (isJourneyPinned(journey)) {
-            removeJourney(journey);
+            removeJourney(journey)
         } else {
-            saveJourney(journey);
+            saveJourney(journey)
         }
     }
 
-    public void updateJourney(JourneyOption updatedJourney) {
-        List<JourneyOption> currentList = getPinnedJourneys();
-        for (int i = 0; i < currentList.size(); i++) {
-            JourneyOption existing = currentList.get(i);
-            if (existing.departTime.equals(updatedJourney.departTime) &&
-                    existing.duration.equals(updatedJourney.duration) &&
-                    Objects.equals(existing.departureDate, updatedJourney.departureDate)) {
-
-                currentList.set(i, updatedJourney);
-                prefs.edit().putString(KEY_JOURNEYS, gson.toJson(currentList)).apply();
-                return;
+    fun updateJourney(updatedJourney: JourneyOption) {
+        val currentList = this.pinnedJourneys
+        for (i in currentList.indices) {
+            val existing = currentList.get(i)
+            if (existing.departTime == updatedJourney.departTime &&
+                existing.duration == updatedJourney.duration &&
+                existing.departureDate == updatedJourney.departureDate
+            ) {
+                currentList.set(i, updatedJourney)
+                prefs.edit().putString(KEY_JOURNEYS, gson.toJson(currentList)).apply()
+                return
             }
         }
+    }
+
+    companion object {
+        private const val PREF_NAME = "pinned_journeys_prefs"
+        private const val KEY_JOURNEYS = "saved_journeys_list"
     }
 }

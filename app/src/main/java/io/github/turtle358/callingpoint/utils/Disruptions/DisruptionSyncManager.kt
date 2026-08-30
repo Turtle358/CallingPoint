@@ -1,309 +1,327 @@
-package io.github.turtle358.callingpoint.utils.Disruptions;
+package io.github.turtle358.callingpoint.utils.Disruptions
 
-import android.appwidget.AppWidgetManager;
-import android.content.ComponentName;
-import android.content.Context;
-import android.content.Intent;
-import android.content.SharedPreferences;
-import android.os.Handler;
-import android.os.Looper;
+import android.appwidget.AppWidgetManager
+import android.content.ComponentName
+import android.content.Context
+import android.content.Intent
+import android.os.Handler
+import android.os.Looper
+import com.google.gson.Gson
+import io.github.turtle358.callingpoint.api.APIClient
+import io.github.turtle358.callingpoint.api.NationalRailAPI
+import io.github.turtle358.callingpoint.api.TflAPI
+import io.github.turtle358.callingpoint.models.DisruptionResponce.ServiceIndicator
+import io.github.turtle358.callingpoint.models.IncidentResponse
+import io.github.turtle358.callingpoint.models.IncidentResponse.AffectedOperator
+import io.github.turtle358.callingpoint.models.IncidentSearchRequest
+import io.github.turtle358.callingpoint.utils.Disruptions.DisruptionSeverityManager.Severity.Companion.fromString
+import io.github.turtle358.callingpoint.utils.Disruptions.DisruptionSeverityManager.classify
+import io.github.turtle358.callingpoint.utils.Disruptions.DisruptionSeverityManager.isTflPlanned
+import io.github.turtle358.callingpoint.utils.TOCBrandHelper
+import io.github.turtle358.callingpoint.widget.AppWidgetProvider
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
-import com.google.gson.Gson;
-
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-
-import io.github.turtle358.callingpoint.api.APIClient;
-import io.github.turtle358.callingpoint.api.NationalRailAPI;
-import io.github.turtle358.callingpoint.api.TflAPI;
-import io.github.turtle358.callingpoint.models.DisruptionResponce;
-import io.github.turtle358.callingpoint.models.IncidentResponse;
-import io.github.turtle358.callingpoint.models.IncidentSearchRequest;
-import io.github.turtle358.callingpoint.models.TflLineStatusResponse;
-import io.github.turtle358.callingpoint.utils.TOCBrandHelper;
-import io.github.turtle358.callingpoint.widget.AppWidgetProvider;
-import io.github.turtle358.callingpoint.utils.Disruptions.DisruptionSeverityManager.Severity;
-import retrofit2.Response;
-
-public class DisruptionSyncManager {
-    public static class CachedDisruptionData {
-        public List<DisruptionResponce.ServiceIndicator> tracked;
-        public List<DisruptionResponce.ServiceIndicator> others;
-        public List<DisruptionResponce.ServiceIndicator> engineering;
-
-        public CachedDisruptionData(List<DisruptionResponce.ServiceIndicator> tracked,
-                                    List<DisruptionResponce.ServiceIndicator> others,
-                                    List<DisruptionResponce.ServiceIndicator> engineering) {
-            this.tracked = tracked;
-            this.others = others;
-            this.engineering = engineering;
-        }
-    }
-
-    public interface SyncCallback {
-        void onSuccess(List<DisruptionResponce.ServiceIndicator> tracked,
-                       List<DisruptionResponce.ServiceIndicator> others,
-                       List<DisruptionResponce.ServiceIndicator> engineering);
-        void onFailure(String error);
-    }
-
-    public static void syncAsync(Context context, SyncCallback callback) {
-        new Thread(() -> {
-            boolean success = syncSync(context, callback);
+object DisruptionSyncManager {
+    @JvmStatic
+    fun syncAsync(context: Context, callback: SyncCallback?) {
+        Thread(Runnable {
+            val success = syncSync(context, callback)
             if (!success && callback != null) {
-                new Handler(Looper.getMainLooper()).post(() -> callback.onFailure("Sync failed"));
+                Handler(Looper.getMainLooper()).post(Runnable { callback.onFailure("Sync failed") })
             }
-        }).start();
+        }).start()
     }
 
-    public static boolean syncSync(Context context, SyncCallback callback) {
-        SharedPreferences prefs = context.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
+    @JvmStatic
+    fun syncSync(context: Context, callback: SyncCallback?): Boolean {
+        val prefs = context.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
 
-        TOCBrandHelper.init(context);
+        TOCBrandHelper.init(context)
 
-        String selectedTocs = prefs.getString("WIDGET_TRACKED_TOCS", "");
-        Set<String> trackedSet = new HashSet<>();
-        if (!selectedTocs.trim().isEmpty()) {
-            for (String s : selectedTocs.split(",")) {
-                if (!s.trim().isEmpty()) trackedSet.add(s.trim());
+        val selectedTocs: String = prefs.getString("WIDGET_TRACKED_TOCS", "")!!
+        val trackedSet: MutableSet<String?> = HashSet<String?>()
+        if (!selectedTocs.trim { it <= ' ' }.isEmpty()) {
+            for (s in selectedTocs.split(",".toRegex()).dropLastWhile { it.isEmpty() }
+                .toTypedArray()) {
+                if (!s.trim { it <= ' ' }.isEmpty()) trackedSet.add(s.trim { it <= ' ' })
             }
         }
 
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-        Calendar cal = Calendar.getInstance();
+        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        val cal = Calendar.getInstance()
 
-        cal.add(Calendar.DAY_OF_YEAR, 1);
-        String today = sdf.format(cal.getTime());
-        cal.add(Calendar.DAY_OF_YEAR, 2);
-        String tomorrow = sdf.format(cal.getTime());
-        IncidentSearchRequest request = new IncidentSearchRequest(today, tomorrow, new ArrayList<>());
-        NationalRailAPI api = APIClient.getClient().<NationalRailAPI>create(NationalRailAPI.class);
+        cal.add(Calendar.DAY_OF_YEAR, 1)
+        val today = sdf.format(cal.getTime())
+        cal.add(Calendar.DAY_OF_YEAR, 2)
+        val tomorrow = sdf.format(cal.getTime())
+        val request = IncidentSearchRequest(today, tomorrow, ArrayList<String?>())
+        val api = APIClient.getClient().create<NationalRailAPI>(NationalRailAPI::class.java)
 
         try {
-            Response<List<IncidentResponse>> response = api.searchIncidents(request).execute();
+            val response = api.searchIncidents(request).execute()
 
             if (response.isSuccessful() && response.body() != null) {
-                Map<String, DisruptionResponce.ServiceIndicator> trackedMap = new LinkedHashMap<>();
-                Map<String, DisruptionResponce.ServiceIndicator> othersMap = new LinkedHashMap<>();
+                val trackedMap: MutableMap<String?, ServiceIndicator> =
+                    LinkedHashMap<String?, ServiceIndicator>()
+                val othersMap: MutableMap<String?, ServiceIndicator> =
+                    LinkedHashMap<String?, ServiceIndicator>()
 
-                for (IncidentResponse incident : response.body()) {
-                    if (incident.affectedOperators == null || "Cleared".equalsIgnoreCase(incident.status)) continue;
+                for (incident in response.body()!!) {
+                    if (incident.affectedOperators == null || "Cleared".equals(
+                            incident.status,
+                            ignoreCase = true
+                        )
+                    ) continue
 
-                    for (IncidentResponse.AffectedOperator op : incident.affectedOperators) {
-
-                        if ("LO".equalsIgnoreCase(op.tocCode) || "XR".equalsIgnoreCase(op.tocCode)) {
-                            continue;
+                    for (op in incident.affectedOperators) {
+                        if ("LO".equals(op.tocCode, ignoreCase = true) || "XR".equals(
+                                op.tocCode,
+                                ignoreCase = true
+                            )
+                        ) {
+                            continue
                         }
 
-                        Severity severity = DisruptionSeverityManager.classify(
-                                incident.summary,
-                                incident.description
-                        );
+                        val severity = classify(
+                            incident.summary,
+                            incident.description
+                        )
 
-                        Map<String, DisruptionResponce.ServiceIndicator> targetMap;
+                        val targetMap: MutableMap<String?, ServiceIndicator>?
                         if (trackedSet.isEmpty() || trackedSet.contains(op.tocCode)) {
-                            targetMap = trackedMap;
+                            targetMap = trackedMap
                         } else {
-                            targetMap = othersMap;
+                            targetMap = othersMap
                         }
 
                         if (!targetMap.containsKey(op.tocCode)) {
-                            DisruptionResponce.ServiceIndicator si = new DisruptionResponce.ServiceIndicator();
-                            si.tocCode = op.tocCode;
-                            si.tocName = TOCBrandHelper.getNameForCode(op.tocCode);
-                            si.status = severity.statusString;
+                            val si = ServiceIndicator()
+                            si.tocCode = op.tocCode
+                            si.tocName = TOCBrandHelper.getNameForCode(op.tocCode)
+                            si.status = severity.statusString
 
-                            if (severity == Severity.ENGINEERING_WORKS) {
-                                si.plannedIncidents.add(incident);
+                            if (severity == DisruptionSeverityManager.Severity.ENGINEERING_WORKS) {
+                                si.plannedIncidents.add(incident)
                             } else {
-                                si.activeIncidents.add(incident);
+                                si.activeIncidents.add(incident)
                             }
-                            targetMap.put(op.tocCode, si);
+                            targetMap.put(op.tocCode, si)
                         } else {
-                            DisruptionResponce.ServiceIndicator existing = targetMap.get(op.tocCode);
-                            Severity existingSeverity = Severity.fromString(existing.status);
+                            val existing = targetMap.get(op.tocCode)
+                            val existingSeverity = fromString(existing!!.status)
 
                             if (severity.priority > existingSeverity.priority) {
-                                existing.status = severity.statusString;
+                                existing.status = severity.statusString
                             }
 
-                            if (severity == Severity.ENGINEERING_WORKS) {
+                            if (severity == DisruptionSeverityManager.Severity.ENGINEERING_WORKS) {
                                 if (!existing.plannedIncidents.contains(incident)) {
-                                    existing.plannedIncidents.add(incident);
+                                    existing.plannedIncidents.add(incident)
                                 }
                             } else {
                                 if (!existing.activeIncidents.contains(incident)) {
-                                    existing.activeIncidents.add(incident);
+                                    existing.activeIncidents.add(incident)
                                 }
                             }
                         }
                     }
                 }
 
-                TflAPI tflApi = APIClient.getClient().<TflAPI>create(TflAPI.class);
+                val tflApi = APIClient.getClient().create<TflAPI>(TflAPI::class.java)
                 try {
-                    Response<List<TflLineStatusResponse>> tflResponse = tflApi.getLineStatus("tube,overground,dlr,elizabeth-line,tram").execute();
+                    val tflResponse =
+                        tflApi.getLineStatus("tube,overground,dlr,elizabeth-line,tram").execute()
 
                     if (tflResponse.isSuccessful() && tflResponse.body() != null) {
-                        for (TflLineStatusResponse line : tflResponse.body()) {
-                            if (line.lineStatuses == null || line.lineStatuses.isEmpty()) continue;
+                        for (line in tflResponse.body()!!) {
+                            if (line.lineStatuses == null || line.lineStatuses.isEmpty()) continue
 
-                            TflLineStatusResponse.LineStatus status = line.lineStatuses.get(0);
+                            val status = line.lineStatuses.get(0)
 
-                            if (status.statusSeverity == 10) continue;
+                            if (status.statusSeverity == 10) continue
 
-                            String opCode = TOCBrandHelper.getTocCodeForTflId(line.id);
-                            String opName = TOCBrandHelper.getNameForCode(opCode);
+                            val opCode = TOCBrandHelper.getTocCodeForTflId(line.id)
+                            val opName = TOCBrandHelper.getNameForCode(opCode)
 
-                            Map<String, DisruptionResponce.ServiceIndicator> targetMap =
-                                    (trackedSet.isEmpty() || trackedSet.contains(opCode)) ? trackedMap : othersMap;
+                            val targetMap: MutableMap<String?, ServiceIndicator?> =
+                                (if (trackedSet.isEmpty() || trackedSet.contains(opCode)) trackedMap else othersMap) as MutableMap<String?, ServiceIndicator?>
 
-                            DisruptionResponce.ServiceIndicator si = targetMap.get(opCode);
+                            var si = targetMap.get(opCode)
                             if (si == null) {
-                                si = new DisruptionResponce.ServiceIndicator();
-                                si.tocCode = opCode;
-                                si.tocName = opName.isEmpty() ? line.name : opName;
-                                si.status = status.statusSeverityDescription;
-                                targetMap.put(opCode, si);
+                                si = ServiceIndicator()
+                                si.tocCode = opCode
+                                si.tocName = if (opName.isEmpty()) line.name else opName
+                                si.status = status.statusSeverityDescription
+                                targetMap.put(opCode, si)
                             } else {
-                                si.status = status.statusSeverityDescription;
+                                si.status = status.statusSeverityDescription
                             }
 
-                            IncidentResponse incident = new IncidentResponse();
-                            incident.summary = status.statusSeverityDescription;
-                            incident.description = status.reason != null ? status.reason : "No further details available.";
-                            incident.status = "Active";
-                            incident.affectedOperators = new ArrayList<>();
+                            val incident = IncidentResponse()
+                            incident.summary = status.statusSeverityDescription
+                            incident.description =
+                                if (status.reason != null) status.reason else "No further details available."
+                            incident.status = "Active"
+                            incident.affectedOperators = ArrayList<AffectedOperator?>()
 
-                            IncidentResponse.AffectedOperator op = new IncidentResponse.AffectedOperator();
-                            op.tocCode = opCode;
-                            incident.affectedOperators.add(op);
+                            val op = AffectedOperator()
+                            op.tocCode = opCode
+                            incident.affectedOperators.add(op)
 
-                            boolean isPlanned = DisruptionSeverityManager.isTflPlanned(status.statusSeverity);
+                            val isPlanned = isTflPlanned(status.statusSeverity)
 
                             if (isPlanned) {
-                                si.plannedIncidents.add(incident);
+                                si.plannedIncidents.add(incident)
                             } else {
-                                si.activeIncidents.add(incident);
+                                si.activeIncidents.add(incident)
                             }
                         }
                     }
-                } catch (Exception e) {
-                    e.printStackTrace();
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
 
-                List<DisruptionResponce.ServiceIndicator> trackedLive = new ArrayList<>();
-                List<DisruptionResponce.ServiceIndicator> othersLive = new ArrayList<>();
-                List<DisruptionResponce.ServiceIndicator> plannedWorks = new ArrayList<>();
+                var trackedLive: MutableList<ServiceIndicator> = ArrayList<ServiceIndicator>()
+                var othersLive: MutableList<ServiceIndicator> = ArrayList<ServiceIndicator>()
+                var plannedWorks: MutableList<ServiceIndicator> = ArrayList<ServiceIndicator>()
 
-                for (DisruptionResponce.ServiceIndicator si : trackedMap.values()) {
+                for (si in trackedMap.values) {
                     if (si.activeIncidents.isEmpty() && !si.plannedIncidents.isEmpty()) {
-                        plannedWorks.add(si);
+                        plannedWorks.add(si)
                     } else {
-                        trackedLive.add(si);
+                        trackedLive.add(si)
                     }
                 }
 
-                for (DisruptionResponce.ServiceIndicator si : othersMap.values()) {
+                for (si in othersMap.values) {
                     if (si.activeIncidents.isEmpty() && !si.plannedIncidents.isEmpty()) {
-                        plannedWorks.add(si);
+                        plannedWorks.add(si)
                     } else {
-                        othersLive.add(si);
+                        othersLive.add(si)
                     }
                 }
 
-                trackedLive = groupAndFormatList(trackedLive);
-                othersLive = groupAndFormatList(othersLive);
-                plannedWorks = groupAndFormatList(plannedWorks);
+                trackedLive = groupAndFormatList(trackedLive)
+                othersLive = groupAndFormatList(othersLive)
+                plannedWorks = groupAndFormatList(plannedWorks)
 
-                CachedDisruptionData cacheContainer = new CachedDisruptionData(trackedLive, othersLive, plannedWorks);
-                String appJson = new Gson().toJson(cacheContainer);
+                val cacheContainer = CachedDisruptionData(trackedLive, othersLive, plannedWorks)
+                val appJson = Gson().toJson(cacheContainer)
 
-                List<DisruptionResponce.ServiceIndicator> widgetTracked = new ArrayList<>();
-                for (DisruptionResponce.ServiceIndicator si : trackedLive) {
-                    if (!"SEPARATOR".equals(si.tocCode)) {
-                        widgetTracked.add(si);
+                val widgetTracked: MutableList<ServiceIndicator?> = ArrayList<ServiceIndicator?>()
+                for (si in trackedLive) {
+                    if ("SEPARATOR" != si.tocCode) {
+                        widgetTracked.add(si)
                     }
                 }
-                String widgetJson = new Gson().toJson(widgetTracked);
+                val widgetJson = Gson().toJson(widgetTracked)
 
                 prefs.edit()
-                        .putString("CACHED_TOC_DATA", widgetJson)
-                        .putString("CACHED_TOC_DATA_ALL", appJson)
-                        .putLong("LAST_SYNC_TIME", System.currentTimeMillis())
-                        .apply();
+                    .putString("CACHED_TOC_DATA", widgetJson)
+                    .putString("CACHED_TOC_DATA_ALL", appJson)
+                    .putLong("LAST_SYNC_TIME", System.currentTimeMillis())
+                    .apply()
 
-                triggerWidgetUpdate(context);
+                triggerWidgetUpdate(context)
 
                 if (callback != null) {
-                    List<DisruptionResponce.ServiceIndicator> finalTrackedLive = trackedLive;
-                    List<DisruptionResponce.ServiceIndicator> finalOthersLive = othersLive;
-                    List<DisruptionResponce.ServiceIndicator> finalPlannedWorks = plannedWorks;
-                    new Handler(Looper.getMainLooper()).post(() ->
-                            callback.onSuccess(finalTrackedLive, finalOthersLive, finalPlannedWorks)
-                    );
+                    val finalTrackedLive = trackedLive
+                    val finalOthersLive = othersLive
+                    val finalPlannedWorks = plannedWorks
+                    Handler(Looper.getMainLooper()).post(Runnable {
+                        callback.onSuccess(
+                            finalTrackedLive,
+                            finalOthersLive,
+                            finalPlannedWorks
+                        )
+                    }
+                    )
                 }
-                return true;
+                return true
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
-        return false;
+        return false
     }
 
-    private static boolean isTflService(DisruptionResponce.ServiceIndicator si) {
-        if (si == null || si.tocName == null) return false;
-        String manager = TOCBrandHelper.getManagerForToc(si.tocName);
-        return "tfl".equalsIgnoreCase(manager) || "tfl-national".equalsIgnoreCase(manager) || "london buses".equalsIgnoreCase(manager);
+    private fun isTflService(si: ServiceIndicator?): Boolean {
+        if (si == null || si.tocName == null) return false
+        val manager = TOCBrandHelper.getManagerForToc(si.tocName)
+        return "tfl".equals(manager, ignoreCase = true) || "tfl-national".equals(
+            manager,
+            ignoreCase = true
+        ) || "london buses".equals(manager, ignoreCase = true)
     }
 
-    private static List<DisruptionResponce.ServiceIndicator> groupAndFormatList(List<DisruptionResponce.ServiceIndicator> inputList) {
-        if (inputList == null || inputList.isEmpty()) return new ArrayList<>();
+    private fun groupAndFormatList(inputList: MutableList<ServiceIndicator>?): MutableList<ServiceIndicator> {
+        if (inputList == null || inputList.isEmpty()) return ArrayList<ServiceIndicator>()
 
-        List<DisruptionResponce.ServiceIndicator> nationalRail = new ArrayList<>();
-        List<DisruptionResponce.ServiceIndicator> tflServices = new ArrayList<>();
+        val nationalRail: MutableList<ServiceIndicator?> = ArrayList<ServiceIndicator?>()
+        val tflServices: MutableList<ServiceIndicator?> = ArrayList<ServiceIndicator?>()
 
-        for (DisruptionResponce.ServiceIndicator si : inputList) {
-            if ("SEPARATOR".equals(si.tocCode)) continue;
+        for (si in inputList) {
+            if ("SEPARATOR" == si.tocCode) continue
             if (isTflService(si)) {
-                tflServices.add(si);
+                tflServices.add(si)
             } else {
-                nationalRail.add(si);
+                nationalRail.add(si)
             }
         }
 
-        nationalRail.sort((a, b) -> a.tocName.compareToIgnoreCase(b.tocName));
-        tflServices.sort((a, b) -> a.tocName.compareToIgnoreCase(b.tocName));
+        nationalRail.sortWith(Comparator { a: ServiceIndicator?, b: ServiceIndicator? ->
+                    a!!.tocName.compareTo(
+                        b!!.tocName,
+                        ignoreCase = true
+                    )
+                })
+        tflServices.sortWith(Comparator { a: ServiceIndicator?, b: ServiceIndicator? ->
+            a!!.tocName.compareTo(
+                b!!.tocName,
+                ignoreCase = true
+            )
+        })
 
-        List<DisruptionResponce.ServiceIndicator> result = new ArrayList<>();
-        result.addAll(nationalRail);
+        val result: MutableList<ServiceIndicator> = ArrayList<ServiceIndicator>()
+        result.addAll(nationalRail as Collection<ServiceIndicator>)
 
         if (!nationalRail.isEmpty() && !tflServices.isEmpty()) {
-            DisruptionResponce.ServiceIndicator sep = new DisruptionResponce.ServiceIndicator();
-            sep.tocCode = "SEPARATOR";
-            sep.tocName = "Transport for London";
-            result.add(sep);
+            val sep = ServiceIndicator()
+            sep.tocCode = "SEPARATOR"
+            sep.tocName = "Transport for London"
+            result.add(sep)
         }
 
-        result.addAll(tflServices);
-        return result;
+        result.addAll(tflServices as Collection<ServiceIndicator>)
+        return result
     }
 
-    private static void triggerWidgetUpdate(Context context) {
-        AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
-        ComponentName thisWidget = new ComponentName(context, AppWidgetProvider.class);
-        int[] appWidgetIds = appWidgetManager.getAppWidgetIds(thisWidget);
+    private fun triggerWidgetUpdate(context: Context) {
+        val appWidgetManager = AppWidgetManager.getInstance(context)
+        val thisWidget = ComponentName(context, AppWidgetProvider::class.java)
+        val appWidgetIds = appWidgetManager.getAppWidgetIds(thisWidget)
 
-        Intent updateIntent = new Intent(context, AppWidgetProvider.class);
-        updateIntent.setAction(AppWidgetManager.ACTION_APPWIDGET_UPDATE);
-        updateIntent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, appWidgetIds);
-        context.sendBroadcast(updateIntent);
+        val updateIntent = Intent(context, AppWidgetProvider::class.java)
+        updateIntent.setAction(AppWidgetManager.ACTION_APPWIDGET_UPDATE)
+        updateIntent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, appWidgetIds)
+        context.sendBroadcast(updateIntent)
+    }
+
+    class CachedDisruptionData(
+        @JvmField var tracked: MutableList<ServiceIndicator>?,
+        @JvmField var others: MutableList<ServiceIndicator>?,
+        @JvmField var engineering: MutableList<ServiceIndicator>?
+    )
+
+    interface SyncCallback {
+        fun onSuccess(
+            tracked: MutableList<ServiceIndicator>?,
+            others: MutableList<ServiceIndicator>?,
+            engineering: MutableList<ServiceIndicator>?
+        )
+
+        fun onFailure(error: String?)
     }
 }

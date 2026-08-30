@@ -40,6 +40,7 @@ import io.github.turtle358.callingpoint.ui.adapters.JourneyAdapter;
 import io.github.turtle358.callingpoint.ui.adapters.StationAutoCompleteAdapter;
 import io.github.turtle358.callingpoint.utils.JourneyPlanner.GraphManager;
 import io.github.turtle358.callingpoint.utils.JourneyPlanner.JourneyPlannerEngine;
+import io.github.turtle358.callingpoint.utils.RecentStationsManager;
 import io.github.turtle358.callingpoint.utils.StationHelper;
 import io.github.turtle358.callingpoint.utils.JourneyPlanner.TflJourneyPlannerEngine;
 
@@ -283,8 +284,8 @@ public class JourneySearchActivity extends AppCompatActivity {
         etFromCrs.setAdapter(fromAdapter);
         etToCrs.setAdapter(toAdapter);
 
-        io.github.turtle358.callingpoint.utils.RecentStationsManager recentManager =
-                new io.github.turtle358.callingpoint.utils.RecentStationsManager(this);
+        RecentStationsManager recentManager =
+                new RecentStationsManager(this);
 
         etFromCrs.setOnItemClickListener((parent, v, position, id) -> {
             recentManager.addStation(fromAdapter.getItem(position));
