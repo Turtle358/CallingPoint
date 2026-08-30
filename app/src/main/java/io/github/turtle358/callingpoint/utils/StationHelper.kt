@@ -1,134 +1,109 @@
-package io.github.turtle358.callingpoint.utils;
+package io.github.turtle358.callingpoint.utils
 
-import android.content.Context;
-import org.json.JSONObject;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
+import android.content.Context
+import io.github.turtle358.callingpoint.R
+import org.json.JSONObject
 
-import io.github.turtle358.callingpoint.R;
+object StationHelper{
+    private var stationsJson : JSONObject? = null;
+    private var cachedStationNames : MutableList<String>? = null
+    @JvmStatic
+    fun init(context: Context) {
+        if (stationsJson != null) return
 
-public class StationHelper {
+        stationsJson = try {
+            val jsonStr = context.assets.open("stations.json").bufferedReader().use { it.readText() }
+            JSONObject(jsonStr)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            JSONObject()
+        }
+    }
 
-    private static JSONObject stationsJson = null;
-    private static List<String> cachedStationNames = null;
+    @JvmStatic
+    fun getStationNames() : List<String> {
+        cachedStationNames?.let {return it}
+        val json = stationsJson ?: return emptyList()
+        val names = json.keys().asSequence().toList().sorted()
+        cachedStationNames = names as MutableList<String>?
+        return names
+    }
 
-    public static void init(Context context) {
-        if (stationsJson == null) {
-            try {
-                InputStream is = context.getAssets().open("stations.json");
-                int size = is.available();
-                byte[] buffer = new byte[size];
-                is.read(buffer);
-                is.close();
-                String jsonStr = new String(buffer, StandardCharsets.UTF_8);
-                stationsJson = new JSONObject(jsonStr);
-            } catch (Exception e) {
-                e.printStackTrace();
-                stationsJson = new JSONObject();
+    @JvmStatic
+    fun getNameFromCode(code: String) : String {
+        if(code.isNullOrEmpty()) return ""
+        val json = stationsJson ?: return ""
+        if (stationsJson?.has(code) ==  true) {
+            return code
+        }
+
+        for (stationName in json.keys()) {
+            val stationData = json.optJSONObject(stationName) ?: continue
+            val crs = stationData.optString("crs", "")
+            val naptan = stationData.optString("naptan", "")
+            if(code.equals(crs, ignoreCase = true) || code.equals(naptan, ignoreCase = true)) {
+                return stationName
             }
         }
+        return ""
     }
 
-    public static List<String> getStationNames() {
-        if (cachedStationNames == null) {
-            cachedStationNames = new ArrayList<>();
-            if (stationsJson != null) {
-                Iterator<String> keys = stationsJson.keys();
-                while (keys.hasNext()) {
-                    cachedStationNames.add(keys.next());
-                }
-                Collections.sort(cachedStationNames);
-            }
-        }
-        return cachedStationNames;
+    @JvmStatic
+    fun getCrsFromName(stationName: String) : String {
+        if (stationName.isNullOrEmpty()) return ""
+        val json = stationsJson ?: return ""
+        val data = json.optJSONObject(stationName) ?: return ""
+        return data.optString("crs", "")
     }
 
-    public static String getNameFromCode(String codeOrName) {
-        if (stationsJson == null || codeOrName == null || codeOrName.isEmpty()) return "";
-
-        if (stationsJson.has(codeOrName)) {
-            return codeOrName;
-        }
-
-        Iterator<String> keys = stationsJson.keys();
-        while (keys.hasNext()) {
-            String stationName = keys.next();
-            JSONObject stationData = stationsJson.optJSONObject(stationName);
-            if (stationData != null) {
-                String crs = stationData.optString("crs", "");
-                String naptan = stationData.optString("naptan", "");
-
-                if (codeOrName.equalsIgnoreCase(crs) || codeOrName.equalsIgnoreCase(naptan)) {
-                    return stationName;
-                }
-            }
-        }
-        return "";
+    @JvmStatic
+    fun getNaptanFromName(stationName: String) : String {
+        if (stationName.isNullOrEmpty()) return ""
+        val json = stationsJson ?: return ""
+        val data = json.optJSONObject(stationName) ?: return ""
+        return data.optString("naptan", "")
     }
 
-    public static String getCrsFromName(String stationName) {
-        if (stationsJson != null && stationName != null) {
-            JSONObject data = stationsJson.optJSONObject(stationName);
-            if (data != null) {
-                return data.optString("crs", "");
-            }
-        }
-        return "";
+    @JvmStatic
+    fun getStationType(stationName: String) : String {
+        if(stationName.isNullOrEmpty()) return "national"
+        val json = stationsJson ?: return "national"
+        val data = json.optJSONObject(stationName) ?: return "national"
+        return data.optString("type","national")
     }
 
-    public static String getNaptanFromName(String stationName) {
-        if (stationsJson != null && stationName != null) {
-            JSONObject data = stationsJson.optJSONObject(stationName);
-            if (data != null) {
-                return data.optString("naptan", "");
-            }
-        }
-        return "";
-    }
-
-    public static String getStationType(String stationName) {
-        if (stationsJson != null && stationName != null) {
-            JSONObject data = stationsJson.optJSONObject(stationName);
-            if (data != null) {
-                return data.optString("type", "national");
-            }
-        }
-        return "national";
-    }
-
-    public static int getIconForStation(String name) {
-        if (getStationType(name).equalsIgnoreCase("tfl") || getStationType(name).equalsIgnoreCase("tfl-national")) {
-            return R.drawable.ic_metro;
-        } else if (getStationType(name).equalsIgnoreCase("gbr")){
-            return R.drawable.ic_gbr;
-        } else if (getStationType(name).equalsIgnoreCase("national")) {
-            return R.drawable.ic_national_rail;
-        } else {
-            return R.drawable.ic_train;
+    @JvmStatic
+    fun getIconForStation(name: String) : Int {
+        return when (getStationType(name).lowercase()) {
+            "tfl", "tfl-national" -> R.drawable.ic_metro
+            "gbr" -> R.drawable.ic_gbr
+            "national" -> R.drawable.ic_national_rail
+            else -> R.drawable.ic_train
         }
     }
 
-    public static boolean areStationNamesEqual(String name1, String name2) {
-        if (name1 == null || name2 == null) return false;
-        return normalise(name1).equalsIgnoreCase(normalise(name2));
+    @JvmStatic
+    fun normalise(name: String?): String {
+        if (name.isNullOrEmpty()) return ""
+
+        return name.lowercase()
+            .replace("'", "")
+            .replace("’", "")
+            .replace("(intl)", "international")
+            .replace(" intl", " international")
+            .replace(" underground station", "")
+            .replace(" rail station", "")
+            .replace(" station", "")
+            .replace(" & ", " and ")
+            .replace(Regex("\\s+"), " ")
+            .trim()
     }
 
-    public static String normalise(String name) {
-        if (name == null) return "";
-        return name.toLowerCase()
-                .replace("'", "")
-                .replace("’", "")
-                .replace("(intl)", "international")
-                .replace(" intl", " international")
-                .replace(" underground station", "")
-                .replace(" rail station", "")
-                .replace(" station", "")
-                .replace(" & ", " and ")
-                .replaceAll("\\s+", " ")
-                .trim();
+    @JvmStatic
+    fun areStationNamesEqual(name1: String?, name2: String?): Boolean {
+        if (name1 == null || name2 == null) return false
+        return normalise(name1) == normalise(name2)
     }
+
+
 }
