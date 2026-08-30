@@ -50,8 +50,6 @@ public class TOCDisruptionDetailActivity extends AppCompatActivity {
     boolean isLightColour;
 
     int brandColour;
-    int secondaryColour;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -72,7 +70,6 @@ public class TOCDisruptionDetailActivity extends AppCompatActivity {
         String tocStatus = getIntent().getStringExtra("TOC_STATUS");
 
         brandColour = TOCBrandHelper.getColourForToc(tocName);
-        secondaryColour = TOCBrandHelper.getSecondaryColourForToc(tocName);
 
         if (topHeaderBar != null) {
             topHeaderBar.setBackgroundColor(brandColour);
@@ -296,9 +293,11 @@ public class TOCDisruptionDetailActivity extends AppCompatActivity {
                     pill.setPadding((int)(6 * density), (int)(2 * density), (int)(6 * density), (int)(2 * density));
 
                     String opTocName = TOCBrandHelper.getNameForCode(op.tocCode);
+                    int primaryColour = TOCBrandHelper.getColourForToc(opTocName);
+                    int secondaryColour = TOCBrandHelper.getSecondaryColourForToc(opTocName);
 
                     GradientDrawable gd = new GradientDrawable();
-                    gd.setColor(brandColour);
+                    gd.setColor(primaryColour);
                     gd.setCornerRadius(7 * density);
                     pill.setBackground(gd);
                     pill.setTextColor(secondaryColour);
