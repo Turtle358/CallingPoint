@@ -260,6 +260,7 @@ class ServiceAdapter(private val context: Context, services: MutableList<TrainSe
         var trueDestTime: String?
         var stopsCount = 0
         var durationStr = ""
+        var filterDestTime: String? = null
 
         val hasFilter =
             (userArrivingStation != "Unknown") && userArrivingStation != null && !userArrivingStation!!.isEmpty()
@@ -278,13 +279,15 @@ class ServiceAdapter(private val context: Context, services: MutableList<TrainSe
                 }
                 if (destIndex != -1) {
                     stopsCount = destIndex + 1
+                    filterDestTime = pts.get(destIndex)!!.st
                 } else {
                     stopsCount = pts.size
                 }
             } else {
                 stopsCount = pts.size
             }
-            durationStr = calculateDuration(schTime, trueDestTime)
+
+            durationStr = calculateDuration(schTime, filterDestTime ?: trueDestTime)
         } else {
             trueDestTime = schTime
         }
