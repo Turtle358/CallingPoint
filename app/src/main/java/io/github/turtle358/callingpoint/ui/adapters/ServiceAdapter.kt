@@ -314,8 +314,8 @@ class ServiceAdapter(private val context: Context, services: MutableList<TrainSe
         itemHolder.tvDestStation.setText(trueDestName)
         itemHolder.tvArrTime.setText(trueDestTime)
 
-        itemHolder.tvCurrentStationTime.setText(schTime)
-        itemHolder.tvPlatform.setText(if (service.platform != null) "Plat " + service.platform else "Plat -")
+        itemHolder.tvCurrentStationTime.text = schTime
+        itemHolder.tvPlatform.text = if (service.platform != null) "Plat\n${service.platform}" else "Plat\n-"
 
         itemHolder.tvCurrentStationTime.setPaintFlags(itemHolder.tvCurrentStationTime.getPaintFlags() and (Paint.STRIKE_THRU_TEXT_FLAG.inv()))
         itemHolder.tvCurrentStationTime.setTextColor(itemHolder.defaultSchColour)

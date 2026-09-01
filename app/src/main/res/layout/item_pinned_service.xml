@@ -1,0 +1,270 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingBottom="12dp"
+    android:clipChildren="false"
+    android:clipToPadding="false">
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/cardBackground"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginHorizontal="16dp"
+        app:cardBackgroundColor="@color/bg_card"
+        app:cardCornerRadius="28dp"
+        app:cardElevation="2dp"
+        android:duplicateParentState="true"
+        android:foreground="?attr/selectableItemBackground"
+        app:layout_constraintTop_toTopOf="@id/contentContainer"
+        app:layout_constraintBottom_toBottomOf="@id/contentContainer"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/contentContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        android:translationZ="3dp"
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <ImageView
+            android:id="@+id/ivModeIcon"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="16dp"
+            android:src="@drawable/ic_train"
+            android:adjustViewBounds="true"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
+
+        <TextView
+            android:id="@+id/tvOperatorName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:layout_marginEnd="12dp"
+            android:paddingHorizontal="8dp"
+            android:paddingVertical="4dp"
+            android:text="Operator"
+            android:textColor="#FFFFFF"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            app:layout_constrainedWidth="true"
+            app:layout_constraintTop_toTopOf="@id/ivModeIcon"
+            app:layout_constraintBottom_toBottomOf="@id/ivModeIcon"
+            app:layout_constraintStart_toEndOf="@id/ivModeIcon"
+            app:layout_constraintEnd_toStartOf="@id/tvCurrentStationTime"
+            app:layout_constraintHorizontal_bias="0.0" />
+
+
+        <TextView
+            android:id="@+id/tvCurrentStationTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:paddingEnd="12dp"
+            android:text="11:54"
+            android:textColor="@color/text_primary"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            app:layout_constraintTop_toTopOf="@id/ivModeIcon"
+            app:layout_constraintBottom_toBottomOf="@id/ivModeIcon"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <TextView
+            android:id="@+id/tvDepTime"
+            android:layout_width="60dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="24dp"
+            android:text="00:00"
+            android:textColor="@color/text_primary"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            app:layout_constraintTop_toBottomOf="@id/ivModeIcon"
+            app:layout_constraintStart_toEndOf="@id/dotTop" />
+
+        <View
+            android:id="@+id/dotTop"
+            android:layout_width="8dp"
+            android:layout_height="8dp"
+            android:background="@drawable/bg_pill_base"
+            android:backgroundTint="#888888"
+            app:layout_constraintTop_toTopOf="@id/tvDepTime"
+            app:layout_constraintBottom_toBottomOf="@id/tvDepTime"
+            app:layout_constraintStart_toStartOf="@id/ivModeIcon"
+            app:layout_constraintEnd_toEndOf="@id/ivModeIcon" />
+
+        <TextView
+            android:id="@+id/tvOriginStation"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_marginEnd="16dp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:text="Origin Station"
+            android:textColor="@color/text_primary"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            app:layout_constraintTop_toTopOf="@id/tvDepTime"
+            app:layout_constraintBottom_toBottomOf="@id/tvDepTime"
+            app:layout_constraintStart_toEndOf="@id/tvDepTime"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <View
+            android:id="@+id/timelineLine"
+            android:layout_width="2dp"
+            android:layout_height="0dp"
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="4dp"
+            android:background="#33888888"
+            app:layout_constraintTop_toBottomOf="@id/dotTop"
+            app:layout_constraintBottom_toTopOf="@id/dotBottom"
+            app:layout_constraintStart_toStartOf="@id/ivModeIcon"
+            app:layout_constraintEnd_toEndOf="@id/ivModeIcon" />
+
+        <TextView
+            android:id="@+id/tvArrTime"
+            android:layout_width="60dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="20dp"
+            android:text="00:00"
+            android:textColor="@color/text_primary"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            app:layout_constraintTop_toBottomOf="@id/tvDepTime"
+            app:layout_constraintStart_toEndOf="@id/dotBottom" />
+
+        <View
+            android:id="@+id/dotBottom"
+            android:layout_width="8dp"
+            android:layout_height="8dp"
+            android:background="@drawable/bg_pill_base"
+            android:backgroundTint="#888888"
+            app:layout_constraintTop_toTopOf="@id/tvArrTime"
+            app:layout_constraintBottom_toBottomOf="@id/tvArrTime"
+            app:layout_constraintStart_toStartOf="@id/ivModeIcon"
+            app:layout_constraintEnd_toEndOf="@id/ivModeIcon" />
+
+        <TextView
+            android:id="@+id/tvDestStation"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_marginEnd="16dp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:text="Destination Station"
+            android:textColor="@color/text_primary"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            app:layout_constraintTop_toTopOf="@id/tvArrTime"
+            app:layout_constraintBottom_toBottomOf="@id/tvArrTime"
+            app:layout_constraintStart_toEndOf="@id/tvArrTime"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <androidx.cardview.widget.CardView
+            android:id="@+id/notchLeft"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            app:cardBackgroundColor="@color/bg_screen"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="0dp"
+            android:outlineProvider="none"
+            android:translationX="-8dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="@id/dashedLine"
+            app:layout_constraintBottom_toBottomOf="@id/dashedLine">
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/bg_notch_inner_shadow" />
+            <View
+                android:id="@+id/notchLeftMask"
+                android:layout_width="8dp"
+                android:layout_height="match_parent"
+                android:layout_gravity="start"
+                android:background="@color/bg_screen" />
+        </androidx.cardview.widget.CardView>
+
+        <androidx.cardview.widget.CardView
+            android:id="@+id/notchRight"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            app:cardBackgroundColor="@color/bg_screen"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="0dp"
+            android:outlineProvider="none"
+            android:translationX="8dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@id/dashedLine"
+            app:layout_constraintBottom_toBottomOf="@id/dashedLine">
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/bg_notch_inner_shadow" />
+            <View
+                android:id="@+id/notchRightMask"
+                android:layout_width="8dp"
+                android:layout_height="match_parent"
+                android:layout_gravity="end"
+                android:background="@color/bg_screen" />
+        </androidx.cardview.widget.CardView>
+
+        <View
+            android:id="@+id/dashedLine"
+            android:layout_width="0dp"
+            android:layout_height="2dp"
+            android:layout_marginTop="24dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/bg_dashed_line"
+            android:layerType="software"
+            app:layout_constraintTop_toBottomOf="@id/tvArrTime"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <TextView
+            android:id="@+id/tvServiceDetails"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="16dp"
+            android:layout_marginEnd="12dp"
+            android:text="1h 20m • 6 stops"
+            android:textColor="@color/text_secondary"
+            android:textSize="14sp"
+            app:layout_constraintTop_toBottomOf="@id/dashedLine"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/tvLiveStatus" />
+
+        <TextView
+            android:id="@+id/tvLiveStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="16dp"
+            android:text="Exp 00:00"
+            android:textColor="#FF8C00"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:visibility="gone"
+            app:layout_constraintTop_toTopOf="@id/tvServiceDetails"
+            app:layout_constraintBottom_toBottomOf="@id/tvServiceDetails"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

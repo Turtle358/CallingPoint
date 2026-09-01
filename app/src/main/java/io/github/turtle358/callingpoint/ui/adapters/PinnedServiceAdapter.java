@@ -38,7 +38,7 @@ public class PinnedServiceAdapter extends RecyclerView.Adapter<PinnedServiceAdap
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View v = LayoutInflater.from(context).inflate(R.layout.item_service, parent, false);
+        View v = LayoutInflater.from(context).inflate(R.layout.item_pinned_service, parent, false);
         return new ViewHolder(v);
     }
 
@@ -96,7 +96,6 @@ public class PinnedServiceAdapter extends RecyclerView.Adapter<PinnedServiceAdap
         holder.tvArrTime.setText(trueDestTime);
 
         holder.tvCurrentStationTime.setText(schTime);
-        holder.tvPlatform.setText(service.platform != null ? "Plat " + service.platform : "Plat -");
 
         List<ServiceDetailsResponse.TimelinePoint> entireJourney = new ArrayList<>();
         if (service.previousCallingPoints != null && !service.previousCallingPoints.isEmpty() && service.previousCallingPoints.get(0).callingPoint != null) {
@@ -160,7 +159,7 @@ public class PinnedServiceAdapter extends RecyclerView.Adapter<PinnedServiceAdap
                 ServiceDetailsResponse.TimelinePoint finalDest = entireJourney.get(entireJourney.size() - 1);
                 durationStr = calculateDuration(trueNextStop.scheduledTime, finalDest.scheduledTime);
             }
-            String callingText = "Calls at " + currentStationName;
+            String callingText = "Next station: " + trueNextStop.locationName;
 
             String detailsText = "";
             if (!durationStr.isEmpty()) detailsText += durationStr + " • ";
@@ -240,7 +239,7 @@ public class PinnedServiceAdapter extends RecyclerView.Adapter<PinnedServiceAdap
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
         ImageView ivModeIcon;
-        TextView tvOperatorName, tvCurrentStationTime, tvPlatform;
+        TextView tvOperatorName, tvCurrentStationTime;
         View dotTop, timelineLine, dotBottom;
         TextView tvDepTime, tvOriginStation, tvArrTime, tvDestStation;
         TextView tvServiceDetails, tvLiveStatus;
@@ -251,7 +250,6 @@ public class PinnedServiceAdapter extends RecyclerView.Adapter<PinnedServiceAdap
             ivModeIcon = v.findViewById(R.id.ivModeIcon);
             tvOperatorName = v.findViewById(R.id.tvOperatorName);
             tvCurrentStationTime = v.findViewById(R.id.tvCurrentStationTime);
-            tvPlatform = v.findViewById(R.id.tvPlatform);
             dotTop = v.findViewById(R.id.dotTop);
             timelineLine = v.findViewById(R.id.timelineLine);
             dotBottom = v.findViewById(R.id.dotBottom);

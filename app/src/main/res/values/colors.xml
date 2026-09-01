@@ -28,4 +28,7 @@
     <color name="predicted_route_disclaimer">#E8F0FE</color>
 
     <color name="predicted_route_disclaimer_text">#1967D2</color>
+
+    <color name="platform_bg">#E8F0FE</color>
+    <color name="platform_text">#1967D2</color>
 </resources>
