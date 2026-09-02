@@ -46,7 +46,7 @@ class SavedRoutesManager(context: Context) {
         }
     }
 
-    private fun saveAll(routes: List<SavedRoute>) {
+    fun saveAll(routes: List<SavedRoute>) {
         prefs.edit(commit = true) { putString(KEY_SAVED_ROUTES, gson.toJson(routes)) }
     }
 }

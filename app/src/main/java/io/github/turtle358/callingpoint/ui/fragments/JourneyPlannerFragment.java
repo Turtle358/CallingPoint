@@ -414,12 +414,24 @@ public class JourneyPlannerFragment extends Fragment {
 
     private void setupSavedRoutesTouchHelper() {
         androidx.recyclerview.widget.ItemTouchHelper touchHelper = new androidx.recyclerview.widget.ItemTouchHelper(
-                new androidx.recyclerview.widget.ItemTouchHelper.SimpleCallback(0,
+                // 1. Add UP and DOWN drag directions
+                new androidx.recyclerview.widget.ItemTouchHelper.SimpleCallback(
+                        androidx.recyclerview.widget.ItemTouchHelper.UP | androidx.recyclerview.widget.ItemTouchHelper.DOWN,
                         androidx.recyclerview.widget.ItemTouchHelper.LEFT | androidx.recyclerview.widget.ItemTouchHelper.RIGHT) {
 
                     @Override
                     public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) {
-                        return false;
+                        // 2. Call the swapItems method we added to the adapter
+                        RecyclerView.Adapter adapter = recyclerSavedRoutes.getAdapter();
+                        if (!(adapter instanceof SavedRoutesAdapter)) return false;
+
+                        int fromPos = viewHolder.getBindingAdapterPosition();
+                        int toPos = target.getBindingAdapterPosition();
+
+                        if (fromPos != RecyclerView.NO_POSITION && toPos != RecyclerView.NO_POSITION) {
+                            ((SavedRoutesAdapter) adapter).swapItems(fromPos, toPos);
+                        }
+                        return true;
                     }
 
                     @Override
@@ -446,6 +458,24 @@ public class JourneyPlannerFragment extends Fragment {
                                     savedRoutesManager.saveRoute(unpinnedRoute);
                                     loadSavedRoutes();
                                 }).show();
+                    }
+
+                    @Override
+                    public void onSelectedChanged(@androidx.annotation.Nullable RecyclerView.ViewHolder viewHolder, int actionState) {
+                        super.onSelectedChanged(viewHolder, actionState);
+                        if (viewHolder != null && (actionState == androidx.recyclerview.widget.ItemTouchHelper.ACTION_STATE_DRAG || actionState == androidx.recyclerview.widget.ItemTouchHelper.ACTION_STATE_SWIPE)) {
+                            viewHolder.itemView.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS);
+                        }
+                    }
+
+                    @Override
+                    public void clearView(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
+                        super.clearView(recyclerView, viewHolder);
+
+                        RecyclerView.Adapter adapter = recyclerSavedRoutes.getAdapter();
+                        if (adapter instanceof SavedRoutesAdapter && savedRoutesManager != null) {
+                            savedRoutesManager.saveAll(((SavedRoutesAdapter) adapter).getRoutes());
+                        }
                     }
 
                     @Override

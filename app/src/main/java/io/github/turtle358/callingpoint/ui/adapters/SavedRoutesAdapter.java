@@ -4,6 +4,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -13,6 +14,7 @@ import java.util.List;
 
 import io.github.turtle358.callingpoint.R;
 import io.github.turtle358.callingpoint.models.SavedRoute;
+import io.github.turtle358.callingpoint.utils.StationHelper;
 
 public class SavedRoutesAdapter extends RecyclerView.Adapter<SavedRoutesAdapter.ViewHolder> {
 
@@ -42,7 +44,9 @@ public class SavedRoutesAdapter extends RecyclerView.Adapter<SavedRoutesAdapter.
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         SavedRoute route = routes.get(position);
-        holder.tvRouteTitle.setText(route.getFromName() + " → " + route.getToName());
+        holder.textOrigin.setText(route.getFromName());
+        holder.textDestination.setText(route.getToName());
+        holder.serviceBranding.setImageResource(StationHelper.getIconForStation(route.getFromName()));
 
         holder.itemView.setOnClickListener(v -> {
             if (listener != null) listener.onRouteClick(route);
@@ -58,12 +62,22 @@ public class SavedRoutesAdapter extends RecyclerView.Adapter<SavedRoutesAdapter.
         return routes.size();
     }
 
+    public void swapItems(int fromPosition, int toPosition) {
+        java.util.Collections.swap(routes, fromPosition, toPosition);
+        notifyItemMoved(fromPosition, toPosition);
+    }
+
     public static class ViewHolder extends RecyclerView.ViewHolder {
-        TextView tvRouteTitle;
+        TextView textOrigin;
+        TextView textDestination;
+        ImageView serviceBranding;
+
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
-            tvRouteTitle = itemView.findViewById(R.id.tvRouteTitle);
+            textOrigin = itemView.findViewById(R.id.tv_origin);
+            textDestination = itemView.findViewById(R.id.tv_destination);
+            serviceBranding = itemView.findViewById(R.id.serviceBranding);
         }
     }
 }
