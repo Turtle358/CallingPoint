@@ -1,25 +1,23 @@
 package io.github.turtle358.callingpoint.ui.activities;
 
-
 import android.app.Dialog;
-import android.graphics.Color;
-import android.graphics.drawable.ColorDrawable;
-import android.widget.NumberPicker;
-import android.widget.PopupMenu;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
+import android.view.KeyEvent;
 import android.view.View;
+import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.ImageButton;
-import android.widget.ProgressBar;
+import android.widget.NumberPicker;
+import android.widget.PopupMenu;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.view.KeyEvent;
-import android.view.inputmethod.EditorInfo;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.WindowCompat;
@@ -28,7 +26,6 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.facebook.shimmer.ShimmerFrameLayout;
 
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
@@ -36,10 +33,12 @@ import java.util.Locale;
 
 import io.github.turtle358.callingpoint.R;
 import io.github.turtle358.callingpoint.models.JourneyOption;
+import io.github.turtle358.callingpoint.models.SavedRoute;
 import io.github.turtle358.callingpoint.ui.adapters.JourneyAdapter;
 import io.github.turtle358.callingpoint.ui.adapters.StationAutoCompleteAdapter;
 import io.github.turtle358.callingpoint.utils.JourneyPlanner.GraphManager;
 import io.github.turtle358.callingpoint.utils.JourneyPlanner.JourneyPlannerEngine;
+import io.github.turtle358.callingpoint.utils.JourneyPlanner.SavedRoutesManager;
 import io.github.turtle358.callingpoint.utils.RecentStationsManager;
 import io.github.turtle358.callingpoint.utils.StationHelper;
 import io.github.turtle358.callingpoint.utils.JourneyPlanner.TflJourneyPlannerEngine;
@@ -49,15 +48,16 @@ public class JourneySearchActivity extends AppCompatActivity {
     private AutoCompleteTextView etFromCrs, etToCrs;
     private RecyclerView recyclerSearchResults;
     private TextView tvStatusUpdate, tvTimeSelection;
-    private ProgressBar progressSearch;
 
     private View cardFallbackWarning;
     private View btnTimeSelector;
     private ImageButton btnResetTime;
+    private ImageButton btnSaveRoute;
 
     private JourneyAdapter adapter;
     private JourneyPlannerEngine plannerEngine;
     private TflJourneyPlannerEngine tflPlannerEngine;
+    private SavedRoutesManager savedRoutesManager;
 
     private StationAutoCompleteAdapter autoCompleteAdapter;
     private ShimmerFrameLayout shimmerView;
@@ -76,7 +76,6 @@ public class JourneySearchActivity extends AppCompatActivity {
         ImageButton btnSwap = findViewById(R.id.btnSwapStations);
         Button btnSearch = findViewById(R.id.btnSearchJourney);
         recyclerSearchResults = findViewById(R.id.recyclerSearchResults);
-        progressSearch = findViewById(R.id.progressSearch);
         tvStatusUpdate = findViewById(R.id.tvStatusUpdate);
         shimmerView = findViewById(R.id.shimmer_journey_container);
 
@@ -84,11 +83,13 @@ public class JourneySearchActivity extends AppCompatActivity {
         tvTimeSelection = findViewById(R.id.tvTimeSelection);
         btnResetTime = findViewById(R.id.btnResetTime);
         cardFallbackWarning = findViewById(R.id.cardFallbackWarning);
+        btnSaveRoute = findViewById(R.id.btnSaveRoute);
 
         GraphManager graphManager = GraphManager.getInstance(this);
 
         plannerEngine = new JourneyPlannerEngine(graphManager);
         tflPlannerEngine = new TflJourneyPlannerEngine();
+        savedRoutesManager = new SavedRoutesManager(this);
 
         setupAdaptersAndListeners(btnSearch);
         setupDateTimePickers();
@@ -98,6 +99,7 @@ public class JourneySearchActivity extends AppCompatActivity {
         });
         etFromCrs.setOnFocusChangeListener((v, hasFocus) -> {
             if (hasFocus && etFromCrs.getText().length() > 0) etFromCrs.showDropDown();
+            if (!hasFocus) updateSaveButtonState();
         });
 
         etToCrs.setOnClickListener(v -> {
@@ -105,13 +107,15 @@ public class JourneySearchActivity extends AppCompatActivity {
         });
         etToCrs.setOnFocusChangeListener((v, hasFocus) -> {
             if (hasFocus && etToCrs.getText().length() > 0) etToCrs.showDropDown();
+            if (!hasFocus) updateSaveButtonState();
         });
-
-        etFromCrs.requestFocus();
 
         View btnBack = findViewById(R.id.btnBack);
         if (btnBack != null) {
-            btnBack.setOnClickListener(v -> finish());
+            btnBack.setOnClickListener(v -> {
+                hideKeyboard();
+                finish();
+            });
         }
 
         recyclerSearchResults.setLayoutManager(new LinearLayoutManager(this));
@@ -128,9 +132,77 @@ public class JourneySearchActivity extends AppCompatActivity {
             etToCrs.setText(tempText);
             etFromCrs.dismissDropDown();
             etToCrs.dismissDropDown();
+            updateSaveButtonState();
         });
 
         btnSearch.setOnClickListener(v -> handleSearch());
+
+        if (btnSaveRoute != null) {
+            btnSaveRoute.setOnClickListener(v -> {
+                toggleRouteSavedState();
+            });
+        }
+
+        Intent intent = getIntent();
+        if (intent != null && intent.hasExtra("AUTO_FROM") && intent.hasExtra("AUTO_TO")) {
+            etFromCrs.setText(intent.getStringExtra("AUTO_FROM"));
+            etToCrs.setText(intent.getStringExtra("AUTO_TO"));
+
+            etFromCrs.dismissDropDown();
+            etToCrs.dismissDropDown();
+            updateSaveButtonState();
+
+            btnSearch.post(this::handleSearch);
+        } else {
+            etFromCrs.requestFocus();
+        }
+    }
+
+    private void toggleRouteSavedState() {
+        String fromName = etFromCrs.getText().toString().trim();
+        String toName = etToCrs.getText().toString().trim();
+
+
+        if (fromName.isEmpty() || toName.isEmpty() || fromName.equalsIgnoreCase(toName)) {
+            Toast.makeText(this, "Enter valid, distinct stations to save", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (savedRoutesManager.isRouteSaved(fromName, toName)) {
+            savedRoutesManager.removeRoute(fromName, toName);
+            Toast.makeText(this, "Saved route removed", Toast.LENGTH_SHORT).show();
+        } else {
+            String fromCrs = StationHelper.getCrsFromName(fromName);
+            String toCrs = StationHelper.getCrsFromName(toName);
+            String fromNaptan = StationHelper.getNaptanFromName(fromName);
+            String toNaptan = StationHelper.getNaptanFromName(toName);
+
+            SavedRoute route = new SavedRoute(fromName, toName, fromCrs, toCrs, fromNaptan, toNaptan);
+            savedRoutesManager.saveRoute(route);
+            Toast.makeText(this, "Route saved!", Toast.LENGTH_SHORT).show();
+        }
+        updateSaveButtonState();
+    }
+
+    private void updateSaveButtonState() {
+        if (btnSaveRoute == null) return;
+
+        String fromName = etFromCrs.getText().toString().trim();
+        String toName = etToCrs.getText().toString().trim();
+
+        boolean isSaved = !fromName.isEmpty() && !toName.isEmpty() &&
+                !fromName.equalsIgnoreCase(toName) &&
+                savedRoutesManager.isRouteSaved(fromName, toName);
+
+        if (isSaved) {
+            btnSaveRoute.setImageResource(R.drawable.ic_bookmark);
+        } else {
+            btnSaveRoute.setImageResource(R.drawable.ic_bookmark_outline);
+        }
+
+        btnSaveRoute.setColorFilter(
+                androidx.core.content.ContextCompat.getColor(this, R.color.brand_primary)
+        );
     }
 
     private void setupDateTimePickers() {
@@ -168,6 +240,7 @@ public class JourneySearchActivity extends AppCompatActivity {
             Toast.makeText(this, "Reset to Leaving now", Toast.LENGTH_SHORT).show();
         });
     }
+
     private void showCustomTimePicker() {
         Dialog dialog = new Dialog(this);
         dialog.setContentView(R.layout.dialog_time_picker);
@@ -273,27 +346,28 @@ public class JourneySearchActivity extends AppCompatActivity {
         super.onResume();
         Button btnSearch = findViewById(R.id.btnSearchJourney);
         setupAdaptersAndListeners(btnSearch);
+        updateSaveButtonState();
     }
 
     private void setupAdaptersAndListeners(Button btnSearch) {
         List<String> stations = StationHelper.getStationNames();
-        // FIX: Create separate adapters so they don't share search states!
         StationAutoCompleteAdapter fromAdapter = new StationAutoCompleteAdapter(this, stations);
         StationAutoCompleteAdapter toAdapter = new StationAutoCompleteAdapter(this, stations);
 
         etFromCrs.setAdapter(fromAdapter);
         etToCrs.setAdapter(toAdapter);
 
-        RecentStationsManager recentManager =
-                new RecentStationsManager(this);
+        RecentStationsManager recentManager = new RecentStationsManager(this);
 
         etFromCrs.setOnItemClickListener((parent, v, position, id) -> {
             recentManager.addStation(fromAdapter.getItem(position));
+            updateSaveButtonState();
             etToCrs.requestFocus();
         });
 
         etToCrs.setOnItemClickListener((parent, v, position, id) -> {
             recentManager.addStation(toAdapter.getItem(position));
+            updateSaveButtonState();
             hideKeyboard();
             if (btnSearch != null) btnSearch.performClick();
         });
@@ -318,6 +392,7 @@ public class JourneySearchActivity extends AppCompatActivity {
         tvStatusUpdate.setText("");
         shimmerView.stopShimmer();
         shimmerView.setVisibility(View.GONE);
+        updateSaveButtonState();
 
         String fromName = etFromCrs.getText().toString().trim();
         String toName = etToCrs.getText().toString().trim();
@@ -365,38 +440,6 @@ public class JourneySearchActivity extends AppCompatActivity {
             startInternalRouting(fromCrs, toCrs);
         } else {
             Toast.makeText(this, "National Rail routing is only available for 'Now'. Switch to 'Now' or use TfL stations.", Toast.LENGTH_LONG).show();
-        }
-
-    }
-
-    private void launchMapsRouting(String originName, String destName, String originCrs, String destCrs) {
-        try {
-            String originSearch = java.net.URLEncoder.encode(originName + " Station, UK", StandardCharsets.UTF_8);
-            String destSearch = java.net.URLEncoder.encode(destName + " Station, UK", StandardCharsets.UTF_8);
-
-            String uriString = "https://www.google.com/maps/dir/?api=1" +
-                    "&origin=" + originSearch +
-                    "&destination=" + destSearch +
-                    "&travelmode=transit";
-
-            android.content.Intent intent = new android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(uriString));
-            intent.setPackage("com.google.android.apps.maps");
-
-            startActivity(intent);
-
-        } catch (android.content.ActivityNotFoundException e) {
-            triggerMapsFallback(originCrs, destCrs);
-        } catch (Exception e) {
-            triggerMapsFallback(originCrs, destCrs);
-        }
-    }
-
-    private void triggerMapsFallback(String originCrs, String destCrs) {
-        if (selectedCalendar == null) {
-            Toast.makeText(this, "Maps app unavailable. Using in-app routing...", Toast.LENGTH_LONG).show();
-            startInternalRouting(originCrs, destCrs);
-        } else {
-            Toast.makeText(this, "Maps app unavailable. Internal fallback cannot be used for future times.", Toast.LENGTH_LONG).show();
         }
     }
 
@@ -535,6 +578,8 @@ public class JourneySearchActivity extends AppCompatActivity {
                         autoCompleteTextView.setSelection(firstMatch.length());
                     }
                 }
+
+                updateSaveButtonState();
 
                 if (nextFocus != null) {
                     nextFocus.requestFocus();

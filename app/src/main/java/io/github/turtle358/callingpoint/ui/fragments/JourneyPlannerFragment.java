@@ -24,10 +24,13 @@ import java.util.Objects;
 
 import io.github.turtle358.callingpoint.R;
 import io.github.turtle358.callingpoint.models.JourneyOption;
+import io.github.turtle358.callingpoint.models.SavedRoute;
 import io.github.turtle358.callingpoint.models.Toc;
 import io.github.turtle358.callingpoint.ui.activities.JourneySearchActivity;
 import io.github.turtle358.callingpoint.ui.adapters.PinnedJourneyAdapter;
+import io.github.turtle358.callingpoint.ui.adapters.SavedRoutesAdapter;
 import io.github.turtle358.callingpoint.utils.JourneyPlanner.PinnedJourneyManager;
+import io.github.turtle358.callingpoint.utils.JourneyPlanner.SavedRoutesManager;
 import io.github.turtle358.callingpoint.utils.TOCBrandHelper;
 
 public class JourneyPlannerFragment extends Fragment {
@@ -37,7 +40,9 @@ public class JourneyPlannerFragment extends Fragment {
     private TextView tvListHeader;
 
     private PinnedJourneyAdapter adapter;
-    private PinnedJourneyManager manager;
+    private PinnedJourneyManager pinnedJourneyManager;
+    private RecyclerView recyclerSavedRoutes;
+    private SavedRoutesManager savedRoutesManager;
 
     @Nullable
     @Override
@@ -50,13 +55,20 @@ public class JourneyPlannerFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         recyclerPinnedJourneys = view.findViewById(R.id.recyclerPinnedJourneys);
+        recyclerSavedRoutes = view.findViewById(R.id.recyclerSavedRoutes);
         layoutEmptyState = view.findViewById(R.id.layoutEmptyState);
         tvListHeader = view.findViewById(R.id.tvListHeader);
         CardView cardMockSearch = view.findViewById(R.id.cardMockSearch);
 
         recyclerPinnedJourneys.setLayoutManager(new LinearLayoutManager(requireContext()));
 
-        manager = new PinnedJourneyManager(requireContext());
+        if (recyclerSavedRoutes != null) {
+            recyclerSavedRoutes.setLayoutManager(new LinearLayoutManager(requireContext()));
+            setupSavedRoutesTouchHelper();
+        }
+
+        pinnedJourneyManager = new PinnedJourneyManager(requireContext());
+        savedRoutesManager = new SavedRoutesManager(requireContext());
         setupDragAndDrop();
 
         cardMockSearch.setOnClickListener(v -> {
@@ -87,7 +99,7 @@ public class JourneyPlannerFragment extends Fragment {
 
                     @Override
                     public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
-                        if (adapter == null || manager == null) return;
+                        if (adapter == null || pinnedJourneyManager == null) return;
 
                         viewHolder.itemView.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS);
 
@@ -98,7 +110,7 @@ public class JourneyPlannerFragment extends Fragment {
                         adapter.getItems().remove(position);
                         adapter.notifyItemRemoved(position);
 
-                        manager.saveAllPinnedJourneys(adapter.getItems());
+                        pinnedJourneyManager.saveAllPinnedJourneys(adapter.getItems());
                         updateEmptyState();
 
                         com.google.android.material.snackbar.Snackbar.make(requireView(), "Journey unpinned", com.google.android.material.snackbar.Snackbar.LENGTH_LONG)
@@ -106,7 +118,7 @@ public class JourneyPlannerFragment extends Fragment {
                                     v.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY);
                                     adapter.restoreItem(unpinnedJourney, position);
                                     recyclerPinnedJourneys.scrollToPosition(position);
-                                    manager.saveAllPinnedJourneys(adapter.getItems());
+                                    pinnedJourneyManager.saveAllPinnedJourneys(adapter.getItems());
                                     updateEmptyState();
                                 }).show();
                     }
@@ -171,8 +183,8 @@ public class JourneyPlannerFragment extends Fragment {
                             notchRightMask.setBackgroundColor(defaultColor);
                         }
 
-                        if (adapter != null && manager != null) {
-                            manager.saveAllPinnedJourneys(adapter.getItems());
+                        if (adapter != null && pinnedJourneyManager != null) {
+                            pinnedJourneyManager.saveAllPinnedJourneys(adapter.getItems());
                         }
                     }
                 });
@@ -344,12 +356,13 @@ public class JourneyPlannerFragment extends Fragment {
     public void onResume() {
         super.onResume();
         loadPinnedJourneys();
+        loadSavedRoutes();
     }
 
     private void loadPinnedJourneys() {
-        if (manager == null) return;
+        if (pinnedJourneyManager == null) return;
 
-        List<JourneyOption> savedJourneys = manager.getPinnedJourneys();
+        List<JourneyOption> savedJourneys = pinnedJourneyManager.getPinnedJourneys();
 
         if (savedJourneys != null) {
             adapter = new PinnedJourneyAdapter(requireContext(), savedJourneys);
@@ -369,5 +382,81 @@ public class JourneyPlannerFragment extends Fragment {
             recyclerPinnedJourneys.setVisibility(View.GONE);
             layoutEmptyState.setVisibility(View.VISIBLE);
         }
+    }
+
+    private void loadSavedRoutes() {
+        if (savedRoutesManager == null || recyclerSavedRoutes == null) return;
+
+        List<SavedRoute> savedRoutes = savedRoutesManager.getSavedRoutes();
+
+        if (savedRoutes != null && !savedRoutes.isEmpty()) {
+            recyclerSavedRoutes.setVisibility(View.VISIBLE);
+
+            SavedRoutesAdapter savedAdapter = new SavedRoutesAdapter(
+                    savedRoutes,
+                    route -> {
+                        Intent intent = new Intent(requireContext(), JourneySearchActivity.class);
+                        intent.putExtra("AUTO_FROM", route.getFromName());
+                        intent.putExtra("AUTO_TO", route.getToName());
+                        startActivity(intent);
+                    },
+                    (route, position) -> {
+                        savedRoutesManager.removeRoute(route.getFromName(), route.getToName());
+                        loadSavedRoutes();
+                    }
+            );
+
+            recyclerSavedRoutes.setAdapter(savedAdapter);
+        } else {
+            recyclerSavedRoutes.setVisibility(View.GONE);
+        }
+    }
+
+    private void setupSavedRoutesTouchHelper() {
+        androidx.recyclerview.widget.ItemTouchHelper touchHelper = new androidx.recyclerview.widget.ItemTouchHelper(
+                new androidx.recyclerview.widget.ItemTouchHelper.SimpleCallback(0,
+                        androidx.recyclerview.widget.ItemTouchHelper.LEFT | androidx.recyclerview.widget.ItemTouchHelper.RIGHT) {
+
+                    @Override
+                    public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) {
+                        return false;
+                    }
+
+                    @Override
+                    public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
+                        viewHolder.itemView.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS);
+
+                        int position = viewHolder.getBindingAdapterPosition();
+                        if (position == RecyclerView.NO_POSITION) return;
+
+                        RecyclerView.Adapter adapter = recyclerSavedRoutes.getAdapter();
+                        if (!(adapter instanceof SavedRoutesAdapter)) return;
+                        SavedRoutesAdapter savedAdapter = (SavedRoutesAdapter) adapter;
+
+                        SavedRoute unpinnedRoute = savedAdapter.getRoutes().get(position);
+                        savedAdapter.getRoutes().remove(position);
+                        savedAdapter.notifyItemRemoved(position);
+
+                        savedRoutesManager.removeRoute(unpinnedRoute.getFromName(), unpinnedRoute.getToName());
+                        loadSavedRoutes();
+
+                        com.google.android.material.snackbar.Snackbar.make(requireView(), "Saved route removed", com.google.android.material.snackbar.Snackbar.LENGTH_LONG)
+                                .setAction("Undo", v -> {
+                                    v.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY);
+                                    savedRoutesManager.saveRoute(unpinnedRoute);
+                                    loadSavedRoutes();
+                                }).show();
+                    }
+
+                    @Override
+                    public void onChildDraw(@NonNull android.graphics.Canvas c, @NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, float dX, float dY, int actionState, boolean isCurrentlyActive) {
+                        if (actionState == androidx.recyclerview.widget.ItemTouchHelper.ACTION_STATE_SWIPE) {
+                            drawSwipeBackground(c, viewHolder.itemView, dX);
+                        }
+                        super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
+                    }
+                });
+
+        touchHelper.attachToRecyclerView(recyclerSavedRoutes);
     }
 }

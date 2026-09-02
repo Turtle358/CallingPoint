@@ -56,6 +56,16 @@
         </LinearLayout>
     </androidx.cardview.widget.CardView>
 
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerSavedRoutes"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="8dp"
+        android:clipToPadding="false"
+        android:paddingHorizontal="0dp"
+        android:nestedScrollingEnabled="false" />
+
     <TextView
         android:id="@+id/tvListHeader"
         android:layout_width="match_parent"
@@ -112,7 +122,7 @@
                 android:layout_width="280dp"
                 android:layout_height="wrap_content"
                 android:textAlignment="center"
-                android:text="Pin journeys to save them for quick offline access."
+                android:text="Pin journeys to save them for quick access."
                 android:textColor="@color/text_secondary"
                 android:textSize="16sp" />
         </LinearLayout>

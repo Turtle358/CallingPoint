@@ -91,7 +91,7 @@
                 android:layout_marginStart="16dp"
                 app:layout_constraintTop_toBottomOf="@id/tilFromCrs"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toStartOf="@id/btnSwapStations" />
+                app:layout_constraintEnd_toStartOf="@id/btnSaveRoute" />
 
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/tilToCrs"
@@ -125,6 +125,7 @@
                     android:popupBackground="@drawable/bg_dropdown"/>
             </com.google.android.material.textfield.TextInputLayout>
 
+
             <ImageButton
                 android:id="@+id/btnSwapStations"
                 android:layout_width="48dp"
@@ -138,6 +139,7 @@
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toTopOf="@id/divider"
                 app:layout_constraintBottom_toBottomOf="@id/divider" />
+
         </androidx.constraintlayout.widget.ConstraintLayout>
     </androidx.cardview.widget.CardView>
 
@@ -233,13 +235,24 @@
 
         <Button
             android:id="@+id/btnSearchJourney"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="56dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="8dp"
             android:text="Find Journeys"
             android:textSize="16sp"
             android:textStyle="bold"
             android:backgroundTint="@color/brand_primary"
             android:textColor="#FFFFFF"/>
+
+        <ImageButton
+            android:id="@+id/btnSaveRoute"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_bookmark_outline"
+            android:contentDescription="Save route"
+            app:tint="@color/brand_primary" />
     </LinearLayout>
 
     <TextView
