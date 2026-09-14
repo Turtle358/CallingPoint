@@ -315,4 +315,28 @@ public class TOCBrandHelper {
         }
         return tflId;
     }
+
+    public static String getContainedName(String text) {
+        if (text == null || text.isEmpty()) return null;
+        String lower = text.toLowerCase();
+        for (Toc t : allTocs) {
+            if (t.name != null && !t.name.isEmpty() && lower.contains(t.name.toLowerCase())) {
+                return t.name;
+            }
+        }
+        return null;
+    }
+
+    public static boolean containsTocName(String text) {
+        return getContainedName(text) != null;
+    }
+
+    public static int brightenIfDark(int color, float minLightness) {
+        float[] hsl = new float[3];
+        androidx.core.graphics.ColorUtils.colorToHSL(color, hsl);
+        if (hsl[2] < minLightness) {
+            hsl[2] = minLightness;
+        }
+        return androidx.core.graphics.ColorUtils.HSLToColor(hsl);
+    }
 }

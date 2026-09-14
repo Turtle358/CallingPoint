@@ -27,9 +27,12 @@ import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -344,24 +347,22 @@ public class TOCDisruptionDetailActivity extends AppCompatActivity {
                 innerLayout.addView(webView);
             }
 
-            TextView tv = new TextView(this);
+            LinearLayout descriptionContainer = new LinearLayout(this);
+            descriptionContainer.setOrientation(LinearLayout.VERTICAL);
             LinearLayout.LayoutParams bodyParams = new LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
             );
             bodyParams.setMargins(0, (int)(12 * density), 0, 0);
-            tv.setLayoutParams(bodyParams);
-            tv.setTextColor(ContextCompat.getColor(this, R.color.text_secondary));
-            tv.setLinkTextColor(Color.parseColor("#0A56F1"));
-            tv.setTextSize(14f);
-            tv.setLineSpacing(0, 1.2f);
-            tv.setMovementMethod(LinkMovementMethod.getInstance());
-            tv.setText(HtmlCompat.fromHtml(chunk, HtmlCompat.FROM_HTML_MODE_COMPACT));
-            tv.setVisibility(autoExpand ? View.VISIBLE : View.GONE);
+            descriptionContainer.setLayoutParams(bodyParams);
+            descriptionContainer.setVisibility(autoExpand ? View.VISIBLE : View.GONE);
+
             if (autoExpand) {
                 arrowIcon.setRotation(180f);
             }
-            innerLayout.addView(tv);
+
+            buildSmartDescription(descriptionContainer, chunk, density);
+            innerLayout.addView(descriptionContainer);
 
             card.addView(innerLayout);
             container.addView(card);
@@ -391,10 +392,10 @@ public class TOCDisruptionDetailActivity extends AppCompatActivity {
 
                 isExpanded[0] = !isExpanded[0];
                 if (isExpanded[0]) {
-                    tv.setVisibility(View.VISIBLE);
+                    descriptionContainer.setVisibility(View.VISIBLE);
                     arrowIcon.animate().rotation(180f).setDuration(250).start();
                 } else {
-                    tv.setVisibility(View.GONE);
+                    descriptionContainer.setVisibility(View.GONE);
                     arrowIcon.animate().rotation(0f).setDuration(250).start();
 
                     if (scrollView != null) {
@@ -466,5 +467,219 @@ public class TOCDisruptionDetailActivity extends AppCompatActivity {
                 "</body>" +
                 "</html>";
         webView.post(() -> webView.loadDataWithBaseURL("https://vimeo.com", html, "text/html", "UTF-8", null));
+    }
+
+    private void buildSmartDescription(LinearLayout container, String htmlContent, float density) {
+        Pattern pattern = Pattern.compile(
+                "(?i)(?:" +
+                        "<h4>\\s*(?:<b>|<strong>)?\\s*(.*?)\\s*(?:</b>|</strong>)?\\s*:?\\s*</h4>" +
+                        "|" +
+                        "(?:^|</p>|<p(?:\\s[^>]*)?>|<br\\s*/?>)\\s*(?:<b>|<strong>)\\s*([^<]{1,80}?[:?])\\s*(?:</b>|</strong>)" +
+                        ")\\s*(?:<br\\s*/?>)*"
+        );
+        Matcher matcher = pattern.matcher(htmlContent);
+
+        int lastEnd = 0;
+        String currentHeader = "Overview";
+        List<ParsedSection> rawSections = new ArrayList<>();
+
+        while (matcher.find()) {
+            String sectionContent = htmlContent.substring(lastEnd, matcher.start()).trim();
+            if (!sectionContent.isEmpty() && !sectionContent.matches("^(?:<br\\s*/?>\\s*)+$")) {
+                rawSections.add(new ParsedSection(currentHeader, sectionContent));
+            }
+
+            String h4Header = matcher.group(1);
+            String boldHeader = matcher.group(2);
+            currentHeader = (h4Header != null ? h4Header : boldHeader).trim();
+            lastEnd = matcher.end();
+        }
+
+        String finalContent = htmlContent.substring(lastEnd).trim();
+        if (!finalContent.isEmpty() && !finalContent.matches("^(?:<br\\s*/?>\\s*)+$")) {
+            rawSections.add(new ParsedSection(currentHeader, finalContent));
+        }
+
+        LinkedHashMap<String, List<ParsedSection>> grouped = new LinkedHashMap<>();
+        Map<String, CategoryStyle> styleByKey = new java.util.HashMap<>();
+
+        for (ParsedSection section : rawSections) {
+            String cleanHeader = section.rawHeader != null
+                    ? section.rawHeader.replaceAll(":\\s*$", "").trim()
+                    : "Overview";
+            CategoryStyle style = classifyHeader(cleanHeader);
+
+            grouped.computeIfAbsent(style.title, k -> new ArrayList<>())
+                    .add(new ParsedSection(cleanHeader, section.html));
+            styleByKey.putIfAbsent(style.title, style);
+        }
+
+        for (Map.Entry<String, List<ParsedSection>> entry : grouped.entrySet()) {
+            addDescriptionCard(container, styleByKey.get(entry.getKey()), entry.getValue(), density);
+        }
+    }
+
+    private void addDescriptionCard(LinearLayout container, CategoryStyle style, List<ParsedSection> sections, float density) {
+        LinearLayout subCard = new LinearLayout(this);
+        subCard.setOrientation(LinearLayout.VERTICAL);
+
+        GradientDrawable bg = new GradientDrawable();
+        bg.setColor(ColorUtils.setAlphaComponent(style.accentColor, 22));
+        bg.setStroke((int) (1 * density), ColorUtils.setAlphaComponent(style.accentColor, 110));
+        bg.setCornerRadius(24 * density);
+        subCard.setBackground(bg);
+        subCard.setPadding((int) (14 * density), (int) (12 * density), (int) (14 * density), (int) (12 * density));
+
+        LinearLayout.LayoutParams subCardParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        subCardParams.setMargins(0, 0, 0, (int) (20 * density));
+        subCard.setLayoutParams(subCardParams);
+
+        LinearLayout headerRow = new LinearLayout(this);
+        headerRow.setOrientation(LinearLayout.HORIZONTAL);
+        headerRow.setGravity(Gravity.CENTER_VERTICAL);
+
+        ImageView icon = new ImageView(this);
+        icon.setImageResource(style.iconRes);
+        icon.setColorFilter(style.accentColor);
+        LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams((int) (18 * density), (int) (18 * density));
+        iconParams.setMargins(0, 0, (int) (8 * density), 0);
+        headerRow.addView(icon, iconParams);
+
+        TextView titleView = new TextView(this);
+        titleView.setText(style.title);
+        titleView.setTextSize(14f);
+        titleView.setTypeface(null, android.graphics.Typeface.BOLD);
+        titleView.setTextColor(style.accentColor);
+        headerRow.addView(titleView);
+
+        subCard.addView(headerRow);
+
+        boolean showSubheaders = sections.size() > 1;
+
+        for (int i = 0; i < sections.size(); i++) {
+            ParsedSection section = sections.get(i);
+
+            if (showSubheaders) {
+                TextView subheaderView = new TextView(this);
+                subheaderView.setText(section.rawHeader);
+                subheaderView.setTextSize(12.5f);
+                subheaderView.setTypeface(null, android.graphics.Typeface.BOLD);
+                subheaderView.setTextColor(ContextCompat.getColor(this, R.color.text_primary));
+                subheaderView.setAlpha(0.85f);
+
+                LinearLayout.LayoutParams subheaderParams = new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+                subheaderParams.setMargins(0, (int) ((i == 0 ? 8 : 16) * density), 0, 0);
+                subCard.addView(subheaderView, subheaderParams);
+            }
+
+            TextView bodyView = new TextView(this);
+            bodyView.setTextColor(ContextCompat.getColor(this, R.color.text_secondary));
+            bodyView.setLinkTextColor(Color.parseColor("#0A56F1"));
+            bodyView.setTextSize(13.5f);
+            bodyView.setLineSpacing(0, 1.2f);
+            bodyView.setMovementMethod(LinkMovementMethod.getInstance());
+            bodyView.setText(HtmlCompat.fromHtml(section.html, HtmlCompat.FROM_HTML_MODE_COMPACT));
+
+            LinearLayout.LayoutParams bodyParams = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+            bodyParams.setMargins(0, (int) ((showSubheaders ? 4 : 8) * density), 0, 0);
+            subCard.addView(bodyView, bodyParams);
+        }
+
+        container.addView(subCard);
+    }
+
+    private CategoryStyle classifyHeader(String cleanHeader) {
+        String lowerHeader = cleanHeader.toLowerCase();
+
+        String simplifiedTitle = cleanHeader;
+        int accentColor = Color.parseColor("#78909C");
+        int iconRes = R.drawable.ic_bookmark_outline;
+
+        if (lowerHeader.equals("overview") || lowerHeader.contains("summary")) {
+            simplifiedTitle = "Overview";
+            accentColor = Color.parseColor("#29B6F6");
+            iconRes = R.drawable.ic_summary_stars;
+        } else if (lowerHeader.contains("advice")) {
+            simplifiedTitle = cleanHeader;
+            accentColor = Color.parseColor("#5C6BC0");
+            iconRes = R.drawable.ic_lightbulb;
+        } else if ( lowerHeader.contains("additional") || lowerHeader.contains("happening")) {
+            simplifiedTitle = cleanHeader;
+            accentColor = Color.parseColor("#0288D1");
+            iconRes = R.drawable.ic_info;
+        } else if (lowerHeader.contains("bus") || lowerHeader.contains("coach")) {
+            simplifiedTitle = cleanHeader.contains(":") ? cleanHeader : "Replacement Buses";
+            accentColor = Color.parseColor("#FFA726");
+            iconRes = R.drawable.ic_bus;
+        } else if (lowerHeader.contains("ticket")) {
+            simplifiedTitle = "Ticket Acceptance";
+            accentColor = Color.parseColor("#FF7043");
+            iconRes = R.drawable.ic_ticket;
+        } else if (lowerHeader.contains("compensation")) {
+            simplifiedTitle = "Compensation & Refunds";
+            accentColor = Color.parseColor("#FF7043");
+            iconRes = R.drawable.ic_money;
+        } else if (lowerHeader.contains("alternative") || lowerHeader.contains("planning") || lowerHeader.contains("check before")) {
+            simplifiedTitle = "Alternative Routes & Planning";
+            accentColor = Color.parseColor("#66BB6A");
+            iconRes = R.drawable.ic_smartphone;
+        } else if (lowerHeader.contains("tell me more") || lowerHeader.contains("why") || lowerHeader.contains("cause")) {
+            simplifiedTitle = "Tell me more about this";
+            accentColor = Color.parseColor("#26A69A");
+            iconRes = R.drawable.ic_question_mark;
+        } else if (lowerHeader.startsWith("after") || lowerHeader.startsWith("before") || lowerHeader.contains("today") || lowerHeader.contains("timetable")) {
+            simplifiedTitle = cleanHeader;
+            accentColor = Color.parseColor("#AB47BC");
+            iconRes = R.drawable.ic_clock;
+        } else if (lowerHeader.contains("parking") || lowerHeader.contains("station")) {
+            simplifiedTitle = "Parking";
+            accentColor = Color.parseColor("#8D6E63");
+            iconRes = R.drawable.ic_parking;
+        } else if (lowerHeader.contains("services") || TOCBrandHelper.containsTocName(lowerHeader)) {
+            simplifiedTitle = cleanHeader;
+            String matchedToc = TOCBrandHelper.getContainedName(lowerHeader);
+            int rawColour = matchedToc != null
+                    ? TOCBrandHelper.getColourForToc(matchedToc)
+                    : Color.parseColor("#c84c53");
+            accentColor = TOCBrandHelper.brightenIfDark(rawColour, 0.55f);
+            iconRes = R.drawable.ic_train;
+        } else if (lowerHeader.contains("day") || lowerHeader.contains("weekends")) {
+            simplifiedTitle = cleanHeader;
+            accentColor = Color.parseColor("#0A56F1");
+            iconRes = R.drawable.ic_calendar;
+        } else if (lowerHeader.contains("industrial action")) {
+            simplifiedTitle = cleanHeader;
+            accentColor = Color.parseColor("#E056FD");
+            iconRes = R.drawable.ic_fire;
+        } else if (lowerHeader.contains("faq")) {
+            simplifiedTitle = cleanHeader;
+            accentColor = Color.parseColor("#d5b20c");
+            iconRes = R.drawable.ic_question_mark;
+        }
+
+        return new CategoryStyle(simplifiedTitle, accentColor, iconRes);
+    }
+
+    private static class ParsedSection {
+        final String rawHeader;
+        final String html;
+        ParsedSection(String rawHeader, String html) {
+            this.rawHeader = rawHeader;
+            this.html = html;
+        }
+    }
+
+    private static class CategoryStyle {
+        final String title;
+        final int accentColor;
+        final int iconRes;
+        CategoryStyle(String title, int accentColor, int iconRes) {
+            this.title = title;
+            this.accentColor = accentColor;
+            this.iconRes = iconRes;
+        }
     }
 }
