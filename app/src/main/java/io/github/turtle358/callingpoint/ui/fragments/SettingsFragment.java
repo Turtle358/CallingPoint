@@ -178,7 +178,7 @@ public class SettingsFragment extends Fragment {
         });
 
         android.widget.TextView tvAttributions = view.findViewById(R.id.tvAttributions);
-        String attributionHtml = "Powered by data from the <b>National Rail Data Portal</b>, <b>Transport for London (TfL)</b>, and <b>OpenStreetMap</b>. Icons from <b>svgrepo.com</b>";
+        String attributionHtml = "Powered by data from the <b>National Rail Data Portal</b>, <b>Transport for London (TfL)</b>, and <b>OpenStreetMap</b>.<br>Some icons sourced from <b>SVGRepo.com</b> under open licenses.";
         tvAttributions.setText(android.text.Html.fromHtml(attributionHtml, android.text.Html.FROM_HTML_MODE_COMPACT));
     }
 
