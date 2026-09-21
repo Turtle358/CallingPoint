@@ -75,9 +75,12 @@ object StationHelper{
     @JvmStatic
     fun getIconForStation(name: String) : Int {
         return when (getStationType(name).lowercase()) {
-            "tfl", "tfl-national" -> R.drawable.ic_metro
+            "tfl", "tfl-national" -> R.drawable.ic_tfl
             "gbr" -> R.drawable.ic_gbr
             "national" -> R.drawable.ic_national_rail
+            "scot" -> R.drawable.ic_scotrail_small
+            "wales" -> R.drawable.ic_tfw
+            "merseytravel" -> R.drawable.ic_merseyrail
             else -> R.drawable.ic_train
         }
     }

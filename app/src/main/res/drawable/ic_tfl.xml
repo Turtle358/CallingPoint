@@ -1,0 +1,25 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="700dp"
+    android:height="700dp"
+    android:viewportWidth="700"
+    android:viewportHeight="700">
+  <group android:translateX="42.34" android:translateY="100">
+    <!-- Solid white background circle -->
+    <path
+        android:pathData="M308.12,249.99m-307.66,0a307.66,307.66 0 1,0 615.32,0a307.66,307.66 0 1,0 -615.32,0"
+        android:fillColor="#FFFFFF"/>
+    <!-- Thicker outer white border stroke -->
+    <path
+        android:pathData="M308.12,249.99m-323.66,0a323.66,323.66 0 1,0 647.32,0a323.66,323.66 0 1,0 -647.32,0"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="32"/>
+    <!-- Ring logo -->
+    <path
+        android:pathData="M469.45,249.99c0,89.08 -72.26,161.31 -161.34,161.31c-89.1,0 -161.29,-72.23 -161.29,-161.31c0,-89.06 72.19,-161.29 161.29,-161.29C397.19,88.7 469.45,160.92 469.45,249.99M308.12,0C170.03,0 58.09,111.93 58.09,249.99C58.09,388.06 170.03,500 308.12,500c138.06,0 249.99,-111.94 249.99,-250.01C558.1,111.93 446.18,0 308.12,0"
+        android:fillColor="#000F9F"/>
+    <!-- Horizontal bar -->
+    <path
+        android:pathData="M0,199.52h615.32v101.13h-615.32z"
+        android:fillColor="#000F9F"/>
+  </group>
+</vector>
