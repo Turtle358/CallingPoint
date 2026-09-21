@@ -33,6 +33,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -131,7 +132,11 @@ public class TOCDisruptionDetailActivity extends AppCompatActivity {
         });
 
         if (tocName != null) {
-            tocIcon.setImageResource(TOCBrandHelper.getIconForToc(tocName));
+            if(Objects.equals(TOCBrandHelper.getManagerForToc(tocName), "scot")) {
+                tocIcon.setImageResource(R.drawable.ic_scotrail);
+            } else {
+                tocIcon.setImageResource(TOCBrandHelper.getIconForToc(tocName));
+            }
             tocIcon.setOnClickListener(v ->
                     TOCBrandHelper.showTOCInfoDialog(this, tocName)
             );

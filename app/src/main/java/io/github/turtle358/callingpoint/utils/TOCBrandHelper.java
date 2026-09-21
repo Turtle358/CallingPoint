@@ -215,7 +215,7 @@ public class TOCBrandHelper {
         } else if (manager.equalsIgnoreCase("national")) {
             return R.drawable.ic_national_rail;
         } else if (manager.equalsIgnoreCase("scot")) {
-            return R.drawable.ic_scotrail;
+            return R.drawable.ic_scotrail_small;
         } else if (manager.equalsIgnoreCase("merseytravel")) {
             return R.drawable.ic_merseyrail;
         } else if (manager.equalsIgnoreCase("wales")) {
@@ -300,6 +300,8 @@ public class TOCBrandHelper {
         String manager = getManagerForToc(tocName);
         if(manager.equalsIgnoreCase("gbr")) {
             logo.setImageResource(R.drawable.ic_national_rail);
+        } else if (manager.equalsIgnoreCase("scot")){
+            logo.setImageResource(R.drawable.ic_scotrail);
         } else {
             logo.setImageResource(getIconForToc(tocName));
         }
