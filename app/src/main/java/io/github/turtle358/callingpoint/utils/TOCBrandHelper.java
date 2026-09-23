@@ -12,6 +12,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import io.github.turtle358.callingpoint.R;
 import io.github.turtle358.callingpoint.models.Toc;
@@ -57,6 +58,7 @@ public class TOCBrandHelper {
                 t.delayRepayUrl = obj.optString("delayRepayUrl", null);
                 t.delayRepayMinTime = obj.optInt("delayRepayMinTime", 15);
                 t.delayRepayMessage = obj.optString("delayRepayMessage", "");
+                t.managerDescription = obj.optString("managerDescription", "");
 
                 allTocs.add(t);
             }
@@ -117,6 +119,11 @@ public class TOCBrandHelper {
         }
 
         return null;
+    }
+
+    private static String getManagerDescriptionForToc(String tocName) {
+        Toc t = getTocByName(tocName);
+        return t != null ? t.managerDescription : "";
     }
 
     public static List<Toc> getVisibleTocs() {
@@ -265,7 +272,7 @@ public class TOCBrandHelper {
             case "national":
                 return "National Rail — " + tocName;
             case "gbr":
-                return "Great British Railways";
+                return "GBR | " + tocName;
             case "scot":
                 return "Scotrail";
             case "wales":
@@ -307,7 +314,8 @@ public class TOCBrandHelper {
         }
 
         name.setText(getManagerName(tocName));
-        desc.setText(getManagerDescription(tocName));
+        String description = Objects.equals(getManagerDescriptionForToc(tocName), "") ? getManagerDescription(tocName) : getManagerDescriptionForToc(tocName);
+        desc.setText(description);
 
         btnClose.setOnClickListener(v -> dialog.dismiss());
 

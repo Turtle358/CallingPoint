@@ -12,4 +12,5 @@ public class Toc {
     public String delayRepayUrl;
     public int delayRepayMinTime;
     public String delayRepayMessage;
+    public String managerDescription;
 }
