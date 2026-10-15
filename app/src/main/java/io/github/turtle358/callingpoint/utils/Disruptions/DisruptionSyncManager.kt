@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Handler
 import android.os.Looper
+import androidx.interpolator.view.animation.LinearOutSlowInInterpolator
 import com.google.gson.Gson
 import io.github.turtle358.callingpoint.api.APIClient
 import io.github.turtle358.callingpoint.api.NationalRailAPI
@@ -67,6 +68,7 @@ object DisruptionSyncManager {
                     LinkedHashMap<String?, ServiceIndicator>()
                 val othersMap: MutableMap<String?, ServiceIndicator> =
                     LinkedHashMap<String?, ServiceIndicator>()
+
 
                 for (incident in response.body()!!) {
                     if (incident.affectedOperators == null || "Cleared".equals(
