@@ -78,11 +78,7 @@ object DisruptionSyncManager {
                     ) continue
 
                     for (op in incident.affectedOperators) {
-                        if ("LO".equals(op.tocCode, ignoreCase = true) || "XR".equals(
-                                op.tocCode,
-                                ignoreCase = true
-                            )
-                        ) {
+                        if ("LO".equals(op.tocCode, ignoreCase = true)) {
                             continue
                         }
 
@@ -134,7 +130,7 @@ object DisruptionSyncManager {
                 val tflApi = APIClient.getClient().create<TflAPI>(TflAPI::class.java)
                 try {
                     val tflResponse =
-                        tflApi.getLineStatus("tube,overground,dlr,elizabeth-line,tram").execute()
+                        tflApi.getLineStatus("tube,overground,dlr,tram").execute()
 
                     if (tflResponse.isSuccessful() && tflResponse.body() != null) {
                         for (line in tflResponse.body()!!) {
