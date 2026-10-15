@@ -90,7 +90,7 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:clipToPadding="false"
-            android:paddingBottom="88dp" />
+            android:paddingBottom="170dp" />
 
         <LinearLayout
             android:id="@+id/layoutEmptyState"
@@ -98,7 +98,7 @@
             android:layout_height="match_parent"
             android:orientation="vertical"
             android:gravity="center"
-            android:paddingBottom="88dp"
+            android:paddingBottom="170dp"
             android:visibility="gone">
 
             <ImageView
@@ -133,7 +133,7 @@
             android:layout_height="wrap_content"
             android:layout_alignParentBottom="true"
             android:layout_marginHorizontal="16dp"
-            android:layout_marginBottom="16dp"
+            android:layout_marginBottom="96dp"
             app:cardBackgroundColor="@color/bg_card"
             app:cardCornerRadius="28dp"
             app:cardElevation="2dp">
