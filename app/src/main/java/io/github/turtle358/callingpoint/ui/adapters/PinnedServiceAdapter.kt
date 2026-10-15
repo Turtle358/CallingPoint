@@ -70,7 +70,7 @@ class PinnedServiceAdapter(
         holder.dotBottom.background = dotBg
         holder.timelineLine.setBackgroundColor(ColorUtils.setAlphaComponent(brandColour, 102))
 
-        val schTime = service.std ?: "--:--"
+        val schTime = service.scheduledDepartureTime ?: "--:--"
         val currentStationName =
             service.locationName ?: "Unknown"
 
@@ -110,9 +110,9 @@ class PinnedServiceAdapter(
 
         val anchorStation = TimelinePoint()
         anchorStation.locationName = service.locationName
-        anchorStation.scheduledTime = service.std ?: ""
-        anchorStation.estimatedTime = service.etd
-        anchorStation.actualTime = service.atd ?: service.ata
+        anchorStation.scheduledTime = service.scheduledDepartureTime ?: ""
+        anchorStation.estimatedTime = service.estimatedDepartureTime
+        anchorStation.actualTime = service.actualDepartureTime ?: service.actualArrivalTime
         entireJourney.add(anchorStation)
 
         if (service.subsequentCallingPoints != null && !service.subsequentCallingPoints.isEmpty() && service.subsequentCallingPoints.get(

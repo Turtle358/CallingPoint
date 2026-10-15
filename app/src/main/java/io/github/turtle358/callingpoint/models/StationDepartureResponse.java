@@ -9,22 +9,22 @@ public class StationDepartureResponse {
 
     public static class TrainService {
         @SerializedName("std")
-        public String std;
+        public String scheduledDepartureTime;
 
         @SerializedName("etd")
-        public String etd;
+        public String estimatedDepartureTime;
 
         @SerializedName("sta")
-        public String sta;
+        public String scheduledArrivalTime;
 
         @SerializedName("eta")
-        public String eta;
+        public String estimatedArrivalTime;
 
         @SerializedName("ata")
-        public String ata;
+        public String actualArrivalTime;
 
         @SerializedName("atd")
-        public String atd;
+        public String actualDepartureTime;
 
         @SerializedName("origin")
         public List<Location> origin;
@@ -61,13 +61,13 @@ public class StationDepartureResponse {
         public String crs;
 
         @SerializedName("st")
-        public String st;
+        public String scheduledTime;
 
         @SerializedName("et")
-        public String et;
+        public String estimatedTime;
 
         @SerializedName("at")
-        public String at;
+        public String actualTime;
     }
 
     public static class Location {

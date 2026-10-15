@@ -6,7 +6,6 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.ImageButton;
-import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -172,8 +171,8 @@ public class ServiceDetailsActivity extends AppCompatActivity {
                         allPoints.addAll(data.previousCallingPoints.get(0).callingPoint);
                     }
 
-                    String schTime = data.std != null ? data.std : (data.sta != null ? data.sta : "");
-                    String estTime = data.etd != null ? data.etd : (data.eta != null ? data.eta : "");
+                    String schTime = data.scheduledDepartureTime != null ? data.scheduledDepartureTime : (data.scheduledArrivalTime != null ? data.scheduledArrivalTime : "");
+                    String estTime = data.estimatedDepartureTime != null ? data.estimatedDepartureTime : (data.estimatedArrivalTime != null ? data.estimatedArrivalTime : "");
 
                     boolean isCancelled = data.isCancelled || "Cancelled".equalsIgnoreCase(estTime);
                     checkDelayRepayEligibility(schTime, estTime, operatorName, isCancelled);
@@ -185,8 +184,8 @@ public class ServiceDetailsActivity extends AppCompatActivity {
                     currentStation.isCancelled = isCancelled;
                     currentStation.platform = data.platform;
 
-                    if (data.atd != null) currentStation.actualTime = data.atd;
-                    else if (data.ata != null) currentStation.actualTime = data.ata;
+                    if (data.actualDepartureTime != null) currentStation.actualTime = data.actualDepartureTime;
+                    else if (data.actualArrivalTime != null) currentStation.actualTime = data.actualArrivalTime;
                     allPoints.add(currentStation);
 
                     if (data.subsequentCallingPoints != null && !data.subsequentCallingPoints.isEmpty()) {

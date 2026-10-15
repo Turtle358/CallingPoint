@@ -48,7 +48,7 @@ public class TrainTrackerWorker extends Worker {
 
                 if (response.isSuccessful() && response.body() != null) {
                     ServiceDetailsResponse data = response.body();
-                    String status = data.etd;
+                    String status = data.estimatedDepartureTime;
 
                     if (status != null && !status.equalsIgnoreCase("On time")) {
                         android.content.SharedPreferences prefs = context.getSharedPreferences("NotifiedTrains", Context.MODE_PRIVATE);
@@ -108,9 +108,9 @@ public class TrainTrackerWorker extends Worker {
 
         ServiceDetailsResponse.TimelinePoint anchor = new ServiceDetailsResponse.TimelinePoint();
         anchor.locationName = data.locationName;
-        anchor.scheduledTime = data.std != null ? data.std : "";
-        anchor.estimatedTime = data.etd;
-        anchor.actualTime = (data.atd != null) ? data.atd : data.ata;
+        anchor.scheduledTime = data.scheduledDepartureTime != null ? data.scheduledDepartureTime : "";
+        anchor.estimatedTime = data.estimatedDepartureTime;
+        anchor.actualTime = (data.actualDepartureTime != null) ? data.actualDepartureTime : data.actualArrivalTime;
         journey.add(anchor);
 
         if (data.subsequentCallingPoints != null && !data.subsequentCallingPoints.isEmpty() && data.subsequentCallingPoints.get(0).callingPoint != null) {
@@ -118,7 +118,7 @@ public class TrainTrackerWorker extends Worker {
         }
 
         String origin = data.locationName;
-        String topTime = data.std != null ? data.std : "--:--";
+        String topTime = data.scheduledDepartureTime != null ? data.scheduledDepartureTime : "--:--";
 
         String destination = origin;
         String bottomTime = "--:--";

@@ -7,7 +7,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageButton;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -450,12 +449,12 @@ public class StationActivity extends AppCompatActivity {
                         try {
                             java.util.Date expectedDate = isoFormat.parse(pred.expectedArrival);
                             if (expectedDate != null) {
-                                tService.std = timeFormat.format(expectedDate);
-                                tService.etd = "On time";
+                                tService.scheduledDepartureTime = timeFormat.format(expectedDate);
+                                tService.estimatedDepartureTime = "On time";
                             }
                         } catch (Exception e) {
-                            tService.std = "--:--";
-                            tService.etd = "Unknown";
+                            tService.scheduledDepartureTime = "--:--";
+                            tService.estimatedDepartureTime = "Unknown";
                         }
 
                         if (pred.platformName != null) {
@@ -656,7 +655,7 @@ public class StationActivity extends AppCompatActivity {
         }
 
         StationDepartureResponse.TrainService lastService = fetchedServices.get(fetchedServices.size() - 1);
-        String timeStr = lastService.std != null ? lastService.std : lastService.sta;
+        String timeStr = lastService.scheduledDepartureTime != null ? lastService.scheduledDepartureTime : lastService.scheduledArrivalTime;
 
         if (timeStr == null || !timeStr.contains(":")) return Math.min(119, currentOffset + 10);
 

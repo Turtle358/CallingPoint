@@ -440,7 +440,7 @@ public class JourneyDetailsActivity extends AppCompatActivity {
 
         ServiceDetailsResponse.TimelinePoint current = new ServiceDetailsResponse.TimelinePoint();
         current.locationName = details.locationName;
-        current.scheduledTime = details.std != null ? details.std : details.sta;
+        current.scheduledTime = details.scheduledDepartureTime != null ? details.scheduledDepartureTime : details.scheduledArrivalTime;
         allPoints.add(current);
 
         if (details.subsequentCallingPoints != null && !details.subsequentCallingPoints.isEmpty()) {
@@ -477,7 +477,7 @@ public class JourneyDetailsActivity extends AppCompatActivity {
             public void onResponse(@NonNull Call<StationDepartureResponse> call, @NonNull Response<StationDepartureResponse> response) {
                 if (response.isSuccessful() && response.body() != null && response.body().trainServices != null) {
                     for (StationDepartureResponse.TrainService service : response.body().trainServices) {
-                        if (service.std != null && isTimeMatching(service.std, leg.departureTime, 2)) {
+                        if (service.scheduledDepartureTime != null && isTimeMatching(service.scheduledDepartureTime, leg.departureTime, 2)) {
                             leg.serviceId = service.serviceID;
                             if (service.operatorName != null) {
                                 io.github.turtle358.callingpoint.models.Toc matchedToc = TOCBrandHelper.getTocByName(service.operatorName);

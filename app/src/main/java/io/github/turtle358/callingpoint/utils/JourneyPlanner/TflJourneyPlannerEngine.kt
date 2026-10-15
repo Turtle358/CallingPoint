@@ -115,8 +115,8 @@ class TflJourneyPlannerEngine {
 
                         if (res.isSuccessful() && res.body() != null && res.body()!!.trainServices != null) {
                             for (service in res.body()!!.trainServices) {
-                                if (service.std != null && isTimeMatching(
-                                        service.std,
+                                if (service.scheduledDepartureTime != null && isTimeMatching(
+                                        service.scheduledDepartureTime,
                                         leg.departureTime,
                                         2
                                     )

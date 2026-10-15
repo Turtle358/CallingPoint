@@ -16,8 +16,8 @@ object LiveLocationEngine {
 
         val current = TimelinePoint()
         current.locationName = details.locationName
-        current.atd = details.atd
-        current.ata = details.ata
+        current.actualDepatureTime = details.actualDepartureTime
+        current.actualArrivalTime = details.actualArrivalTime
         allStops.add(current)
 
         if (details.subsequentCallingPoints != null && !details.subsequentCallingPoints.isEmpty()) {
@@ -27,10 +27,10 @@ object LiveLocationEngine {
         for (i in allStops.indices.reversed()) {
             val stop = allStops.get(i)
 
-            if (stop.atd != null && !stop.atd.isEmpty()) {
+            if (stop.actualDepatureTime != null && !stop.actualDepatureTime.isEmpty()) {
                 return "Departed " + stop.locationName
             }
-            if (stop.ata != null && !stop.ata.isEmpty()) {
+            if (stop.actualArrivalTime != null && !stop.actualArrivalTime.isEmpty()) {
                 return "At " + stop.locationName
             }
         }

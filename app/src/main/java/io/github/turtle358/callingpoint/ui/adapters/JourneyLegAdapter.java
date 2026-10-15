@@ -486,9 +486,9 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
         }
         ServiceDetailsResponse.TimelinePoint current = new ServiceDetailsResponse.TimelinePoint();
         current.locationName = liveData.locationName;
-        current.scheduledTime = liveData.std != null ? liveData.std : liveData.sta;
-        current.estimatedTime = liveData.etd != null ? liveData.etd : liveData.eta;
-        current.actualTime = liveData.atd != null ? liveData.atd : liveData.ata;
+        current.scheduledTime = liveData.scheduledDepartureTime != null ? liveData.scheduledDepartureTime : liveData.scheduledArrivalTime;
+        current.estimatedTime = liveData.estimatedDepartureTime != null ? liveData.estimatedDepartureTime : liveData.estimatedArrivalTime;
+        current.actualTime = liveData.actualDepartureTime != null ? liveData.actualDepartureTime : liveData.actualArrivalTime;
         fullRoute.add(current);
         if (liveData.subsequentCallingPoints != null && !liveData.subsequentCallingPoints.isEmpty()) {
             fullRoute.addAll(liveData.subsequentCallingPoints.get(0).callingPoint);

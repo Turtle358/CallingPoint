@@ -17,22 +17,22 @@ public class ServiceDetailsResponse {
     public String crs;
 
     @SerializedName("std")
-    public String std;
+    public String scheduledDepartureTime;
 
     @SerializedName("etd")
-    public String etd;
+    public String estimatedDepartureTime;
 
     @SerializedName("ata")
-    public String ata;
+    public String actualArrivalTime;
 
     @SerializedName("atd")
-    public String atd;
+    public String actualDepartureTime;
 
     @SerializedName("sta")
-    public String sta;
+    public String scheduledArrivalTime;
 
     @SerializedName("eta")
-    public String eta;
+    public String estimatedArrivalTime;
 
     @SerializedName("platform")
     public String platform;
@@ -74,10 +74,10 @@ public class ServiceDetailsResponse {
         public boolean isCancelled;
 
         @SerializedName("ata")
-        public String ata;
+        public String actualArrivalTime;
 
         @SerializedName("atd")
-        public String atd;
+        public String actualDepatureTime;
 
         @SerializedName("platform")
         public String platform;

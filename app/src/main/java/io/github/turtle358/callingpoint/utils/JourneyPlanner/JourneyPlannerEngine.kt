@@ -96,7 +96,7 @@ class JourneyPlannerEngine(private val graphManager: GraphManager) {
         val directRes = getBoard(originCrs, 25, destCrs)
         if (directRes != null && directRes.trainServices != null) {
             for (service in directRes.trainServices) {
-                val depTime = getBestTime(service.std, service.etd)
+                val depTime = getBestTime(service.scheduledDepartureTime, service.estimatedDepartureTime)
                 if (depTime == null) continue
 
                 val arrTime = getPreciseArrivalTime(service.serviceID, destCrs)
@@ -117,14 +117,14 @@ class JourneyPlannerEngine(private val graphManager: GraphManager) {
                         destCrs,
                         getStationName(destCrs),
                         destName,
-                        service.std,
+                        service.scheduledDepartureTime,
                         arrTime,
                         service.operatorName,
                         service.serviceID,
                         "TRAIN",
                         intermediateStops,
                         getLiveLocationStatus(service.serviceID),
-                        service.etd
+                        service.estimatedDepartureTime
                     )
                 )
 
@@ -155,7 +155,7 @@ class JourneyPlannerEngine(private val graphManager: GraphManager) {
                 for (t1 in allDepRes.trainServices) {
                     if (leg1Count++ >= 6) break
 
-                    val t1Dep = getBestTime(t1.std, t1.etd)
+                    val t1Dep = getBestTime(t1.scheduledDepartureTime, t1.estimatedDepartureTime)
                     if (t1Dep == null) continue
 
                     if (getPreciseArrivalTime(t1.serviceID, destCrs) != null) continue
@@ -164,7 +164,7 @@ class JourneyPlannerEngine(private val graphManager: GraphManager) {
                     if (t1ArrTime == null) continue
 
                     for (t2 in leg2Res.trainServices) {
-                        val t2DepTime = getBestTime(t2.std, t2.etd)
+                        val t2DepTime = getBestTime(t2.scheduledDepartureTime, t2.estimatedDepartureTime)
                         if (t2DepTime == null) continue
 
                         if (hasValidTransferTime(t1ArrTime, t2DepTime, 5, 180)) {
@@ -191,14 +191,14 @@ class JourneyPlannerEngine(private val graphManager: GraphManager) {
                                     hubCrs,
                                     getStationName(hubCrs),
                                     t1Dest,
-                                    t1.std,
+                                    t1.scheduledDepartureTime,
                                     t1ArrTime,
                                     t1.operatorName,
                                     t1.serviceID,
                                     "TRAIN",
                                     stops1,
                                     getLiveLocationStatus(t1.serviceID),
-                                    t1.etd
+                                    t1.estimatedDepartureTime
                                 )
                             )
                             legs.add(
@@ -208,14 +208,14 @@ class JourneyPlannerEngine(private val graphManager: GraphManager) {
                                     destCrs,
                                     getStationName(destCrs),
                                     t2Dest,
-                                    t2.std,
+                                    t2.scheduledDepartureTime,
                                     t2ArrTime,
                                     t2.operatorName,
                                     t2.serviceID,
                                     "TRAIN",
                                     stops2,
                                     getLiveLocationStatus(t2.serviceID),
-                                    t2.etd
+                                    t2.estimatedDepartureTime
                                 )
                             )
 
@@ -262,7 +262,7 @@ class JourneyPlannerEngine(private val graphManager: GraphManager) {
                 if (hub2ToDest == null || hub2ToDest.trainServices == null || hub2ToDest.trainServices.isEmpty()) continue
 
                 for (t1 in allOrigin.trainServices) {
-                    if (getBestTime(t1.std, t1.etd) == null) continue
+                    if (getBestTime(t1.scheduledDepartureTime, t1.estimatedDepartureTime) == null) continue
                     if (getPreciseArrivalTime(t1.serviceID, destCrs) != null) continue
                     if (getPreciseArrivalTime(t1.serviceID, hub2) != null) continue
 
@@ -270,7 +270,7 @@ class JourneyPlannerEngine(private val graphManager: GraphManager) {
                     if (t1ArrTime == null) continue
 
                     for (t2 in allHub1.trainServices) {
-                        val t2DepTime = getBestTime(t2.std, t2.etd)
+                        val t2DepTime = getBestTime(t2.scheduledDepartureTime, t2.estimatedDepartureTime)
                         if (t2DepTime == null) continue
                         if (getPreciseArrivalTime(t2.serviceID, destCrs) != null) continue
 
@@ -279,7 +279,7 @@ class JourneyPlannerEngine(private val graphManager: GraphManager) {
                             if (t2ArrTime == null) continue
 
                             for (t3 in hub2ToDest.trainServices) {
-                                val t3DepTime = getBestTime(t3.std, t3.etd)
+                                val t3DepTime = getBestTime(t3.scheduledDepartureTime, t3.estimatedDepartureTime)
                                 if (t3DepTime == null) continue
 
                                 if (hasValidTransferTime(t2ArrTime, t3DepTime, 5, 120)) {
@@ -313,14 +313,14 @@ class JourneyPlannerEngine(private val graphManager: GraphManager) {
                                             hub1,
                                             getStationName(hub1),
                                             t1Dest,
-                                            t1.std,
+                                            t1.scheduledDepartureTime,
                                             t1ArrTime,
                                             t1.operatorName,
                                             t1.serviceID,
                                             "TRAIN",
                                             stops1,
                                             getLiveLocationStatus(t1.serviceID),
-                                            t1.etd
+                                            t1.estimatedDepartureTime
                                         )
                                     )
                                     legs.add(
@@ -330,14 +330,14 @@ class JourneyPlannerEngine(private val graphManager: GraphManager) {
                                             hub2,
                                             getStationName(hub2),
                                             t2Dest,
-                                            t2.std,
+                                            t2.scheduledDepartureTime,
                                             t2ArrTime,
                                             t2.operatorName,
                                             t2.serviceID,
                                             "TRAIN",
                                             stops2,
                                             getLiveLocationStatus(t2.serviceID),
-                                            t2.etd
+                                            t2.estimatedDepartureTime
                                         )
                                     )
                                     legs.add(
@@ -347,14 +347,14 @@ class JourneyPlannerEngine(private val graphManager: GraphManager) {
                                             destCrs,
                                             getStationName(destCrs),
                                             t3Dest,
-                                            t3.std,
+                                            t3.scheduledDepartureTime,
                                             t3ArrTime,
                                             t3.operatorName,
                                             t3.serviceID,
                                             "TRAIN",
                                             stops3,
                                             getLiveLocationStatus(t3.serviceID),
-                                            t3.etd
+                                            t3.estimatedDepartureTime
                                         )
                                     )
 
@@ -404,7 +404,7 @@ class JourneyPlannerEngine(private val graphManager: GraphManager) {
                 if (term2Board == null || term2Board.trainServices == null) continue
 
                 for (t1 in allOrigin.trainServices) {
-                    if (getBestTime(t1.std, t1.etd) == null) continue
+                    if (getBestTime(t1.scheduledDepartureTime, t1.estimatedDepartureTime) == null) continue
                     if (getPreciseArrivalTime(t1.serviceID, destCrs) != null) continue
 
                     val t1ArrTime = getPreciseArrivalTime(t1.serviceID, terminal1)
@@ -416,7 +416,7 @@ class JourneyPlannerEngine(private val graphManager: GraphManager) {
                         addMinutesToTime(transferStartTime, transferInfo.timeMins)
 
                     for (t2 in term2Board.trainServices) {
-                        val t2DepTime = getBestTime(t2.std, t2.etd)
+                        val t2DepTime = getBestTime(t2.scheduledDepartureTime, t2.estimatedDepartureTime)
                         if (t2DepTime == null) continue
 
                         if (hasValidTransferTime(arrivedAtTerm2Time, t2DepTime, 3, 120)) {
@@ -444,14 +444,14 @@ class JourneyPlannerEngine(private val graphManager: GraphManager) {
                                     terminal1,
                                     getStationName(terminal1),
                                     t1TrainDest,
-                                    t1.std,
+                                    t1.scheduledDepartureTime,
                                     t1ArrTime,
                                     t1.operatorName,
                                     t1.serviceID,
                                     "TRAIN",
                                     stops1,
                                     getLiveLocationStatus(t1.serviceID),
-                                    t1.etd
+                                    t1.estimatedDepartureTime
                                 )
                             )
                             legs.add(
@@ -479,14 +479,14 @@ class JourneyPlannerEngine(private val graphManager: GraphManager) {
                                     destCrs,
                                     getStationName(destCrs),
                                     t2TrainDest,
-                                    t2.std,
+                                    t2.scheduledDepartureTime,
                                     t2ArrTime,
                                     t2.operatorName,
                                     t2.serviceID,
                                     "TRAIN",
                                     stops2,
                                     getLiveLocationStatus(t2.serviceID),
-                                    t2.etd
+                                    t2.estimatedDepartureTime
                                 )
                             )
 
@@ -583,7 +583,7 @@ class JourneyPlannerEngine(private val graphManager: GraphManager) {
             val destCrs =
                 if (details.crs != null) details.crs else StationHelper.getCrsFromName(details.locationName)
             if (targetCrs.equals(destCrs, ignoreCase = true)) {
-                return getBestTime(details.sta, details.eta)
+                return getBestTime(details.scheduledArrivalTime, details.estimatedArrivalTime)
             }
         }
         return null
@@ -608,8 +608,8 @@ class JourneyPlannerEngine(private val graphManager: GraphManager) {
         currentStation.locationName = details.locationName
         currentStation.crs =
             if (details.crs != null) details.crs else StationHelper.getCrsFromName(details.locationName)
-        currentStation.scheduledTime = if (details.std != null) details.std else details.sta
-        currentStation.estimatedTime = if (details.etd != null) details.etd else details.eta
+        currentStation.scheduledTime = if (details.scheduledDepartureTime != null) details.scheduledDepartureTime else details.scheduledArrivalTime
+        currentStation.estimatedTime = if (details.estimatedDepartureTime != null) details.estimatedDepartureTime else details.estimatedArrivalTime
         allPoints.add(currentStation)
 
         if (details.subsequentCallingPoints != null && !details.subsequentCallingPoints.isEmpty()) {

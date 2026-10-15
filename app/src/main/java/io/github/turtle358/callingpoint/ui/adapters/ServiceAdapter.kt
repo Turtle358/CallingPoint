@@ -80,12 +80,12 @@ class ServiceAdapter(private val context: Context, services: MutableList<TrainSe
     }
 
     private fun isServicePassed(service: TrainService): Boolean {
-        if ((service.atd != null && !service.atd.isEmpty()) || (service.ata != null && !service.ata.isEmpty())) {
+        if ((service.actualDepartureTime != null && !service.actualDepartureTime.isEmpty()) || (service.actualArrivalTime != null && !service.actualArrivalTime.isEmpty())) {
             return true
         }
 
-        val schTime = if (service.std != null) service.std else service.sta
-        val estTime = if (service.etd != null) service.etd else service.eta
+        val schTime = if (service.scheduledDepartureTime != null) service.scheduledDepartureTime else service.scheduledArrivalTime
+        val estTime = if (service.estimatedDepartureTime != null) service.estimatedDepartureTime else service.estimatedArrivalTime
 
         if ("Cancelled".equals(estTime, ignoreCase = true) || "Delayed".equals(
                 estTime,
@@ -223,16 +223,16 @@ class ServiceAdapter(private val context: Context, services: MutableList<TrainSe
         itemHolder.timelineLine.setBackgroundColor(ColorUtils.setAlphaComponent(brandColour, 102))
 
         val schTime =
-            if (service.std != null) service.std else (if (service.sta != null) service.sta else "--:--")
+            if (service.scheduledDepartureTime != null) service.scheduledDepartureTime else (if (service.scheduledArrivalTime != null) service.scheduledArrivalTime else "--:--")
         val estTime =
-            if (service.etd != null) service.etd else (if (service.eta != null) service.eta else "Unknown")
+            if (service.estimatedDepartureTime != null) service.estimatedDepartureTime else (if (service.estimatedArrivalTime != null) service.estimatedArrivalTime else "Unknown")
         val countdownText = calculateCountdown(schTime, estTime)
 
         val trueOriginName =
             if (service.origin != null && !service.origin.isEmpty()) service.origin.get(0).locationName else "Unknown"
         var trueOriginTime: String? = "--:--"
         if (service.previousCallingPoints != null && !service.previousCallingPoints.isEmpty()) {
-            trueOriginTime = service.previousCallingPoints.get(0).callingPoint.get(0).st
+            trueOriginTime = service.previousCallingPoints.get(0).callingPoint.get(0).scheduledTime
         } else if (areStationNamesEqual(trueOriginName, userOriginStation)) {
             trueOriginTime = schTime
         } else {
@@ -267,7 +267,7 @@ class ServiceAdapter(private val context: Context, services: MutableList<TrainSe
 
         if (service.subsequentCallingPoints != null && !service.subsequentCallingPoints.isEmpty()) {
             val pts = service.subsequentCallingPoints.get(0).callingPoint
-            trueDestTime = pts.get(pts.size - 1)!!.st
+            trueDestTime = pts.get(pts.size - 1)!!.scheduledTime
 
             if (hasFilter && !isArrivals) {
                 var destIndex = -1
@@ -279,7 +279,7 @@ class ServiceAdapter(private val context: Context, services: MutableList<TrainSe
                 }
                 if (destIndex != -1) {
                     stopsCount = destIndex + 1
-                    filterDestTime = pts.get(destIndex)!!.st
+                    filterDestTime = pts.get(destIndex)!!.scheduledTime
                 } else {
                     stopsCount = pts.size
                 }
