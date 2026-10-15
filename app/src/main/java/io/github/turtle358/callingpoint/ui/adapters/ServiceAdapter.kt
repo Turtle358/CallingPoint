@@ -77,6 +77,8 @@ class ServiceAdapter(private val context: Context, services: MutableList<TrainSe
                 upcomingServices.add(service)
             }
         }
+        sortByBestTime(upcomingServices)
+        sortByBestTime(earlierServices)
     }
 
     private fun isServicePassed(service: TrainService): Boolean {
@@ -515,6 +517,8 @@ class ServiceAdapter(private val context: Context, services: MutableList<TrainSe
             }
         }
         if (addedCount > 0) {
+            sortByBestTime(upcomingServices)
+            sortByBestTime(earlierServices)
             notifyDataSetChanged()
         }
         return addedCount
@@ -593,6 +597,48 @@ class ServiceAdapter(private val context: Context, services: MutableList<TrainSe
             tvLiveStatus = v.findViewById(R.id.tvLiveStatus)
             defaultSchColour = tvDepTime.getCurrentTextColor()
         }
+    }
+
+    private fun toMinutes(t: String?): Int? {
+        if (t == null || !t.contains(":")) return null
+        return try {
+            val p = t.trim().split(":")
+            p[0].trim().toInt() * 60 + p[1].trim().toInt()
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    private fun minutesFromNow(t: String?, nowMins: Int): Int? {
+        val mins = toMinutes(t) ?: return null
+        return (mins - nowMins + 720).mod(1440) - 720
+    }
+
+    private fun scheduledOf(s: TrainService): String? =
+        s.scheduledDepartureTime ?: s.scheduledArrivalTime
+
+    private fun estimatedOf(s: TrainService): String? =
+        s.estimatedDepartureTime ?: s.estimatedArrivalTime
+
+    private fun actualOf(s: TrainService): String? =
+        s.actualDepartureTime?.takeIf { it.isNotEmpty() }
+            ?: s.actualArrivalTime?.takeIf { it.isNotEmpty() }
+
+    private fun sortKey(s: TrainService, nowMins: Int): Int =
+        minutesFromNow(actualOf(s), nowMins)
+            ?: minutesFromNow(estimatedOf(s), nowMins)
+            ?: minutesFromNow(scheduledOf(s), nowMins)
+            ?: Int.MAX_VALUE
+
+    private fun sortByBestTime(list: MutableList<TrainService>) {
+        val now = Calendar.getInstance(TimeZone.getTimeZone("Europe/London"))
+        val nowMins = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE)
+
+        list.sortWith(
+            compareBy<TrainService> { sortKey(it, nowMins) }
+                // tie-break so equal estimates keep scheduled order
+                .thenBy { minutesFromNow(scheduledOf(it), nowMins) ?: Int.MAX_VALUE }
+        )
     }
 
     companion object {
