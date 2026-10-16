@@ -67,7 +67,7 @@
   {
     "code": "SE",
     "acronym": "SE",
-    "name": "South Eastern",
+    "name": "Southeastern",
     "colour": "#00AFEF",
     "secondary_colour": "#ffffff",
     "manager": "gbr",
@@ -88,7 +88,7 @@
     "delayRepayUrl": "https://delayrepay.gwr.com",
     "delayRepayMinTime": 15,
     "delayRepayMessage": "",
-    "managerDescription": ""
+    "managerDescription": "Great Western Railway is a National Rail service, operating on the privatised UK railway network. It is expected to be nationalised on the 13th December 2026."
   },
   {
     "code": "VT",
@@ -101,7 +101,7 @@
     "delayRepayUrl": "https://delayrepay.avantiwestcoast.co.uk",
     "delayRepayMinTime": 15,
     "delayRepayMessage": "",
-    "managerDescription": ""
+    "managerDescription": "Avanti West Coast is a National Rail service, operating on the privatised UK railway network. It is expected to be nationalised on the 7th March 2027."
   },
   {
     "code": "GR",
@@ -179,7 +179,7 @@
     "delayRepayUrl": "https://greateranglia.delayrepaycompensation.com/",
     "delayRepayMinTime": 15,
     "delayRepayMessage": "",
-    "managerDescription": "Greater Anglia is currently operated by DfT Operator (DFTO) who will soon form part of the Anglia region of Great British Railways."
+    "managerDescription": "Greater Anglia is currently operated by DfT Operator (DFTO) and will soon form part of the Anglia region of Great British Railways."
   },
   {
     "code": "NT",
@@ -257,7 +257,7 @@
     "delayRepayUrl": "https://c2c.delayrepaycompensation.com/",
     "delayRepayMinTime": 15,
     "delayRepayMessage": "",
-    "managerDescription": "c2c is currently operated by DfT Operator (DFTO) who will soon form part of the Anglia region of Great British Railways."
+    "managerDescription": "c2c is currently operated by DfT Operator (DFTO) and will soon form part of the Anglia region of Great British Railways."
   },
   {
     "code": "LO",
