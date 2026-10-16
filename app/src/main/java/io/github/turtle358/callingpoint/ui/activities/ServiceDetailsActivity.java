@@ -54,7 +54,7 @@ public class ServiceDetailsActivity extends AppCompatActivity {
     private SwipeRefreshLayout swipeRefreshLayout;
 
     private TextView tvHeaderDestination, tvHeaderTime, tvHeaderStatus;
-    private TextView tvHeaderPlatform, tvHeaderOperator, tvCoachCapacity;
+    private TextView tvHeaderOperator, tvCoachCapacity;
     private ImageButton btnPinService;
 
     private View topHeaderBar, cardTrainDetails, titleCallingPoints, cardTflDisclaimer, cardHeaderInfo, cardCallingPoints;
@@ -85,7 +85,6 @@ public class ServiceDetailsActivity extends AppCompatActivity {
         tvHeaderDestination = findViewById(R.id.tvHeaderDestination);
         tvHeaderTime = findViewById(R.id.tvHeaderTime);
         tvHeaderStatus = findViewById(R.id.tvHeaderStatus);
-        tvHeaderPlatform = findViewById(R.id.tvHeaderPlatform);
         tvHeaderOperator = findViewById(R.id.tvHeaderOperator);
 
         cardHeaderInfo = findViewById(R.id.cardHeaderInfo);
@@ -138,6 +137,7 @@ public class ServiceDetailsActivity extends AppCompatActivity {
     }
 
     private void fetchServiceDetails(String serviceId) {
+        System.out.println(serviceId);
         swipeRefreshLayout.setRefreshing(true);
         NationalRailAPI api = APIClient.getClient().create(NationalRailAPI.class);
 
@@ -179,6 +179,7 @@ public class ServiceDetailsActivity extends AppCompatActivity {
 
                     ServiceDetailsResponse.TimelinePoint currentStation = new ServiceDetailsResponse.TimelinePoint();
                     currentStation.locationName = data.locationName != null ? data.locationName : "Current Station";
+                    currentStation.crs = data.crs;
                     currentStation.scheduledTime = schTime;
                     currentStation.estimatedTime = estTime;
                     currentStation.isCancelled = isCancelled;
@@ -217,7 +218,6 @@ public class ServiceDetailsActivity extends AppCompatActivity {
 
                     tvHeaderOperator.setText(subInfoText);
                     tvHeaderTime.setText(schTime);
-                    tvHeaderPlatform.setText(data.platform != null ? "Platform " + data.platform : "");
 
                     tvHeaderStatus.setText(estTime);
                     tvHeaderStatus.setVisibility(View.VISIBLE);
@@ -255,7 +255,7 @@ public class ServiceDetailsActivity extends AppCompatActivity {
                     if (titleCallingPoints != null) titleCallingPoints.setVisibility(View.VISIBLE);
                     String originParam = userOrigin != null && !userOrigin.isEmpty() ? userOrigin : currentStation.locationName;
 
-                    TimelineAdapter adapter = new TimelineAdapter(allPoints, brandColour, originParam, userDest, crs -> {
+                    TimelineAdapter adapter = new TimelineAdapter(allPoints, brandColour, originParam, userDest, serviceId, api, crs -> {
                         android.content.Intent intent = new android.content.Intent(ServiceDetailsActivity.this, MainActivity.class);
                         intent.putExtra("OPEN_STATION_CRS", crs);
                         startActivity(intent);
@@ -482,7 +482,6 @@ public class ServiceDetailsActivity extends AppCompatActivity {
 
         tvHeaderOperator.setText(subInfoText);
         tvHeaderTime.setText("Frequent Service");
-        tvHeaderPlatform.setText("");
 
         tvHeaderStatus.setText("Live Tracker");
         tvHeaderStatus.setTextColor(Color.parseColor("#00875A"));
@@ -496,7 +495,7 @@ public class ServiceDetailsActivity extends AppCompatActivity {
         recyclerTimeline.setVisibility(View.VISIBLE);
 
         String originParam = userOrigin != null && !userOrigin.isEmpty() ? userOrigin : stops.get(0);
-        TimelineAdapter adapter = new TimelineAdapter(allPoints, brandColour, originParam, userDest, crs -> {
+        TimelineAdapter adapter = new TimelineAdapter(allPoints, brandColour, originParam, userDest, null, null, crs -> {
             android.content.Intent intent = new android.content.Intent(ServiceDetailsActivity.this, MainActivity.class);
             intent.putExtra("OPEN_STATION_CRS", crs);
             startActivity(intent);
@@ -632,12 +631,6 @@ public class ServiceDetailsActivity extends AppCompatActivity {
         tvHeaderTime.setText(allPoints.get(0).scheduledTime);
 
         String rawPlatform = allPoints.get(0).platform != null ? allPoints.get(0).platform : "";
-        if (rawPlatform.contains(" - ")) {
-            String[] parts = rawPlatform.split(" - ");
-            tvHeaderPlatform.setText(parts[parts.length - 1]);
-        } else {
-            tvHeaderPlatform.setText(rawPlatform);
-        }
 
         tvHeaderStatus.setText("Live");
         tvHeaderStatus.setTextColor(Color.parseColor("#00875A"));
@@ -647,7 +640,7 @@ public class ServiceDetailsActivity extends AppCompatActivity {
         recyclerTimeline.setVisibility(View.VISIBLE);
 
         String originParam = userOrigin != null && !userOrigin.isEmpty() ? userOrigin : allPoints.get(0).locationName;
-        TimelineAdapter adapter = new TimelineAdapter(allPoints, brandColour, originParam, userDest, crs -> {
+        TimelineAdapter adapter = new TimelineAdapter(allPoints, brandColour, originParam, userDest, null, null, crs -> {
             android.content.Intent intent = new android.content.Intent(ServiceDetailsActivity.this, MainActivity.class);
             intent.putExtra("OPEN_STATION_CRS", crs);
             startActivity(intent);
@@ -684,7 +677,6 @@ public class ServiceDetailsActivity extends AppCompatActivity {
 
         tvHeaderOperator.setText("");
         tvHeaderTime.setText("");
-        tvHeaderPlatform.setText("");
 
         tvHeaderStatus.setText("Unavailable");
         tvHeaderStatus.setTextColor(Color.parseColor("#DE350B"));

@@ -319,13 +319,6 @@
                                 android:textSize="18sp"
                                 android:textStyle="bold" />
 
-                            <TextView
-                                android:id="@+id/tvHeaderPlatform"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:textColor="@color/text_primary"
-                                android:textSize="16sp"
-                                android:textStyle="bold" />
                         </LinearLayout>
 
                         <androidx.recyclerview.widget.RecyclerView

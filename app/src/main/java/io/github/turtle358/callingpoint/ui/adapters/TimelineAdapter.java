@@ -3,6 +3,9 @@ package io.github.turtle358.callingpoint.ui.adapters;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.os.Handler;
+import android.os.Looper;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,14 +15,26 @@ import androidx.annotation.NonNull;
 import androidx.core.graphics.ColorUtils;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
+
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import io.github.turtle358.callingpoint.R;
+import io.github.turtle358.callingpoint.api.NationalRailAPI;
 import io.github.turtle358.callingpoint.models.ServiceDetailsResponse;
+import io.github.turtle358.callingpoint.models.StationDepartureResponse;
 import io.github.turtle358.callingpoint.utils.StationHelper;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class TimelineAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+
+    private static final String LOG_TAG = "PLATFORM_LOG";
 
     private static final int TYPE_STOP = 0;
     private static final int TYPE_HEADER_PRE = 1;
@@ -38,7 +53,12 @@ public class TimelineAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
 
     private final String userOrigin;
     private final String userDestination;
+    private final String serviceId;
+    private final NationalRailAPI api;
     private final OnStationClickListener listener;
+
+    public static final Map<String, String> platformCache = new HashMap<>();
+    private static final Set<String> fetchingPlatforms = new HashSet<>();
 
     public interface OnStationClickListener {
         void onStationClick(String crs);
@@ -61,12 +81,14 @@ public class TimelineAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
         }
     }
 
-    public TimelineAdapter(List<ServiceDetailsResponse.TimelinePoint> allPoints, int brandColor, String userOrigin, String userDestination, OnStationClickListener listener) {
+    public TimelineAdapter(List<ServiceDetailsResponse.TimelinePoint> allPoints, int brandColor, String userOrigin, String userDestination, String serviceId, NationalRailAPI api, OnStationClickListener listener) {
         this.allPoints = allPoints;
         this.brandColor = brandColor;
         this.dimmedColor = ColorUtils.blendARGB(brandColor, Color.parseColor("#444444"), 0.6f);
         this.userOrigin = userOrigin;
         this.userDestination = userDestination;
+        this.serviceId = serviceId;
+        this.api = api;
         this.listener = listener;
         buildDisplayList(false);
     }
@@ -225,6 +247,32 @@ public class TimelineAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
             h.tvStationName.setText(point.locationName);
             h.tvTime.setText(point.scheduledTime);
 
+            String cacheKey = point.crs + "_" + serviceId;
+            if (platformCache.containsKey(cacheKey)) {
+                point.platform = platformCache.get(cacheKey);
+            }
+
+            if (h.tvPlatform != null) {
+                if (point.platform != null && !point.platform.isEmpty() && !point.platform.equals("-")) {
+                    h.tvPlatform.setText("Platform " + point.platform);
+                    if (h.tvPlatform.getVisibility() == View.GONE) {
+                        h.tvPlatform.setAlpha(0f);
+                        h.tvPlatform.setVisibility(View.VISIBLE);
+                        h.tvPlatform.animate().alpha(1f).setDuration(300).start();
+                    } else {
+                        h.tvPlatform.setAlpha(1f);
+                        h.tvPlatform.setVisibility(View.VISIBLE);
+                    }
+                } else if ("-".equals(point.platform)) {
+                    h.tvPlatform.setVisibility(View.GONE);
+                } else {
+                    h.tvPlatform.setVisibility(View.GONE);
+                    if (api != null && serviceId != null && point.crs != null) {
+                        fetchPlatformAsync(point, absIndex, position);
+                    }
+                }
+            }
+
             float textAlpha = item.isDarkened ? 0.4f : 1.0f;
             h.tvStationName.setAlpha(textAlpha);
             h.tvTime.setAlpha(textAlpha);
@@ -329,11 +377,106 @@ public class TimelineAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
         }
     }
 
+    private void fetchPlatformAsync(ServiceDetailsResponse.TimelinePoint point, int absIndex, int adapterPosition) {
+        String cacheKey = point.crs + "_" + serviceId;
+
+        if (platformCache.containsKey(cacheKey)) {
+            point.platform = platformCache.get(cacheKey);
+            new Handler(Looper.getMainLooper()).post(() -> notifyItemChanged(adapterPosition));
+            return;
+        }
+
+        if (fetchingPlatforms.contains(cacheKey)) return;
+        fetchingPlatforms.add(cacheKey);
+
+        int offset = calculateOffsetMins(point.scheduledTime);
+        boolean isDestination = (absIndex == allPoints.size() - 1);
+
+        Call<StationDepartureResponse> call = isDestination
+                ? api.getStationArrivals(point.crs, 50, null, null, offset, 120)
+                : api.getStationDepartures(point.crs, 50, null, null, offset, 120);
+
+        call.enqueue(new Callback<StationDepartureResponse>() {
+            @Override
+            public void onResponse(@NonNull Call<StationDepartureResponse> call, @NonNull Response<StationDepartureResponse> response) {
+                fetchingPlatforms.remove(cacheKey);
+
+                if (response.isSuccessful() && response.body() != null && response.body().trainServices != null) {
+                    List<StationDepartureResponse.TrainService> services = response.body().trainServices;
+
+                    boolean found = false;
+                    StringBuilder candidateTimes = new StringBuilder();
+
+                    for (StationDepartureResponse.TrainService service : services) {
+                        String std = service.scheduledDepartureTime;
+                        String sta = service.scheduledArrivalTime;
+
+                        if (std != null || sta != null) {
+                            candidateTimes.append(" [std:").append(std).append(", sta:").append(sta).append("]");
+                        }
+
+                        boolean timeMatches = point.scheduledTime != null &&
+                                (point.scheduledTime.equals(std) || point.scheduledTime.equals(sta));
+
+                        if (timeMatches) {
+                            found = true;
+                            if (service.platform != null && !service.platform.isEmpty() && !service.platform.equals("-")) {
+                                platformCache.put(cacheKey, service.platform);
+                                point.platform = service.platform;
+                                new Handler(Looper.getMainLooper()).post(() -> notifyItemChanged(adapterPosition));
+                            } else {
+                                point.platform = null;
+                            }
+                            break;
+                        }
+                    }
+
+                    if (!found) {
+                        Log.w(LOG_TAG, "MISMATCH -> " + point.locationName + " [" + point.crs + "]" +
+                                " | Expected Time: " + point.scheduledTime +
+                                " | Candidate times on board were:" + candidateTimes.toString());
+                    }
+                } else {
+                    Log.e(LOG_TAG, "API ERROR -> [" + point.crs + "] Response code: " + response.code());
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<StationDepartureResponse> call, @NonNull Throwable t) {
+                fetchingPlatforms.remove(cacheKey);
+                Log.e(LOG_TAG, "NETWORK FAILURE -> [" + point.crs + "]: " + t.getMessage(), t);
+            }
+        });
+    }
+
+    private int calculateOffsetMins(String scheduledTime) {
+        if (scheduledTime == null || !scheduledTime.contains(":")) return 0;
+        try {
+            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("HH:mm", java.util.Locale.UK);
+            sdf.setTimeZone(java.util.TimeZone.getTimeZone("Europe/London"));
+            java.util.Date trainTime = sdf.parse(scheduledTime);
+
+            java.util.Calendar nowCal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("Europe/London"));
+            int currentH = nowCal.get(java.util.Calendar.HOUR_OF_DAY);
+            int currentM = nowCal.get(java.util.Calendar.MINUTE);
+            String nowStr = String.format(java.util.Locale.UK, "%02d:%02d", currentH, currentM);
+            java.util.Date nowTime = sdf.parse(nowStr);
+
+            long diffMins = (trainTime.getTime() - nowTime.getTime()) / 60000;
+            if (diffMins < -120) diffMins += 24 * 60;
+
+            // Start board window 5 minutes BEFORE the train is due to keep it at top of search results
+            return Math.max(0, (int) diffMins - 5);
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
     @Override
     public int getItemCount() { return displayList.size(); }
 
     public static class StopViewHolder extends RecyclerView.ViewHolder {
-        TextView tvTime, tvLiveStatus, tvStationName;
+        TextView tvTime, tvLiveStatus, tvStationName, tvPlatform;
         View lineTop, dot, lineBottom, lineBottomActive;
         ImageView iconTrainAt, iconTrainBetween;
 
@@ -342,6 +485,7 @@ public class TimelineAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
             tvTime = v.findViewById(R.id.tvTime);
             tvLiveStatus = v.findViewById(R.id.tvLiveStatus);
             tvStationName = v.findViewById(R.id.tvStationName);
+            tvPlatform = v.findViewById(R.id.tvPlatform);
             lineTop = v.findViewById(R.id.lineTop);
             dot = v.findViewById(R.id.dot);
             lineBottom = v.findViewById(R.id.lineBottom);
