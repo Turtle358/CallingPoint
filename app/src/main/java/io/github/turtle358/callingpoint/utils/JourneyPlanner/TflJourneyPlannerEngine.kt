@@ -44,15 +44,18 @@ class TflJourneyPlannerEngine {
         date: String?,
         time: String?,
         timeIs: String?,
+        journeyPreference: String?,
+        modes: String?,
+        accessibilityPreference: String?,
         callback: JourneyCallback
     ) {
-        mainHandler.post( { callback.onStatusUpdate("Searching TfL network...") })
+        mainHandler.post { callback.onStatusUpdate("Searching TfL network...") }
 
-        tflApi.getJourneyResults(fromNaptan, toNaptan, false, date, time, timeIs)
+        tflApi.getJourneyResults(fromNaptan, toNaptan, false, date, time, timeIs, journeyPreference, modes, accessibilityPreference)
             .enqueue(object : Callback<JsonObject?> {
                 override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
                     if (response.isSuccessful && response.body() != null) {
-                        executor!!.execute( {
+                        executor!!.execute {
                             try {
                                 val options = parseTflResponse(response.body()!!)
 
@@ -71,7 +74,7 @@ class TflJourneyPlannerEngine {
                             } catch (_: Exception) {
                                 mainHandler.post { callback.onError("Error processing journey data.") }
                             }
-                        })
+                        }
                     } else {
                         mainHandler.post { callback.onError("TfL Planner unavailable.") }
                     }

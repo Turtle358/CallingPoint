@@ -3,9 +3,11 @@ package io.github.turtle358.callingpoint.ui.activities;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
@@ -15,7 +17,7 @@ import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.NumberPicker;
-import android.widget.PopupMenu;
+import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -25,6 +27,9 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.facebook.shimmer.ShimmerFrameLayout;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.google.android.material.button.MaterialButtonToggleGroup;
+import com.google.android.material.switchmaterial.SwitchMaterial;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -48,16 +53,17 @@ public class JourneySearchActivity extends AppCompatActivity {
     private AutoCompleteTextView etFromCrs, etToCrs;
     private RecyclerView recyclerSearchResults;
     private TextView tvStatusUpdate, tvTimeSelection;
+    private TextView tvTravelOptionsSummary, tvModesSummary;
 
     private View cardFallbackWarning;
     private View btnTimeSelector;
-    private ImageButton btnResetTime;
     private ImageButton btnSaveRoute;
 
     private JourneyAdapter adapter;
     private JourneyPlannerEngine plannerEngine;
     private TflJourneyPlannerEngine tflPlannerEngine;
     private SavedRoutesManager savedRoutesManager;
+    private SharedPreferences journeyPrefs;
 
     private StationAutoCompleteAdapter autoCompleteAdapter;
     private ShimmerFrameLayout shimmerView;
@@ -71,6 +77,8 @@ public class JourneySearchActivity extends AppCompatActivity {
         WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
         setContentView(R.layout.activity_journey_search);
 
+        journeyPrefs = getSharedPreferences("JourneyPrefs", Context.MODE_PRIVATE);
+
         etFromCrs = findViewById(R.id.etFromCrs);
         etToCrs = findViewById(R.id.etToCrs);
         ImageButton btnSwap = findViewById(R.id.btnSwapStations);
@@ -81,9 +89,20 @@ public class JourneySearchActivity extends AppCompatActivity {
 
         btnTimeSelector = findViewById(R.id.btnTimeSelector);
         tvTimeSelection = findViewById(R.id.tvTimeSelection);
-        btnResetTime = findViewById(R.id.btnResetTime);
         cardFallbackWarning = findViewById(R.id.cardFallbackWarning);
         btnSaveRoute = findViewById(R.id.btnSaveRoute);
+
+        tvTravelOptionsSummary = findViewById(R.id.tvTravelOptionsSummary);
+        tvModesSummary = findViewById(R.id.tvModesSummary);
+        View btnTravelOptions = findViewById(R.id.btnTravelOptions);
+        View btnPreferredModes = findViewById(R.id.btnPreferredModes);
+
+        if (btnTravelOptions != null) btnTravelOptions.setOnClickListener(v -> showTravelOptionsDialog());
+        if (btnPreferredModes != null) btnPreferredModes.setOnClickListener(v -> showPreferredModesDialog());
+
+        if (tvTravelOptionsSummary != null && tvModesSummary != null) {
+            updateSearchOptionsUI();
+        }
 
         GraphManager graphManager = GraphManager.getInstance(this);
 
@@ -158,10 +177,245 @@ public class JourneySearchActivity extends AppCompatActivity {
         }
     }
 
+    private void updateSearchOptionsUI() {
+        String pref = journeyPrefs.getString("journeyPreference", "leasttime");
+        boolean isAccessible = journeyPrefs.getBoolean("accessibilityRequired", false);
+
+        String routeText = "Fastest route";
+        if (pref.equals("leastinterchange")) routeText = "Fewest changes";
+        if (pref.equals("leastwalking")) routeText = "Least walking";
+
+        if (isAccessible) routeText += " • Step-free";
+        tvTravelOptionsSummary.setText(routeText);
+
+        String modes = journeyPrefs.getString("preferredModes", null);
+        if (modes == null || modes.isEmpty()) {
+            tvModesSummary.setText("All modes");
+        } else {
+            boolean hasTrain = modes.contains("national-rail");
+            boolean hasTram = modes.contains("tram");
+            boolean hasTube = modes.contains("tube");
+            boolean hasBus = modes.contains("bus");
+
+            int activeToggles = (hasTrain ? 1 : 0) + (hasTram ? 1 : 0) +
+                    (hasTube ? 1 : 0) + (hasBus ? 1 : 0);
+
+            if (activeToggles == 0 || activeToggles == 4) {
+                tvModesSummary.setText("All modes");
+            } else if (activeToggles == 1) {
+                if (hasTrain) tvModesSummary.setText("Train");
+                else if (hasTram) tvModesSummary.setText("Tram");
+                else if (hasTube) tvModesSummary.setText("Underground");
+                else if (hasBus) tvModesSummary.setText("Bus");
+            } else {
+                tvModesSummary.setText(activeToggles + " selected");
+            }
+        }
+    }
+
+    private void setupDateTimePickers() {
+        btnTimeSelector.setOnClickListener(v -> showCustomTimePicker());
+    }
+
+    private void showCustomTimePicker() {
+        BottomSheetDialog dialog = new BottomSheetDialog(this);
+        dialog.setContentView(R.layout.dialog_time_picker);
+
+        View bottomSheet = dialog.findViewById(com.google.android.material.R.id.design_bottom_sheet);
+        if (bottomSheet != null) bottomSheet.setBackground(new ColorDrawable(Color.TRANSPARENT));
+
+        RadioGroup toggleGroup = dialog.findViewById(R.id.toggleTimeType);
+        View slidingPill = dialog.findViewById(R.id.slidingPill);
+
+        if (isArriving) {
+            toggleGroup.check(R.id.radioArrivingBy);
+        } else {
+            toggleGroup.check(R.id.radioLeavingAt);
+        }
+
+        toggleGroup.setOnCheckedChangeListener((group, checkedId) -> {
+            View selectedButton = group.findViewById(checkedId);
+            if (selectedButton != null && slidingPill != null) {
+                slidingPill.animate()
+                        .translationX(selectedButton.getX())
+                        .setDuration(200)
+                        .setInterpolator(new androidx.interpolator.view.animation.FastOutSlowInInterpolator())
+                        .start();
+            }
+        });
+
+        toggleGroup.getViewTreeObserver().addOnGlobalLayoutListener(new android.view.ViewTreeObserver.OnGlobalLayoutListener() {
+            @Override
+            public void onGlobalLayout() {
+                if (toggleGroup.getWidth() > 0 && slidingPill != null) {
+                    toggleGroup.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                    View selectedButton = toggleGroup.findViewById(toggleGroup.getCheckedRadioButtonId());
+                    if (selectedButton != null) {
+                        android.view.ViewGroup.LayoutParams params = slidingPill.getLayoutParams();
+                        params.width = selectedButton.getWidth();
+                        slidingPill.setLayoutParams(params);
+                        slidingPill.setTranslationX(selectedButton.getX());
+                    }
+                }
+            }
+        });
+
+        NumberPicker pickerDate = dialog.findViewById(R.id.pickerDate);
+        NumberPicker pickerHour = dialog.findViewById(R.id.pickerHour);
+        NumberPicker pickerMinute = dialog.findViewById(R.id.pickerMinute);
+
+        String[] dateDisplayValues = new String[30];
+        Calendar calIter = Calendar.getInstance();
+        for (int i = 0; i < 30; i++) {
+            if (i == 0) dateDisplayValues[i] = "Today";
+            else if (i == 1) dateDisplayValues[i] = "Tomorrow";
+            else {
+                java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("EEE, dd MMM", Locale.UK);
+                dateDisplayValues[i] = sdf.format(calIter.getTime());
+            }
+            calIter.add(Calendar.DAY_OF_YEAR, 1);
+        }
+
+        pickerDate.setMinValue(0);
+        pickerDate.setMaxValue(29);
+        pickerDate.setDisplayedValues(dateDisplayValues);
+
+        pickerHour.setMinValue(0);
+        pickerHour.setMaxValue(23);
+
+        pickerMinute.setMinValue(0);
+        pickerMinute.setMaxValue(59);
+
+        Calendar currentSelection = selectedCalendar != null ? selectedCalendar : Calendar.getInstance();
+
+        Calendar today = Calendar.getInstance();
+        today.set(Calendar.HOUR_OF_DAY, 0); today.set(Calendar.MINUTE, 0); today.set(Calendar.SECOND, 0); today.set(Calendar.MILLISECOND, 0);
+        Calendar sel = (Calendar) currentSelection.clone();
+        sel.set(Calendar.HOUR_OF_DAY, 0); sel.set(Calendar.MINUTE, 0); sel.set(Calendar.SECOND, 0); sel.set(Calendar.MILLISECOND, 0);
+
+        long diff = (sel.getTimeInMillis() - today.getTimeInMillis()) / (1000 * 60 * 60 * 24);
+        int dayOffset = Math.max(0, Math.min(29, (int) diff));
+
+        pickerDate.setValue(dayOffset);
+        pickerHour.setValue(currentSelection.get(Calendar.HOUR_OF_DAY));
+        pickerMinute.setValue(currentSelection.get(Calendar.MINUTE));
+
+        dialog.findViewById(R.id.btnCancel).setOnClickListener(v -> dialog.dismiss());
+
+        dialog.findViewById(R.id.btnResetNow).setOnClickListener(v -> {
+            selectedCalendar = null;
+            isArriving = false;
+            updateDateTimeUI();
+            dialog.dismiss();
+            Toast.makeText(this, "Reset to Leaving now", Toast.LENGTH_SHORT).show();
+        });
+
+        dialog.findViewById(R.id.btnSet).setOnClickListener(v -> {
+            isArriving = toggleGroup.getCheckedRadioButtonId() == R.id.radioArrivingBy;
+
+            Calendar result = Calendar.getInstance();
+            result.add(Calendar.DAY_OF_YEAR, pickerDate.getValue());
+            result.set(Calendar.HOUR_OF_DAY, pickerHour.getValue());
+            result.set(Calendar.MINUTE, pickerMinute.getValue());
+
+            selectedCalendar = result;
+            updateDateTimeUI();
+            dialog.dismiss();
+        });
+
+        dialog.show();
+    }
+
+    private void showTravelOptionsDialog() {
+        BottomSheetDialog dialog = new BottomSheetDialog(this);
+        dialog.setContentView(R.layout.dialog_travel_options);
+
+        View bottomSheet = (View) dialog.findViewById(com.google.android.material.R.id.design_bottom_sheet);
+        if (bottomSheet != null) bottomSheet.setBackground(new ColorDrawable(Color.TRANSPARENT));
+
+        SwitchMaterial switchAccessibility = dialog.findViewById(R.id.switchAccessibility);
+        RadioGroup radioGroup = dialog.findViewById(R.id.radioGroupPreference);
+
+        switchAccessibility.setChecked(journeyPrefs.getBoolean("accessibilityRequired", false));
+        String currentPref = journeyPrefs.getString("journeyPreference", "leasttime");
+
+        if (currentPref.equals("leastinterchange")) radioGroup.check(R.id.radioChanges);
+        else if (currentPref.equals("leastwalking")) radioGroup.check(R.id.radioWalking);
+        else radioGroup.check(R.id.radioFastest);
+
+        dialog.setOnDismissListener(d -> {
+            SharedPreferences.Editor editor = journeyPrefs.edit();
+            editor.putBoolean("accessibilityRequired", switchAccessibility.isChecked());
+
+            int selectedId = radioGroup.getCheckedRadioButtonId();
+            if (selectedId == R.id.radioChanges) editor.putString("journeyPreference", "leastinterchange");
+            else if (selectedId == R.id.radioWalking) editor.putString("journeyPreference", "leastwalking");
+            else editor.putString("journeyPreference", "leasttime");
+
+            editor.apply();
+            updateSearchOptionsUI();
+        });
+
+        dialog.show();
+    }
+
+    private void showPreferredModesDialog() {
+        BottomSheetDialog dialog = new BottomSheetDialog(this);
+        dialog.setContentView(R.layout.dialog_preferred_modes);
+
+        View bottomSheet = (View) dialog.findViewById(com.google.android.material.R.id.design_bottom_sheet);
+        if (bottomSheet != null) bottomSheet.setBackground(new ColorDrawable(Color.TRANSPARENT));
+
+        SwitchMaterial switchTrain = dialog.findViewById(R.id.switchTrain);
+        SwitchMaterial switchTram = dialog.findViewById(R.id.switchTram);
+        SwitchMaterial switchTube = dialog.findViewById(R.id.switchTube);
+        SwitchMaterial switchBus = dialog.findViewById(R.id.switchBus);
+
+        String currentModes = journeyPrefs.getString("preferredModes", null);
+        if (currentModes == null) {
+            switchTrain.setChecked(true);
+            switchTram.setChecked(true);
+            switchTube.setChecked(true);
+            switchBus.setChecked(true);
+        } else {
+            switchTrain.setChecked(currentModes.contains("national-rail"));
+            switchTram.setChecked(currentModes.contains("tram"));
+            switchTube.setChecked(currentModes.contains("tube"));
+            switchBus.setChecked(currentModes.contains("bus"));
+        }
+
+        dialog.setOnDismissListener(d -> {
+            List<String> selectedModes = new ArrayList<>();
+            if (switchTrain.isChecked()) {
+                selectedModes.add("national-rail");
+                selectedModes.add("overground");
+                selectedModes.add("elizabeth-line");
+            }
+            if (switchTram.isChecked()) selectedModes.add("tram");
+            if (switchTube.isChecked()) {
+                selectedModes.add("tube");
+                selectedModes.add("dlr");
+            }
+            if (switchBus.isChecked()) selectedModes.add("bus");
+
+            SharedPreferences.Editor editor = journeyPrefs.edit();
+
+            if (selectedModes.size() >= 6 || selectedModes.isEmpty()) {
+                editor.putString("preferredModes", null);
+            } else {
+                editor.putString("preferredModes", TextUtils.join(",", selectedModes));
+            }
+
+            editor.apply();
+            updateSearchOptionsUI();
+        });
+
+        dialog.show();
+    }
+
     private void toggleRouteSavedState() {
         String fromName = etFromCrs.getText().toString().trim();
         String toName = etToCrs.getText().toString().trim();
-
 
         if (fromName.isEmpty() || toName.isEmpty() || fromName.equalsIgnoreCase(toName)) {
             Toast.makeText(this, "Enter valid, distinct stations to save", Toast.LENGTH_SHORT).show();
@@ -205,121 +459,13 @@ public class JourneySearchActivity extends AppCompatActivity {
         );
     }
 
-    private void setupDateTimePickers() {
-        btnTimeSelector.setOnClickListener(v -> {
-            PopupMenu popup = new PopupMenu(this, btnTimeSelector);
-            popup.getMenu().add(0, 0, 0, "Now");
-            popup.getMenu().add(0, 1, 1, "Leaving at...");
-            popup.getMenu().add(0, 2, 2, "Arriving by...");
-
-            popup.setOnMenuItemClickListener(item -> {
-                switch (item.getItemId()) {
-                    case 0:
-                        selectedCalendar = null;
-                        isArriving = false;
-                        updateDateTimeUI();
-                        break;
-                    case 1:
-                        isArriving = false;
-                        showCustomTimePicker();
-                        break;
-                    case 2:
-                        isArriving = true;
-                        showCustomTimePicker();
-                        break;
-                }
-                return true;
-            });
-            popup.show();
-        });
-
-        btnResetTime.setOnClickListener(v -> {
-            selectedCalendar = null;
-            isArriving = false;
-            updateDateTimeUI();
-            Toast.makeText(this, "Reset to Leaving now", Toast.LENGTH_SHORT).show();
-        });
-    }
-
-    private void showCustomTimePicker() {
-        Dialog dialog = new Dialog(this);
-        dialog.setContentView(R.layout.dialog_time_picker);
-
-        if (dialog.getWindow() != null) {
-            dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-            dialog.getWindow().setLayout(
-                    android.view.ViewGroup.LayoutParams.MATCH_PARENT,
-                    android.view.ViewGroup.LayoutParams.WRAP_CONTENT
-            );
-        }
-
-        TextView tvTitle = dialog.findViewById(R.id.tvPickerTitle);
-        tvTitle.setText(isArriving ? "Set arrival time" : "Set departure time");
-
-        NumberPicker pickerDate = dialog.findViewById(R.id.pickerDate);
-        NumberPicker pickerHour = dialog.findViewById(R.id.pickerHour);
-        NumberPicker pickerMinute = dialog.findViewById(R.id.pickerMinute);
-
-        String[] dateDisplayValues = new String[30];
-        Calendar calIter = Calendar.getInstance();
-        for (int i = 0; i < 30; i++) {
-            if (i == 0) dateDisplayValues[i] = "Today";
-            else if (i == 1) dateDisplayValues[i] = "Tomorrow";
-            else {
-                java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("EEE, dd MMM", Locale.UK);
-                dateDisplayValues[i] = sdf.format(calIter.getTime());
-            }
-            calIter.add(Calendar.DAY_OF_YEAR, 1);
-        }
-
-        pickerDate.setMinValue(0);
-        pickerDate.setMaxValue(29);
-        pickerDate.setDisplayedValues(dateDisplayValues);
-
-        pickerHour.setMinValue(0);
-        pickerHour.setMaxValue(23);
-
-        pickerMinute.setMinValue(0);
-        pickerMinute.setMaxValue(59);
-
-        Calendar currentSelection = selectedCalendar != null ? selectedCalendar : Calendar.getInstance();
-
-        Calendar today = Calendar.getInstance();
-        today.set(Calendar.HOUR_OF_DAY, 0); today.set(Calendar.MINUTE, 0); today.set(Calendar.SECOND, 0); today.set(Calendar.MILLISECOND, 0);
-        Calendar sel = (Calendar) currentSelection.clone();
-        sel.set(Calendar.HOUR_OF_DAY, 0); sel.set(Calendar.MINUTE, 0); sel.set(Calendar.SECOND, 0); sel.set(Calendar.MILLISECOND, 0);
-
-        long diff = (sel.getTimeInMillis() - today.getTimeInMillis()) / (1000 * 60 * 60 * 24);
-        int dayOffset = Math.max(0, Math.min(29, (int) diff));
-
-        pickerDate.setValue(dayOffset);
-        pickerHour.setValue(currentSelection.get(Calendar.HOUR_OF_DAY));
-        pickerMinute.setValue(currentSelection.get(Calendar.MINUTE));
-
-        dialog.findViewById(R.id.btnCancel).setOnClickListener(v -> dialog.dismiss());
-        dialog.findViewById(R.id.btnSet).setOnClickListener(v -> {
-            Calendar result = Calendar.getInstance();
-            result.add(Calendar.DAY_OF_YEAR, pickerDate.getValue());
-            result.set(Calendar.HOUR_OF_DAY, pickerHour.getValue());
-            result.set(Calendar.MINUTE, pickerMinute.getValue());
-
-            selectedCalendar = result;
-            updateDateTimeUI();
-            dialog.dismiss();
-        });
-
-        dialog.show();
-    }
-
     private void updateDateTimeUI() {
         if (selectedCalendar == null) {
             tvTimeSelection.setText("Leaving now");
-            btnResetTime.setVisibility(View.GONE);
             cardFallbackWarning.setVisibility(View.GONE);
         } else {
             String prefix = isArriving ? "Arriving " : "Leaving ";
             tvTimeSelection.setText(prefix + formatCalendarFriendly(selectedCalendar));
-            btnResetTime.setVisibility(View.VISIBLE);
             cardFallbackWarning.setVisibility(View.VISIBLE);
         }
     }
@@ -468,8 +614,13 @@ public class JourneySearchActivity extends AppCompatActivity {
         shimmerView.setVisibility(View.VISIBLE);
         shimmerView.startShimmer();
 
+        String journeyPref = journeyPrefs.getString("journeyPreference", "leasttime");
+        String modes = journeyPrefs.getString("preferredModes", null);
+        boolean requiresAccessibility = journeyPrefs.getBoolean("accessibilityRequired", false);
+        String accessPref = requiresAccessibility ? "noSolidStairs" : null;
+
         if (tflPlannerEngine != null) {
-            tflPlannerEngine.findRoutes(fromNaptan, toNaptan, date, time, timeIs, new JourneyPlannerEngine.JourneyCallback() {
+            tflPlannerEngine.findRoutes(fromNaptan, toNaptan, date, time, timeIs, journeyPref, modes, accessPref, new JourneyPlannerEngine.JourneyCallback() {
                 @Override
                 public void onJourneysFound(List<JourneyOption> journeys) {
                     if (isDestroyed()) return;

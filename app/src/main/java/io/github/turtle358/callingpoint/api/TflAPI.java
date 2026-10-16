@@ -30,7 +30,10 @@ public interface TflAPI {
             @Query("nationalSearch") boolean nationalSearch,
             @Query("date") String date,
             @Query("time") String time,
-            @Query("timeIs") String timeIs
+            @Query("timeIs") String timeIs,
+            @Query("journeyPreference") String journeyPreference,
+            @Query("mode") String mode,
+            @Query("accessibilityPreference") String accessibilityPreference
     );
 
     @GET("tfl/Vehicle/{vehicleId}/Arrivals")
