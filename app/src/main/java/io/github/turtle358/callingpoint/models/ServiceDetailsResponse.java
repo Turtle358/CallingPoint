@@ -49,6 +49,9 @@ public class ServiceDetailsResponse {
     @SerializedName("formation")
     public Formation formation;
 
+    @SerializedName("length")
+    public int length;
+
     public static class CallingPointList {
         @SerializedName("callingPoint")
         public List<TimelinePoint> callingPoint;

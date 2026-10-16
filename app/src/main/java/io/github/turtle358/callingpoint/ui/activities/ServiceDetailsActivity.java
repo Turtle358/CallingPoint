@@ -230,10 +230,23 @@ public class ServiceDetailsActivity extends AppCompatActivity {
                         tvHeaderStatus.setTextColor(Color.parseColor("#FF8C00"));
                     }
 
-                    if (data.formation != null && data.formation.coaches != null && !data.formation.coaches.isEmpty()) {
+                    if ((data.formation != null && data.formation.coaches != null && !data.formation.coaches.isEmpty())) {
                         cardTrainDetails.setVisibility(View.VISIBLE);
                         tvCoachCapacity.setText(data.formation.coaches.size() + " coaches");
                         CoachAdapter coachAdapter = new CoachAdapter(data.formation.coaches);
+                        recyclerCoaches.setAdapter(coachAdapter);
+                    } else if (data.length != 0) {
+                        cardTrainDetails.setVisibility(View.VISIBLE);
+                        tvCoachCapacity.setText(data.length + " coaches");
+
+                        List<ServiceDetailsResponse.Coach> basicCoaches = new ArrayList<>();
+                        for (int i = 1; i <= data.length; i++) {
+                            ServiceDetailsResponse.Coach basicCoach = new ServiceDetailsResponse.Coach();
+                            basicCoach.number = String.valueOf(i);
+                            basicCoaches.add(basicCoach);
+                        }
+
+                        CoachAdapter coachAdapter = new CoachAdapter(basicCoaches);
                         recyclerCoaches.setAdapter(coachAdapter);
                     } else {
                         cardTrainDetails.setVisibility(View.GONE);
