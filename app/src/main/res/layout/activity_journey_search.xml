@@ -300,6 +300,7 @@
                 app:tint="#FF8C00" />
 
             <TextView
+                android:id="@+id/cardTextFallbackWarning"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -339,23 +340,6 @@
             app:tint="@color/brand_primary" />
     </LinearLayout>
 
-    <TextView
-        android:id="@+id/tvStatusUpdate"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:textAlignment="center"
-        android:textColor="?android:attr/textColorSecondary"
-        android:textSize="14sp"
-        android:visibility="gone" />
-
-    <ProgressBar
-        android:id="@+id/progressSearch"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:layout_marginTop="32dp"
-        android:visibility="gone"/>
 
     <include
         android:id="@+id/shimmer_journey_container"

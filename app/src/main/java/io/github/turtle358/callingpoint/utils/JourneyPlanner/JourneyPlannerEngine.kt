@@ -39,26 +39,23 @@ class JourneyPlannerEngine(private val graphManager: GraphManager) {
     }
 
     fun findRoutes(originCrs: String?, destCrs: String, callback: JourneyCallback) {
+
         executor.execute {
             boardCache = HashMap()
             detailCache = HashMap()
             val foundJourneys: MutableList<JourneyOption?> = ArrayList()
             try {
-                mainHandler.post { callback.onStatusUpdate("Checking for direct trains...") }
                 findDirect(originCrs, destCrs, foundJourneys)
 
                 if (foundJourneys.size < 5) {
-                    mainHandler.post { callback.onStatusUpdate("Checking 1-change connections...") }
                     findOneChange(originCrs, destCrs, foundJourneys)
                 }
 
                 if (foundJourneys.size < 3) {
-                    mainHandler.post { callback.onStatusUpdate("Checking cross-city transfers...") }
                     findCrossCity(originCrs, destCrs, foundJourneys)
                 }
 
                 if (foundJourneys.size < 3) {
-                    mainHandler.post { callback.onStatusUpdate("Deep searching 2-change routes...") }
                     findTwoChange(originCrs, destCrs, foundJourneys)
                 }
 
@@ -67,10 +64,8 @@ class JourneyPlannerEngine(private val graphManager: GraphManager) {
                     val arr2 = if (j2!!.arriveTime != null) j2.arriveTime else "23:59"
                     arr1.compareTo(arr2)
                 })
-                mainHandler.post { callback.onJourneysFound(foundJourneys) }
             } catch (e: Exception) {
                 Log.e(TAG, "Network error during search", e)
-                mainHandler.post { callback.onError("Network error: " + e.message) }
             }
         }
     }

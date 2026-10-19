@@ -2,6 +2,7 @@ package io.github.turtle358.callingpoint.utils.JourneyPlanner
 
 import android.os.Handler
 import android.os.Looper
+import android.view.View
 import com.google.gson.JsonObject
 import io.github.turtle358.callingpoint.api.APIClient
 import io.github.turtle358.callingpoint.api.NationalRailAPI
@@ -30,6 +31,7 @@ class TflJourneyPlannerEngine {
     private val mainHandler: Handler
     private val executor: ExecutorService?
 
+
     init {
         this.tflApi = APIClient.getClient().create(TflAPI::class.java)
         this.nationalRailApi =
@@ -49,7 +51,6 @@ class TflJourneyPlannerEngine {
         accessibilityPreference: String?,
         callback: JourneyCallback
     ) {
-        mainHandler.post { callback.onStatusUpdate("Searching TfL network...") }
 
         tflApi.getJourneyResults(fromNaptan, toNaptan, false, date, time, timeIs, journeyPreference, modes, accessibilityPreference)
             .enqueue(object : Callback<JsonObject?> {
@@ -60,7 +61,6 @@ class TflJourneyPlannerEngine {
                                 val options = parseTflResponse(response.body()!!)
 
                                 if (isToday(date)) {
-                                    mainHandler.post { callback.onStatusUpdate("Matching National Rail services...") }
                                     enrichNationalRailServices(options)
                                 }
 

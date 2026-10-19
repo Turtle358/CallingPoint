@@ -1,6 +1,8 @@
 package io.github.turtle358.callingpoint.ui.activities;
 
-import android.app.Dialog;
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -31,6 +33,8 @@ import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.google.android.material.switchmaterial.SwitchMaterial;
 
+import org.w3c.dom.Text;
+
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
@@ -52,10 +56,11 @@ public class JourneySearchActivity extends AppCompatActivity {
 
     private AutoCompleteTextView etFromCrs, etToCrs;
     private RecyclerView recyclerSearchResults;
-    private TextView tvStatusUpdate, tvTimeSelection;
+    private TextView tvTimeSelection;
     private TextView tvTravelOptionsSummary, tvModesSummary;
 
     private View cardFallbackWarning;
+    private TextView cardTextFallbackWarning;
     private View btnTimeSelector;
     private ImageButton btnSaveRoute;
 
@@ -84,12 +89,12 @@ public class JourneySearchActivity extends AppCompatActivity {
         ImageButton btnSwap = findViewById(R.id.btnSwapStations);
         Button btnSearch = findViewById(R.id.btnSearchJourney);
         recyclerSearchResults = findViewById(R.id.recyclerSearchResults);
-        tvStatusUpdate = findViewById(R.id.tvStatusUpdate);
         shimmerView = findViewById(R.id.shimmer_journey_container);
 
         btnTimeSelector = findViewById(R.id.btnTimeSelector);
         tvTimeSelection = findViewById(R.id.tvTimeSelection);
         cardFallbackWarning = findViewById(R.id.cardFallbackWarning);
+        cardTextFallbackWarning = findViewById(R.id.cardTextFallbackWarning);
         btnSaveRoute = findViewById(R.id.btnSaveRoute);
 
         tvTravelOptionsSummary = findViewById(R.id.tvTravelOptionsSummary);
@@ -307,7 +312,6 @@ public class JourneySearchActivity extends AppCompatActivity {
             isArriving = false;
             updateDateTimeUI();
             dialog.dismiss();
-            Toast.makeText(this, "Reset to Leaving now", Toast.LENGTH_SHORT).show();
         });
 
         dialog.findViewById(R.id.btnSet).setOnClickListener(v -> {
@@ -462,11 +466,12 @@ public class JourneySearchActivity extends AppCompatActivity {
     private void updateDateTimeUI() {
         if (selectedCalendar == null) {
             tvTimeSelection.setText("Leaving now");
-            cardFallbackWarning.setVisibility(View.GONE);
+            fadeOutWarningCard();
         } else {
             String prefix = isArriving ? "Arriving " : "Leaving ";
             tvTimeSelection.setText(prefix + formatCalendarFriendly(selectedCalendar));
-            cardFallbackWarning.setVisibility(View.VISIBLE);
+            cardTextFallbackWarning.setText("Internal fallback routing is unavailable for future dates. Results will rely strictly on TfL.");
+            fadeInWarningCard();
         }
     }
 
@@ -534,8 +539,6 @@ public class JourneySearchActivity extends AppCompatActivity {
     private void handleSearch() {
         etFromCrs.dismissDropDown();
         etToCrs.dismissDropDown();
-        tvStatusUpdate.setVisibility(View.GONE);
-        tvStatusUpdate.setText("");
         shimmerView.stopShimmer();
         shimmerView.setVisibility(View.GONE);
         updateSaveButtonState();
@@ -589,10 +592,9 @@ public class JourneySearchActivity extends AppCompatActivity {
         }
     }
 
+    @SuppressLint("SetTextI18n")
     private void startInternalRouting(String fromCrs, String toCrs) {
         recyclerSearchResults.setVisibility(View.GONE);
-        tvStatusUpdate.setVisibility(View.VISIBLE);
-        tvStatusUpdate.setText("Initialising search...");
 
         shimmerView.setVisibility(View.VISIBLE);
         shimmerView.startShimmer();
@@ -600,16 +602,16 @@ public class JourneySearchActivity extends AppCompatActivity {
         if (plannerEngine != null) {
             findRoutes(fromCrs, toCrs);
         } else {
-            tvStatusUpdate.setText("Routing engine unavailable. Check your connection.");
+            cardTextFallbackWarning.setText("Routing engine unavailable. Check your connection.");
+            fadeInWarningCard();
             shimmerView.stopShimmer();
             shimmerView.setVisibility(View.GONE);
         }
     }
 
     private void startTflRouting(String fromNaptan, String toNaptan, String fromCrs, String toCrs, String date, String time, String timeIs) {
+        fadeOutWarningCard();
         recyclerSearchResults.setVisibility(View.GONE);
-        tvStatusUpdate.setVisibility(View.VISIBLE);
-        tvStatusUpdate.setText("Initialising TfL search...");
 
         shimmerView.setVisibility(View.VISIBLE);
         shimmerView.startShimmer();
@@ -621,10 +623,10 @@ public class JourneySearchActivity extends AppCompatActivity {
 
         if (tflPlannerEngine != null) {
             tflPlannerEngine.findRoutes(fromNaptan, toNaptan, date, time, timeIs, journeyPref, modes, accessPref, new JourneyPlannerEngine.JourneyCallback() {
+                @SuppressLint("SetTextI18n")
                 @Override
                 public void onJourneysFound(List<JourneyOption> journeys) {
                     if (isDestroyed()) return;
-                    tvStatusUpdate.setVisibility(View.GONE);
                     shimmerView.stopShimmer();
                     shimmerView.setVisibility(View.GONE);
 
@@ -635,20 +637,24 @@ public class JourneySearchActivity extends AppCompatActivity {
                         if (date == null && fromCrs != null && toCrs != null) {
                             startInternalRouting(fromCrs, toCrs);
                         } else {
-                            tvStatusUpdate.setVisibility(View.VISIBLE);
-                            tvStatusUpdate.setText("No routes found for the selected time.");
+                            cardTextFallbackWarning.setText("No routes found for the selected time.");
+                            fadeInWarningCard();
                         }
                     }
                 }
 
+                @SuppressLint("SetTextI18n")
                 @Override
                 public void onError(String message) {
                     if (isDestroyed()) return;
                     if (date == null && fromCrs != null && toCrs != null) {
+                        cardTextFallbackWarning.setText("TfL routing is not available right now, falling back to internal routing\n This may take a moment");
+                        fadeInWarningCard();
+
                         startInternalRouting(fromCrs, toCrs);
                     } else {
-                        tvStatusUpdate.setVisibility(View.VISIBLE);
-                        tvStatusUpdate.setText("Search failed: " + message);
+                        cardTextFallbackWarning.setText("Search failed: " + message);
+                        fadeInWarningCard();
                         shimmerView.stopShimmer();
                         shimmerView.setVisibility(View.GONE);
                     }
@@ -657,7 +663,8 @@ public class JourneySearchActivity extends AppCompatActivity {
                 @Override
                 public void onStatusUpdate(String message) {
                     if (isDestroyed()) return;
-                    tvStatusUpdate.setText(message);
+                    cardTextFallbackWarning.setText(message);
+                    fadeInWarningCard();
                 }
             });
         }
@@ -665,10 +672,10 @@ public class JourneySearchActivity extends AppCompatActivity {
 
     private void findRoutes(String fromCrs, String toCrs) {
         plannerEngine.findRoutes(fromCrs, toCrs, new JourneyPlannerEngine.JourneyCallback() {
+            @SuppressLint("SetTextI18n")
             @Override
             public void onJourneysFound(List<JourneyOption> journeys) {
                 if (isDestroyed()) return;
-                tvStatusUpdate.setVisibility(View.GONE);
                 shimmerView.stopShimmer();
                 shimmerView.setVisibility(View.GONE);
 
@@ -676,16 +683,16 @@ public class JourneySearchActivity extends AppCompatActivity {
                     adapter.updateData(journeys);
                     recyclerSearchResults.setVisibility(View.VISIBLE);
                 } else {
-                    tvStatusUpdate.setVisibility(View.VISIBLE);
-                    tvStatusUpdate.setText("No routes found between these stations.");
+                    cardTextFallbackWarning.setText("No routes found between these stations.");
+                    fadeInWarningCard();
                 }
             }
 
             @Override
             public void onError(String message) {
                 if (isDestroyed()) return;
-                tvStatusUpdate.setVisibility(View.VISIBLE);
-                tvStatusUpdate.setText(message);
+                cardTextFallbackWarning.setText(message);
+                fadeInWarningCard();
                 shimmerView.stopShimmer();
                 shimmerView.setVisibility(View.GONE);
             }
@@ -693,7 +700,7 @@ public class JourneySearchActivity extends AppCompatActivity {
             @Override
             public void onStatusUpdate(String message) {
                 if (isDestroyed()) return;
-                tvStatusUpdate.setText(message);
+                cardTextFallbackWarning.setText(message);
             }
         });
     }
@@ -741,5 +748,31 @@ public class JourneySearchActivity extends AppCompatActivity {
             }
             return false;
         });
+    }
+
+
+    private void fadeInWarningCard() {
+        if (cardFallbackWarning.getVisibility() == View.VISIBLE && cardFallbackWarning.getAlpha() == 1f) return;
+
+        cardFallbackWarning.setAlpha(0f);
+        cardFallbackWarning.setVisibility(View.VISIBLE);
+        cardFallbackWarning.animate()
+                .alpha(1f)
+                .setDuration(300)
+                .setListener(null);
+    }
+
+    private void fadeOutWarningCard() {
+        if (cardFallbackWarning.getVisibility() == View.GONE) return;
+
+        cardFallbackWarning.animate()
+                .alpha(0f)
+                .setDuration(300)
+                .setListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        cardFallbackWarning.setVisibility(View.GONE);
+                    }
+                });
     }
 }

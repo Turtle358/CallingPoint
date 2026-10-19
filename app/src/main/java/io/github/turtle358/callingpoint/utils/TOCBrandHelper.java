@@ -270,8 +270,10 @@ public class TOCBrandHelper {
             case "tfl":
                 return "Transport for London";
             case "national":
+                if (manager.equals("National Rail")) return tocName;
                 return "National Rail — " + tocName;
             case "gbr":
+                if (manager.equals("GBR")) return tocName;
                 return "GBR | " + tocName;
             case "scot":
                 return "Scotrail";

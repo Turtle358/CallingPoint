@@ -20,7 +20,7 @@ object DisruptionSeverityManager {
 
         val isEngineering = combined.contains("engineering") && !isOverrun
 
-        val isTempAmendedTimetable = combined.contains("temporary") && combined.contains("timetable")
+        val isTempAmendedTimetable = combined.contains("temporary") && combined.contains("timetable") && !combined.contains("reopened") && !combined.contains("points failure")
 
         val isStrike = lowerSummary.contains("industrial action")
                 || lowerSummary.contains("strike")
@@ -77,8 +77,8 @@ object DisruptionSeverityManager {
         STRIKE(
             "Planned Industrial Action", 5, "#E056FD".toColorInt(), "#2A1235".toColorInt()),
         HIGH("Major Disruption", 4, "#FF5252".toColorInt(), "#331414".toColorInt()),
-        AMENDED_TIMETABLE("Temporary Amended Timetable", 3, "#FF8550".toColorInt(), "#26130D".toColorInt()),
-        LOW("Minor Disruption", 2, "#FFB74D".toColorInt(), "#332410".toColorInt()),
+        LOW("Minor Disruption", 3, "#FFB74D".toColorInt(), "#332410".toColorInt()),
+        AMENDED_TIMETABLE("Temporary Amended Timetable", 2, "#FF8550".toColorInt(), "#26130D".toColorInt()),
         ENGINEERING_WORKS("Planned Engineering Works",1,"#4FC3F7".toColorInt(),"#102533".toColorInt()),
         UNKNOWN("Information", 0, "#4FC3F7".toColorInt(), "#102533".toColorInt());
 
