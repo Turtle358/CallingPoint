@@ -3,8 +3,10 @@ package io.github.turtle358.callingpoint.ui.fragments;
 import android.appwidget.AppWidgetManager;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
@@ -16,6 +18,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -103,6 +106,33 @@ public class SettingsFragment extends Fragment {
         if (!savedTocs.trim().isEmpty()) {
             trackedTocs.addAll(Arrays.asList(savedTocs.split(",")));
         }
+
+        Button btnReportBug = view.findViewById(R.id.btnReportBug);
+        btnReportBug.setOnClickListener(v -> {
+            Intent intent = new Intent(Intent.ACTION_SENDTO);
+            intent.setData(Uri.parse("mailto:callingpoint@outlook.com"));
+
+            intent.putExtra(Intent.EXTRA_SUBJECT, "Bug Report - CallingPoint");
+
+            try {
+                startActivity(intent);
+            } catch (android.content.ActivityNotFoundException e) {
+                Toast.makeText(getContext(), "No email app found.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), "Send report to: callingpoint@outlook.com", Toast.LENGTH_LONG).show();
+            }
+        });
+
+        Button btnPrivacyPolicy = view.findViewById(R.id.btnPrivacyPolicy);
+        btnPrivacyPolicy.setOnClickListener(v -> {
+            String url = "https://callingpoint.co.uk/privacy.html";
+
+            androidx.browser.customtabs.CustomTabsIntent.Builder builder =
+                    new androidx.browser.customtabs.CustomTabsIntent.Builder();
+
+
+            androidx.browser.customtabs.CustomTabsIntent customTabsIntent = builder.build();
+            customTabsIntent.launchUrl(getContext(), Uri.parse(url));
+        });
 
         themeRadioGroup = view.findViewById(R.id.themeRadioGroup);
         slidingPillTheme = view.findViewById(R.id.slidingPillTheme);
