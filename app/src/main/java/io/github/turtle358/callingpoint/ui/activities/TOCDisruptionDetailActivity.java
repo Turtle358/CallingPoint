@@ -568,7 +568,7 @@ public class TOCDisruptionDetailActivity extends AppCompatActivity {
 
         subCard.addView(headerRow);
 
-        boolean showSubheaders = sections.size() > 1;
+        boolean showSubheaders = sections.size() > 1 || style.title.equals("Affected Routes");
 
         for (int i = 0; i < sections.size(); i++) {
             ParsedSection section = sections.get(i);
@@ -619,7 +619,7 @@ public class TOCDisruptionDetailActivity extends AppCompatActivity {
             simplifiedTitle = cleanHeader;
             accentColor = Color.parseColor("#5C6BC0");
             iconRes = R.drawable.ic_lightbulb;
-        } else if ( lowerHeader.contains("additional") || lowerHeader.contains("happening")) {
+        } else if ( lowerHeader.contains("additional") || lowerHeader.contains("happening") || lowerHeader.contains("service impact")) {
             simplifiedTitle = cleanHeader;
             accentColor = Color.parseColor("#0288D1");
             iconRes = R.drawable.ic_info;
@@ -635,10 +635,10 @@ public class TOCDisruptionDetailActivity extends AppCompatActivity {
             simplifiedTitle = "Compensation & Refunds";
             accentColor = Color.parseColor("#FF7043");
             iconRes = R.drawable.ic_money;
-        } else if (lowerHeader.contains("alternative") || lowerHeader.contains("planning") || lowerHeader.contains("check before")) {
+        } else if (lowerHeader.contains("alternative") || lowerHeader.contains("planning") || lowerHeader.contains("check before") || lowerHeader.contains("how do i get to my destination")) {
             simplifiedTitle = "Alternative Routes & Planning";
             accentColor = Color.parseColor("#66BB6A");
-            iconRes = R.drawable.ic_smartphone;
+            iconRes = R.drawable.ic_map;
         } else if (lowerHeader.contains("tell me more") || lowerHeader.contains("why") || lowerHeader.contains("cause")) {
             simplifiedTitle = "Tell me more about this";
             accentColor = Color.parseColor("#26A69A");
@@ -648,7 +648,7 @@ public class TOCDisruptionDetailActivity extends AppCompatActivity {
             accentColor = Color.parseColor("#AB47BC");
             iconRes = R.drawable.ic_clock;
         } else if (lowerHeader.contains("parking") || lowerHeader.contains("station")) {
-            simplifiedTitle = "Parking";
+            simplifiedTitle = "Parking & Station info";
             accentColor = Color.parseColor("#8D6E63");
             iconRes = R.drawable.ic_parking;
         } else if (lowerHeader.contains("services") || TOCBrandHelper.containsTocName(lowerHeader)) {
@@ -671,6 +671,14 @@ public class TOCDisruptionDetailActivity extends AppCompatActivity {
             simplifiedTitle = cleanHeader;
             accentColor = Color.parseColor("#d5b20c");
             iconRes = R.drawable.ic_question_mark;
+        } else if (lowerHeader.contains("weather")) {
+            simplifiedTitle = cleanHeader;
+            accentColor = Color.parseColor("#d5b20c");
+            iconRes = R.drawable.ic_weather;
+        } else if (cleanHeader.contains(" - ") || cleanHeader.contains(" to ")) {
+            simplifiedTitle = "Affected Routes";
+            accentColor = Color.parseColor("#E91E63");
+            iconRes = R.drawable.ic_train;
         } else {
             if (availableFallbackColors.isEmpty()) {
                 availableFallbackColors.addAll(Arrays.asList(
