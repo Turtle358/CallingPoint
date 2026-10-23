@@ -34,6 +34,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Random;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -54,6 +55,13 @@ public class TOCDisruptionDetailActivity extends AppCompatActivity {
     boolean isLightColour;
 
     int brandColour;
+
+    private List<String> availableFallbackColors = new ArrayList<>(Arrays.asList(
+            "#78909C", "#EF5350", "#AB47BC", "#5C6BC0",
+            "#29B6F6", "#26A69A", "#66BB6A", "#FFA726"
+    ));
+    private Random random = new Random();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -600,7 +608,7 @@ public class TOCDisruptionDetailActivity extends AppCompatActivity {
         String lowerHeader = cleanHeader.toLowerCase();
 
         String simplifiedTitle = cleanHeader;
-        int accentColor = Color.parseColor("#78909C");
+        int accentColor;
         int iconRes = R.drawable.ic_bookmark_outline;
 
         if (lowerHeader.equals("overview") || lowerHeader.contains("summary")) {
@@ -663,9 +671,22 @@ public class TOCDisruptionDetailActivity extends AppCompatActivity {
             simplifiedTitle = cleanHeader;
             accentColor = Color.parseColor("#d5b20c");
             iconRes = R.drawable.ic_question_mark;
+        } else {
+            if (availableFallbackColors.isEmpty()) {
+                availableFallbackColors.addAll(Arrays.asList(
+                        "#78909C", "#EF5350", "#AB47BC", "#5C6BC0",
+                        "#29B6F6", "#26A69A", "#66BB6A", "#FFA726"
+                ));
+            }
+
+            int randomIndex = random.nextInt(availableFallbackColors.size());
+            String chosenHex = availableFallbackColors.remove(randomIndex);
+            accentColor = Color.parseColor(chosenHex);
         }
 
-        return new CategoryStyle(simplifiedTitle, accentColor, iconRes);
+        int secondaryColor = ColorUtils.setAlphaComponent(accentColor, 22);
+
+        return new CategoryStyle(simplifiedTitle, accentColor, secondaryColor, iconRes);
     }
 
     private static class ParsedSection {
@@ -680,10 +701,12 @@ public class TOCDisruptionDetailActivity extends AppCompatActivity {
     private static class CategoryStyle {
         final String title;
         final int accentColor;
+        final int secondaryColor;
         final int iconRes;
-        CategoryStyle(String title, int accentColor, int iconRes) {
+        CategoryStyle(String title, int accentColor, int secondaryColor, int iconRes) {
             this.title = title;
             this.accentColor = accentColor;
+            this.secondaryColor = secondaryColor;
             this.iconRes = iconRes;
         }
     }
