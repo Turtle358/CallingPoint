@@ -379,16 +379,16 @@
   },
   {
     "code": "ZN",
-    "acronym": "LU",
-    "name": "London Underground",
-    "colour": "#0006a1",
+    "acronym": "NR",
+    "name": "National Rail",
+    "colour": "#312783",
     "secondary_colour": "#ffffff",
-    "manager": "tfl",
+    "manager": "national",
     "shown": 1,
-    "delayRepayUrl": "https://tfl.gov.uk/fares/refunds/apply-for-a-service-delay-refund",
+    "delayRepayUrl": "https://www.nationalrail.co.uk/help-and-assistance/compensation-and-refunds/",
     "delayRepayMinTime": 15,
-    "delayRepayMessage": "Handled via TfL refunds. Different rules apply.",
-    "managerDescription": ""
+    "delayRepayMessage": "",
+    "managerDescription": "National Rail represents the entirety of the UK rail network. Soon to become part of GBR"
   },
   {
     "code": "HT",

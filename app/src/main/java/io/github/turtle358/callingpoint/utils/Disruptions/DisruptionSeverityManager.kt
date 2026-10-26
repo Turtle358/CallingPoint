@@ -21,6 +21,7 @@ object DisruptionSeverityManager {
         val isEngineering = combined.contains("engineering") && !isOverrun
 
         val isTempAmendedTimetable = combined.contains("temporary") && combined.contains("timetable") && !combined.contains("reopened") && !combined.contains("points failure")
+        val isWeatherWarning = combined.contains("met office") || combined.contains("storm") || combined.contains("hot weather") || combined.contains("weather warning")
 
         val isStrike = lowerSummary.contains("industrial action")
                 || lowerSummary.contains("strike")
@@ -34,6 +35,8 @@ object DisruptionSeverityManager {
             return Severity.ENGINEERING_WORKS
         } else if (isTempAmendedTimetable) {
             return Severity.AMENDED_TIMETABLE
+        } else if (isWeatherWarning) {
+            return Severity.WEATHER_WARNING
         }
 
         var hasSevereDelay = false
@@ -74,14 +77,13 @@ object DisruptionSeverityManager {
         @JvmField val accentColor: Int,
         val backgroundColor: Int
     ) {
-        STRIKE(
-            "Planned Industrial Action", 5, "#E056FD".toColorInt(), "#2A1235".toColorInt()),
-        HIGH("Major Disruption", 4, "#FF5252".toColorInt(), "#331414".toColorInt()),
-        LOW("Minor Disruption", 3, "#FFB74D".toColorInt(), "#332410".toColorInt()),
-        AMENDED_TIMETABLE("Temporary Amended Timetable", 2, "#FF8550".toColorInt(), "#26130D".toColorInt()),
-        ENGINEERING_WORKS("Planned Engineering Works",1,"#4FC3F7".toColorInt(),"#102533".toColorInt()),
+        STRIKE("Planned Industrial Action", 6, "#E056FD".toColorInt(), "#2A1235".toColorInt()),
+        HIGH("Major Disruption", 5, "#FF5252".toColorInt(), "#331414".toColorInt()),
+        LOW("Minor Disruption", 4, "#FF8550".toColorInt(), "#26130D".toColorInt()),
+        AMENDED_TIMETABLE("Temporary Amended Timetable", 3, "#FFB74D".toColorInt(), "#332410".toColorInt()),
+        WEATHER_WARNING("Weather Warning", 2, "#FFEB3B".toColorInt(), "#332F0A".toColorInt()),
+        ENGINEERING_WORKS("Planned Engineering Works", 1, "#4FC3F7".toColorInt(), "#102533".toColorInt()),
         UNKNOWN("Information", 0, "#4FC3F7".toColorInt(), "#102533".toColorInt());
-
         companion object {
             @JvmStatic
             fun fromString(statusString: String?): Severity {
