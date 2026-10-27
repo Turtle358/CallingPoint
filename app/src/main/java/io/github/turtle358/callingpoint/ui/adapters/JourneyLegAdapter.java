@@ -3,11 +3,10 @@ package io.github.turtle358.callingpoint.ui.adapters;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.drawable.GradientDrawable;
-import android.os.Handler;
-import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -16,37 +15,31 @@ import androidx.annotation.NonNull;
 import androidx.cardview.widget.CardView;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.recyclerview.widget.RecyclerView;
+import org.maplibre.android.maps.MapView;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
-import org.osmdroid.tileprovider.tilesource.XYTileSource;
-import org.osmdroid.util.BoundingBox;
-import org.osmdroid.util.GeoPoint;
-import org.osmdroid.views.MapView;
-import org.osmdroid.views.overlay.Marker;
-import org.osmdroid.views.overlay.Polyline;
 
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Scanner;
 import java.util.Set;
+
+import org.maplibre.android.maps.MapLibreMapOptions;
 
 import io.github.turtle358.callingpoint.R;
 import io.github.turtle358.callingpoint.models.JourneyLeg;
 import io.github.turtle358.callingpoint.models.ServiceDetailsResponse;
 import io.github.turtle358.callingpoint.utils.TOCBrandHelper;
-import io.github.turtle358.callingpoint.utils.WalkLocator;
+import io.github.turtle358.callingpoint.utils.MapLibreWalkingMap;
 
 public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.LegViewHolder> {
 
     private final List<JourneyLeg> legs;
+    private final Set<LegViewHolder> knownHolders = new HashSet<>();
+    private boolean hostStarted;
+    private boolean hostResumed;
     private final Map<String, ServiceDetailsResponse> liveDataMap = new HashMap<>();
     private final int COLOUR_FUTURE_LINE = Color.parseColor("#444444");
     private final int COLOUR_FUTURE_DOT = Color.parseColor("#888888");
@@ -69,52 +62,56 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
     @Override
     public LegViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_journey_leg, parent, false);
-        return new LegViewHolder(view);
+        LegViewHolder holder = new LegViewHolder(view);
+        knownHolders.add(holder);
+        return holder;
     }
 
     @Override
     public void onBindViewHolder(@NonNull LegViewHolder holder, int position) {
         JourneyLeg currentLeg = legs.get(position);
 
+
         if ("TUBE/WALK".equals(currentLeg.transportMode)) {
             holder.contentContainer.setVisibility(View.GONE);
             holder.cardTransfer.setVisibility(View.VISIBLE);
-            holder.btnMapTransfer.setVisibility(View.VISIBLE);
 
-            holder.tvTransferTitle.setText("Walk " + currentLeg.durationMinutes + " min");
+            holder.tvTransferTitle.setText(
+                    "Walk " + currentLeg.durationMinutes + " min"
+            );
             holder.ivTransferIcon.setImageResource(R.drawable.ic_walk);
 
-            boolean isDarkMode = (holder.itemView.getContext().getResources().getConfiguration().uiMode & android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES;
-            String mapTheme = isDarkMode ? "dark_all" : "voyager";
+            View mapCard = (View) holder.mapContainer.getParent();
 
-            String tileProxyUrl = "https://callingpoint-api.callingpoint.co.uk/carto/rastertiles/" + mapTheme + "/";
+            mapCard.setVisibility(View.VISIBLE);
+            holder.mapContainer.setVisibility(View.VISIBLE);
+            holder.btnMapTransfer.setVisibility(View.VISIBLE);
 
-            org.osmdroid.tileprovider.tilesource.ITileSource TILE_SOURCE = new org.osmdroid.tileprovider.tilesource.XYTileSource(
-                    "CartoDB Proxy", 0, 19, 256, ".png",
-                    new String[]{ tileProxyUrl },
-                    "© OpenStreetMap contributors, © CARTO"
-            );
-            holder.mapViewTransferLeg.setTileSource(TILE_SOURCE);
-            holder.mapViewTransferLeg.setMultiTouchControls(true);
-            holder.mapViewTransferLeg.setBuiltInZoomControls(false);
-
-            holder.mapViewTransferLeg.setVisibility(View.VISIBLE);
-            loadWalkingRoute(holder.itemView.getContext(), holder.mapViewTransferLeg, currentLeg.fromStationName, currentLeg.toStationName);
+            if (holder.attached) {
+                showWalkingMap(holder, currentLeg);
+            }
 
             holder.cardTransfer.setOnClickListener(v -> {
-                if (holder.mapViewTransferLeg.getVisibility() == View.VISIBLE) {
-                    holder.mapViewTransferLeg.setVisibility(View.GONE);
+                if (mapCard.getVisibility() != View.VISIBLE) {
+                    return;
+                }
+
+                if (holder.mapContainer.getVisibility() == View.VISIBLE) {
+                    holder.mapContainer.setVisibility(View.GONE);
                 } else {
-                    holder.mapViewTransferLeg.setVisibility(View.VISIBLE);
-                    loadWalkingRoute(v.getContext(), holder.mapViewTransferLeg, currentLeg.fromStationName, currentLeg.toStationName);
+                    holder.mapContainer.setVisibility(View.VISIBLE);
+                    showWalkingMap(holder, currentLeg);
                 }
             });
+
             return;
         }
 
+
         holder.contentContainer.setVisibility(View.VISIBLE);
         holder.cardTransfer.setVisibility(View.GONE);
-        holder.mapViewTransferLeg.setVisibility(View.GONE);
+        holder.mapContainer.setVisibility(View.GONE);
+        holder.releaseMap();
 
         boolean isBus = "BUS".equalsIgnoreCase(currentLeg.transportMode)
                 || "bus".equalsIgnoreCase(currentLeg.transportMode)
@@ -265,81 +262,65 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
         }
     }
 
-    private void loadWalkingRoute(android.content.Context context, MapView mapView, String origin, String dest) {
-        final String legKey = origin + "|" + dest;
-        mapView.setTag(legKey);
+    public void onHostStart() {
+        hostStarted = true;
+        for (LegViewHolder h : knownHolders) h.syncMapLifecycle(hostStarted, hostResumed);
+    }
 
-        new Thread(() -> {
-            try {
-                GeoPoint[] resolved = WalkLocator.resolve(context, origin, dest);
+    public void onHostResume() {
+        hostResumed = true;
+        for (LegViewHolder h : knownHolders) h.syncMapLifecycle(hostStarted, hostResumed);
+    }
 
-                if (resolved != null) {
-                    GeoPoint startPoint = resolved[0];
-                    GeoPoint endPoint = resolved[1];
+    public void onHostPause() {
+        hostResumed = false;
+        for (LegViewHolder h : knownHolders) h.syncMapLifecycle(hostStarted, hostResumed);
+    }
 
-                    Polyline routeLine = new Polyline(mapView);
-                    android.graphics.Paint paint = routeLine.getOutlinePaint();
-                    paint.setColor(Color.parseColor("#4285F4"));
-                    paint.setStrokeWidth(16.0f);
-                    paint.setAntiAlias(true);
-                    paint.setStrokeCap(Paint.Cap.ROUND);
-                    paint.setStrokeJoin(Paint.Join.ROUND);
+    public void onHostStop() {
+        hostStarted = false;
+        for (LegViewHolder h : knownHolders) h.syncMapLifecycle(hostStarted, hostResumed);
+    }
 
-                    try {
-                        String urlString = "https://router.project-osrm.org/route/v1/foot/"
-                                + startPoint.getLongitude() + "," + startPoint.getLatitude() + ";"
-                                + endPoint.getLongitude() + "," + endPoint.getLatitude()
-                                + "?overview=full&geometries=geojson";
+    public void onHostDestroy() {
+        hostResumed = false;
+        hostStarted = false;
+        for (LegViewHolder h : new ArrayList<>(knownHolders)) h.releaseMap();
+        knownHolders.clear();
+    }
 
-                        HttpURLConnection conn = (HttpURLConnection) new URL(urlString).openConnection();
-                        conn.setRequestMethod("GET");
-                        conn.setRequestProperty("User-Agent", context.getPackageName() + "/1.0");
+    @Override
+    public void onViewAttachedToWindow(@NonNull LegViewHolder holder) {
+        super.onViewAttachedToWindow(holder);
 
-                        Scanner scanner = new Scanner(conn.getInputStream()).useDelimiter("\\A");
-                        String response = scanner.hasNext() ? scanner.next() : "";
+        holder.attached = true;
 
-                        JSONArray coordinates = new JSONObject(response).getJSONArray("routes")
-                                .getJSONObject(0).getJSONObject("geometry").getJSONArray("coordinates");
+        int position = holder.getBindingAdapterPosition();
 
-                        for (int i = 0; i < coordinates.length(); i++) {
-                            JSONArray coord = coordinates.getJSONArray(i);
-                            routeLine.addPoint(new GeoPoint(coord.getDouble(1), coord.getDouble(0)));
-                        }
-                    } catch (Exception e) {
-                        routeLine.addPoint(startPoint);
-                        routeLine.addPoint(endPoint);
-                    }
+        if (position != RecyclerView.NO_POSITION
+                && position < legs.size()) {
 
-                    new Handler(Looper.getMainLooper()).post(() -> {
-                        if (!legKey.equals(mapView.getTag())) return;
-                        mapView.getOverlays().clear();
-                        mapView.getOverlays().add(routeLine);
+            JourneyLeg leg = legs.get(position);
 
-                        Marker startMarker = new Marker(mapView);
-                        startMarker.setPosition(startPoint);
-                        startMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
-                        startMarker.setIcon(createStartMarkerDrawable(context));
-                        mapView.getOverlays().add(startMarker);
-
-                        Marker endMarker = new Marker(mapView);
-                        endMarker.setPosition(endPoint);
-                        endMarker.setAnchor(0.5f, 0.714f);
-                        endMarker.setIcon(createEndMarkerDrawable(context));
-                        mapView.getOverlays().add(endMarker);
-
-                        mapView.post(() -> {
-                            if (startPoint != null && endPoint != null) {
-                                BoundingBox bounds = BoundingBox.fromGeoPoints(Arrays.asList(startPoint, endPoint));
-                                mapView.zoomToBoundingBox(bounds, true, 100);
-                                mapView.invalidate();
-                            }
-                        });
-                    });
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
+            if ("TUBE/WALK".equals(leg.transportMode)) {
+                showWalkingMap(holder, leg);
             }
-        }).start();
+        }
+
+        holder.syncMapLifecycle(hostStarted, hostResumed);
+    }
+
+    @Override
+    public void onViewDetachedFromWindow(@NonNull LegViewHolder holder) {
+        holder.attached = false;
+        holder.syncMapLifecycle(hostStarted, hostResumed);
+        super.onViewDetachedFromWindow(holder);
+    }
+
+    @Override
+    public void onViewRecycled(@NonNull LegViewHolder holder) {
+        holder.releaseMap();
+        super.onViewRecycled(holder);
     }
 
     private int timeToMins(String time) {
@@ -615,9 +596,13 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
         CardView cardTransfer;
         TextView tvTransferTitle;
         ImageView ivManagerLogo, btnMapTransfer, ivModeIcon, ivTransferIcon;
+        FrameLayout mapContainer;
         MapView mapViewTransferLeg;
+        boolean attached;
+        private boolean mapStarted;
+        private boolean mapResumed;
 
-        public LegViewHolder(@NonNull View itemView) {
+        LegViewHolder(@NonNull View itemView) {
             super(itemView);
             contentContainer = itemView.findViewById(R.id.contentContainer);
             tvOperatorName = itemView.findViewById(R.id.tvOperatorName);
@@ -629,59 +614,96 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
             tvTransferTitle = itemView.findViewById(R.id.tvTransferTitle);
             btnMapTransfer = itemView.findViewById(R.id.btnMapTransfer);
             ivTransferIcon = itemView.findViewById(R.id.ivTransferIcon);
-            mapViewTransferLeg = itemView.findViewById(R.id.mapViewTransferLeg);
+            mapContainer = itemView.findViewById(R.id.mapViewTransferLeg);
+        }
+
+        void ensureMap(boolean hostStarted, boolean hostResumed) {
+            if (mapViewTransferLeg == null) {
+                MapLibreMapOptions options = new MapLibreMapOptions()
+                        .textureMode(true);
+
+                mapViewTransferLeg = new MapView(
+                        itemView.getContext(),
+                        options
+                );
+                mapContainer.removeAllViews();
+                mapContainer.addView(mapViewTransferLeg, new FrameLayout.LayoutParams(
+                        FrameLayout.LayoutParams.MATCH_PARENT,
+                        FrameLayout.LayoutParams.MATCH_PARENT));
+                mapViewTransferLeg.onCreate(null);
+            }
+            syncMapLifecycle(hostStarted, hostResumed);
+        }
+
+        void syncMapLifecycle(boolean hostStarted, boolean hostResumed) {
+            if (mapViewTransferLeg == null) return;
+            boolean shouldStart = hostStarted && attached;
+            boolean shouldResume = shouldStart && hostResumed;
+
+            if (mapResumed && !shouldResume) {
+                mapViewTransferLeg.onPause();
+                mapResumed = false;
+            }
+            if (mapStarted && !shouldStart) {
+                mapViewTransferLeg.onStop();
+                mapStarted = false;
+            }
+            if (!mapStarted && shouldStart) {
+                mapViewTransferLeg.onStart();
+                mapStarted = true;
+            }
+            if (!mapResumed && shouldResume) {
+                mapViewTransferLeg.onResume();
+                mapResumed = true;
+            }
+        }
+
+        void releaseMap() {
+            if (mapViewTransferLeg == null) return;
+            MapLibreWalkingMap.invalidate(mapViewTransferLeg);
+            if (mapResumed) mapViewTransferLeg.onPause();
+            if (mapStarted) mapViewTransferLeg.onStop();
+            mapViewTransferLeg.onDestroy();
+            mapContainer.removeView(mapViewTransferLeg);
+            mapViewTransferLeg = null;
+            mapStarted = false;
+            mapResumed = false;
         }
     }
 
-    private android.graphics.drawable.Drawable createStartMarkerDrawable(android.content.Context context) {
-        float density = context.getResources().getDisplayMetrics().density;
-        int size = (int) (36 * density);
-        android.graphics.Bitmap bitmap = android.graphics.Bitmap.createBitmap(size, size, android.graphics.Bitmap.Config.ARGB_8888);
-        android.graphics.Canvas canvas = new android.graphics.Canvas(bitmap);
-        android.graphics.Paint paint = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
 
-        paint.setColor(android.graphics.Color.WHITE);
-        paint.setStyle(android.graphics.Paint.Style.FILL);
-        canvas.drawCircle(size / 2f, size / 2f, size / 2f - (1 * density), paint);
+    private void showWalkingMap(
+            LegViewHolder holder,
+            JourneyLeg leg
+    ) {
+        holder.ensureMap(hostStarted, hostResumed);
 
-        paint.setColor(android.graphics.Color.parseColor("#22000000"));
-        paint.setStyle(android.graphics.Paint.Style.STROKE);
-        paint.setStrokeWidth(1.5f * density);
-        canvas.drawCircle(size / 2f, size / 2f, size / 2f - (1 * density), paint);
+        MapView currentMap = holder.mapViewTransferLeg;
 
-        paint.setColor(android.graphics.Color.BLACK);
-        paint.setStyle(android.graphics.Paint.Style.FILL);
-        canvas.drawCircle(size / 2f, size / 2f, 6 * density, paint);
-        return new android.graphics.drawable.BitmapDrawable(context.getResources(), bitmap);
+        View mapCard = (View) holder.mapContainer.getParent();
+
+        MapLibreWalkingMap.render(
+                holder.itemView.getContext(),
+                currentMap,
+                leg.fromStationName,
+                leg.toStationName,
+                () -> {
+                    int position = holder.getBindingAdapterPosition();
+
+                    if (position == RecyclerView.NO_POSITION
+                            || position >= legs.size()
+                            || legs.get(position) != leg
+                            || holder.mapViewTransferLeg != currentMap) {
+                        return;
+                    }
+
+                    mapCard.setVisibility(View.GONE);
+
+                    holder.btnMapTransfer.setVisibility(View.GONE);
+
+                    holder.releaseMap();
+                }
+        );
     }
 
-    private android.graphics.drawable.Drawable createEndMarkerDrawable(android.content.Context context) {
-        float density = context.getResources().getDisplayMetrics().density;
-        int width = (int) (40 * density);
-        int height = (int) (70 * density);
-        android.graphics.Bitmap bitmap = android.graphics.Bitmap.createBitmap(width, height, android.graphics.Bitmap.Config.ARGB_8888);
-        android.graphics.Canvas canvas = new android.graphics.Canvas(bitmap);
-        android.graphics.Paint paint = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
-
-        paint.setColor(android.graphics.Color.BLACK);
-        paint.setStyle(android.graphics.Paint.Style.FILL);
-        android.graphics.RectF pillRect = new android.graphics.RectF(0, 0, width, height);
-        canvas.drawRoundRect(pillRect, width / 2f, width / 2f, paint);
-
-        paint.setColor(android.graphics.Color.WHITE);
-        paint.setTextSize(10 * density);
-        paint.setTypeface(android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD));
-        paint.setTextAlign(android.graphics.Paint.Align.CENTER);
-        android.graphics.Paint.FontMetrics fontMetrics = paint.getFontMetrics();
-        float textY = (22 * density) - ((fontMetrics.descent + fontMetrics.ascent) / 2f);
-        canvas.drawText("E N D", width / 2f, textY, paint);
-
-        float dotCenterY = height - (20 * density);
-        paint.setColor(android.graphics.Color.WHITE);
-        canvas.drawCircle(width / 2f, dotCenterY, 9 * density, paint);
-        paint.setColor(android.graphics.Color.BLACK);
-        canvas.drawCircle(width / 2f, dotCenterY, 4 * density, paint);
-
-        return new android.graphics.drawable.BitmapDrawable(context.getResources(), bitmap);
-    }
 }

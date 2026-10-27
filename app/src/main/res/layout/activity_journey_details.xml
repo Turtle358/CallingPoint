@@ -156,7 +156,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent">
 
-                    <org.osmdroid.views.MapView
+                    <org.maplibre.android.maps.MapView
                         android:id="@+id/mapViewTransfer"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent" />
