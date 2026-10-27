@@ -32,6 +32,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import io.github.turtle358.callingpoint.BuildConfig;
 import io.github.turtle358.callingpoint.R;
 import io.github.turtle358.callingpoint.api.APIClient;
 import io.github.turtle358.callingpoint.api.NationalRailAPI;
@@ -44,6 +45,7 @@ import io.github.turtle358.callingpoint.utils.JourneyPlanner.LiveLocationEngine;
 import io.github.turtle358.callingpoint.utils.JourneyPlanner.PinnedJourneyManager;
 import io.github.turtle358.callingpoint.utils.StationHelper;
 import io.github.turtle358.callingpoint.utils.TOCBrandHelper;
+import io.github.turtle358.callingpoint.utils.WalkLocator;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -65,6 +67,8 @@ public class JourneyDetailsActivity extends AppCompatActivity {
         SharedPreferences prefs = ctx.getSharedPreferences("osmdroid", Context.MODE_PRIVATE);
         Configuration.getInstance().load(ctx, prefs);
         Configuration.getInstance().setUserAgentValue(getPackageName());
+
+        Configuration.getInstance().getAdditionalHttpRequestProperties().put("x-callingpoint-secret", BuildConfig.APP_SECRET);
 
         setContentView(R.layout.activity_journey_details);
 
@@ -147,15 +151,18 @@ public class JourneyDetailsActivity extends AppCompatActivity {
 
             mapView = findViewById(R.id.mapViewTransfer);
 
-            org.osmdroid.tileprovider.tilesource.ITileSource CARTO_VOYAGER = new org.osmdroid.tileprovider.tilesource.XYTileSource(
-                    "CartoDB Voyager",
+            boolean isDarkMode = (getResources().getConfiguration().uiMode & android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES;
+            String mapTheme = isDarkMode ? "dark_all" : "voyager";
+
+            String tileProxyUrl = "https://callingpoint-api.callingpoint.co.uk/carto/rastertiles/" + mapTheme + "/";
+
+            org.osmdroid.tileprovider.tilesource.ITileSource CARTO_MAP = new org.osmdroid.tileprovider.tilesource.XYTileSource(
+                    "CartoDB Proxy",
                     0, 19, 256, ".png",
-                    new String[]{
-                            "https://a.basemaps.cartocdn.com/rastertiles/voyager/",
-                            "https://b.basemaps.cartocdn.com/rastertiles/voyager/",
-                            "https://c.basemaps.cartocdn.com/rastertiles/voyager/"
-                    });
-            mapView.setTileSource(CARTO_VOYAGER);
+                    new String[]{ tileProxyUrl },
+                    "© OpenStreetMap contributors, © CARTO"
+            );
+            mapView.setTileSource(CARTO_MAP);
 
             mapView.setMultiTouchControls(true);
             mapView.setTilesScaledToDpi(true);
@@ -172,14 +179,12 @@ public class JourneyDetailsActivity extends AppCompatActivity {
             });
 
             new Thread(() -> {
-                android.location.Geocoder geocoder = new android.location.Geocoder(this);
                 try {
-                    java.util.List<android.location.Address> originLoc = geocoder.getFromLocationName(origin + " Station, London", 1);
-                    java.util.List<android.location.Address> destLoc = geocoder.getFromLocationName(dest + " Station, London", 1);
+                    GeoPoint[] resolved = WalkLocator.resolve(this, origin, dest);
 
-                    if (originLoc != null && !originLoc.isEmpty() && destLoc != null && !destLoc.isEmpty()) {
-                        GeoPoint startPoint = new GeoPoint(originLoc.get(0).getLatitude(), originLoc.get(0).getLongitude());
-                        GeoPoint endPoint = new GeoPoint(destLoc.get(0).getLatitude(), destLoc.get(0).getLongitude());
+                    if (resolved != null) {
+                        GeoPoint startPoint = resolved[0];
+                        GeoPoint endPoint = resolved[1];
 
                         Polyline routeLine = new Polyline(mapView);
                         android.graphics.Paint paint = routeLine.getOutlinePaint();
@@ -209,6 +214,7 @@ public class JourneyDetailsActivity extends AppCompatActivity {
                         }
 
                         runOnUiThread(() -> {
+                            mapView.getOverlays().clear();
                             mapView.getOverlays().add(routeLine);
 
                             Marker startMarker = new Marker(mapView);
@@ -234,16 +240,10 @@ public class JourneyDetailsActivity extends AppCompatActivity {
                 }
             }).start();
 
-            findViewById(R.id.fabOpenExternalMap).setOnClickListener(v -> {
-                try {
-                    String destQuery = java.net.URLEncoder.encode(dest + " Station, London", StandardCharsets.UTF_8);
-                    String uriString = "https://www.google.com/maps/dir/?api=1&destination=" + destQuery + "&travelmode=walking";
-                    android.content.Intent intent = new android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(uriString));
-                    startActivity(intent);
-                } catch (Exception e) {
-                    Toast.makeText(this, "Unable to open Maps app", Toast.LENGTH_SHORT).show();
-                }
-            });
+            View fabMap = findViewById(R.id.fabOpenExternalMap);
+            if (fabMap != null) {
+                fabMap.setVisibility(View.GONE);
+            }
 
         } else {
             cardTimeline.setVisibility(View.VISIBLE);
