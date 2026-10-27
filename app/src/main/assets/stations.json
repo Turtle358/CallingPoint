@@ -739,6 +739,11 @@
     "naptan": "940GZZLUBLM",
     "type": "national"
   },
+  "Balgray": {
+    "crs":"BGY",
+    "naptan": "9100BALGRAY",
+    "type": "gbr"
+  },
   "Balloch": {
     "crs": "BHC",
     "naptan": "910GBALLOCH",
@@ -4384,7 +4389,7 @@
     "naptan": "9100EDINPRK",
     "type": "scot"
   },
-  "Edinburgh Waverley": {
+  "Edinburgh": {
     "crs": "EDB",
     "naptan": "910GEDINWAV",
     "type": "national"
