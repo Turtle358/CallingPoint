@@ -15,17 +15,13 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class WalkLocator {
 
     private static final String TAG = "WalkLocator";
-
-    // Rough UK bounding box
     private static final double LAT_MIN = 49.8, LAT_MAX = 60.9;
     private static final double LON_MIN = -8.7, LON_MAX = 1.8;
 
     private static final int MAX_CANDIDATES = 8;
 
-    // Candidates closer together than this are treated as the same place
     private static final double DEDUPE_METRES = 100;
 
-    // A walk longer than this almost certainly means a bad geocode
     private static final double MAX_SANE_WALK_METRES = 8000;
 
     private static final Map<String, GeoPoint[]> CACHE = new ConcurrentHashMap<>();
@@ -110,7 +106,6 @@ public final class WalkLocator {
 
         int comma = bracketsToComma.indexOf(',');
         if (comma > 0) {
-            // e.g. "Hurst Green, Surrey, Pollards Oak Shops" -> "Hurst Green, Surrey"
             int second = bracketsToComma.indexOf(',', comma + 1);
             if (second > 0) variants.add(bracketsToComma.substring(0, second).trim());
         }

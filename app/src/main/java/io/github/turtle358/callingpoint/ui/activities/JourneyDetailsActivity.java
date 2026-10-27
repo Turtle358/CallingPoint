@@ -1,8 +1,6 @@
 package io.github.turtle358.callingpoint.ui.activities;
 
 import android.annotation.SuppressLint;
-import android.content.Context;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ImageButton;
@@ -16,23 +14,15 @@ import androidx.core.view.WindowCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.osmdroid.config.Configuration;
-import org.osmdroid.util.BoundingBox;
-import org.osmdroid.util.GeoPoint;
-import org.osmdroid.views.MapView;
-import org.osmdroid.views.overlay.Marker;
-import org.osmdroid.views.overlay.Polyline;
+import org.maplibre.android.MapLibre;
+import org.maplibre.android.maps.MapView;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import io.github.turtle358.callingpoint.BuildConfig;
 import io.github.turtle358.callingpoint.R;
 import io.github.turtle358.callingpoint.api.APIClient;
 import io.github.turtle358.callingpoint.api.NationalRailAPI;
@@ -45,7 +35,8 @@ import io.github.turtle358.callingpoint.utils.JourneyPlanner.LiveLocationEngine;
 import io.github.turtle358.callingpoint.utils.JourneyPlanner.PinnedJourneyManager;
 import io.github.turtle358.callingpoint.utils.StationHelper;
 import io.github.turtle358.callingpoint.utils.TOCBrandHelper;
-import io.github.turtle358.callingpoint.utils.WalkLocator;
+import io.github.turtle358.callingpoint.utils.CallingPointMapNetwork;
+import io.github.turtle358.callingpoint.utils.MapLibreWalkingMap;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -63,14 +54,14 @@ public class JourneyDetailsActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        Context ctx = getApplicationContext();
-        SharedPreferences prefs = ctx.getSharedPreferences("osmdroid", Context.MODE_PRIVATE);
-        Configuration.getInstance().load(ctx, prefs);
-        Configuration.getInstance().setUserAgentValue(getPackageName());
+        MapLibre.getInstance(getApplicationContext());
 
-        Configuration.getInstance().getAdditionalHttpRequestProperties().put("x-callingpoint-secret", BuildConfig.APP_SECRET);
+        CallingPointMapNetwork.initialize(getApplicationContext());
 
         setContentView(R.layout.activity_journey_details);
+
+        mapView = findViewById(R.id.mapViewTransfer);
+        if (mapView != null) mapView.onCreate(savedInstanceState);
 
         View topHeaderBar = findViewById(R.id.topHeaderBar);
         if (topHeaderBar != null) {
@@ -149,96 +140,21 @@ public class JourneyDetailsActivity extends AppCompatActivity {
             cardTimeline.setVisibility(View.GONE);
             cardWalkOnlyMap.setVisibility(View.VISIBLE);
 
-            mapView = findViewById(R.id.mapViewTransfer);
-
-            boolean isDarkMode = (getResources().getConfiguration().uiMode & android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES;
-            String mapTheme = isDarkMode ? "dark_all" : "voyager";
-
-            String tileProxyUrl = "https://callingpoint-api.callingpoint.co.uk/carto/rastertiles/" + mapTheme + "/";
-
-            org.osmdroid.tileprovider.tilesource.ITileSource CARTO_MAP = new org.osmdroid.tileprovider.tilesource.XYTileSource(
-                    "CartoDB Proxy",
-                    0, 19, 256, ".png",
-                    new String[]{ tileProxyUrl },
-                    "© OpenStreetMap contributors, © CARTO"
-            );
-            mapView.setTileSource(CARTO_MAP);
-
-            mapView.setMultiTouchControls(true);
-            mapView.setTilesScaledToDpi(true);
-            mapView.setBuiltInZoomControls(false);
-
             mapView.setOnTouchListener((v, event) -> {
-                if (event.getAction() == android.view.MotionEvent.ACTION_DOWN ||
-                        event.getAction() == android.view.MotionEvent.ACTION_MOVE) {
-                    v.getParent().requestDisallowInterceptTouchEvent(true);
-                } else if (event.getAction() == android.view.MotionEvent.ACTION_UP) {
-                    v.getParent().requestDisallowInterceptTouchEvent(false);
+                int action = event.getActionMasked();
+                if (v.getParent() != null) {
+                    if (action == android.view.MotionEvent.ACTION_DOWN
+                            || action == android.view.MotionEvent.ACTION_MOVE) {
+                        v.getParent().requestDisallowInterceptTouchEvent(true);
+                    } else if (action == android.view.MotionEvent.ACTION_UP
+                            || action == android.view.MotionEvent.ACTION_CANCEL) {
+                        v.getParent().requestDisallowInterceptTouchEvent(false);
+                    }
                 }
                 return false;
             });
 
-            new Thread(() -> {
-                try {
-                    GeoPoint[] resolved = WalkLocator.resolve(this, origin, dest);
-
-                    if (resolved != null) {
-                        GeoPoint startPoint = resolved[0];
-                        GeoPoint endPoint = resolved[1];
-
-                        Polyline routeLine = new Polyline(mapView);
-                        android.graphics.Paint paint = routeLine.getOutlinePaint();
-                        paint.setColor(android.graphics.Color.parseColor("#4285F4"));
-                        paint.setStrokeWidth(16.0f);
-                        paint.setAntiAlias(true);
-                        paint.setStrokeCap(android.graphics.Paint.Cap.ROUND);
-                        paint.setStrokeJoin(android.graphics.Paint.Join.ROUND);
-
-                        try {
-                            JSONArray routes = getJsonArray(startPoint, endPoint);
-
-                            if (routes.length() > 0) {
-                                org.json.JSONArray coordinates = routes.getJSONObject(0).getJSONObject("geometry").getJSONArray("coordinates");
-                                for (int i = 0; i < coordinates.length(); i++) {
-                                    org.json.JSONArray coord = coordinates.getJSONArray(i);
-                                    routeLine.addPoint(new GeoPoint(coord.getDouble(1), coord.getDouble(0)));
-                                }
-                            } else {
-                                routeLine.addPoint(startPoint);
-                                routeLine.addPoint(endPoint);
-                            }
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                            routeLine.addPoint(startPoint);
-                            routeLine.addPoint(endPoint);
-                        }
-
-                        runOnUiThread(() -> {
-                            mapView.getOverlays().clear();
-                            mapView.getOverlays().add(routeLine);
-
-                            Marker startMarker = new Marker(mapView);
-                            startMarker.setPosition(startPoint);
-                            startMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
-                            startMarker.setIcon(createStartMarkerDrawable());
-                            mapView.getOverlays().add(startMarker);
-
-                            Marker endMarker = new Marker(mapView);
-                            endMarker.setPosition(endPoint);
-                            endMarker.setAnchor(0.5f, 0.714f);
-                            endMarker.setIcon(createEndMarkerDrawable());
-                            mapView.getOverlays().add(endMarker);
-
-                            mapView.post(() -> {
-                                BoundingBox bounds = BoundingBox.fromGeoPoints(java.util.Arrays.asList(startPoint, endPoint));
-                                mapView.zoomToBoundingBox(bounds, true, 200);
-                            });
-                        });
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }).start();
+            MapLibreWalkingMap.render(this, mapView, origin, dest);
 
             View fabMap = findViewById(R.id.fabOpenExternalMap);
             if (fabMap != null) {
@@ -300,30 +216,18 @@ public class JourneyDetailsActivity extends AppCompatActivity {
         }
     }
 
-    @NonNull
-    private JSONArray getJsonArray(GeoPoint startPoint, GeoPoint endPoint) throws IOException, JSONException {
-        String urlString = "https://router.project-osrm.org/route/v1/foot/"
-                + startPoint.getLongitude() + "," + startPoint.getLatitude() + ";"
-                + endPoint.getLongitude() + "," + endPoint.getLatitude()
-                + "?overview=full&geometries=geojson";
-
-        java.net.URL url = new java.net.URL(urlString);
-        java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
-        conn.setRequestMethod("GET");
-        conn.setRequestProperty("User-Agent", getPackageName() + "/1.0");
-
-        java.io.InputStream in = new java.io.BufferedInputStream(conn.getInputStream());
-        java.util.Scanner scanner = new java.util.Scanner(in).useDelimiter("\\A");
-        String response = scanner.hasNext() ? scanner.next() : "";
-
-        org.json.JSONObject json = new org.json.JSONObject(response);
-        return json.getJSONArray("routes");
+    @Override
+    protected void onStart() {
+        super.onStart();
+        if (mapView != null) mapView.onStart();
+        if (adapter != null) adapter.onHostStart();
     }
 
     @Override
     public void onResume() {
         super.onResume();
         if (mapView != null) mapView.onResume();
+        if (adapter != null) adapter.onHostResume();
 
         JourneyOption journey = (JourneyOption) getIntent().getSerializableExtra("JOURNEY_OPTION");
         if (journey != null && journey.legs != null && !journey.legs.isEmpty()) {
@@ -343,17 +247,36 @@ public class JourneyDetailsActivity extends AppCompatActivity {
 
     @Override
     public void onPause() {
-        super.onPause();
+        if (adapter != null) adapter.onHostPause();
         if (mapView != null) mapView.onPause();
-        if (autoRefreshHandler != null && autoRefreshRunnable != null) {
-            autoRefreshHandler.removeCallbacks(autoRefreshRunnable);
-        }
+        if (autoRefreshRunnable != null) autoRefreshHandler.removeCallbacks(autoRefreshRunnable);
+        super.onPause();
+    }
+
+    @Override
+    protected void onStop() {
+        if (adapter != null) adapter.onHostStop();
+        if (mapView != null) mapView.onStop();
+        super.onStop();
     }
 
     @Override
     public void onDestroy() {
+        if (adapter != null) adapter.onHostDestroy();
+        if (mapView != null) mapView.onDestroy();
         super.onDestroy();
-        if (mapView != null) mapView.onDetach();
+    }
+
+    @Override
+    public void onLowMemory() {
+        super.onLowMemory();
+        if (mapView != null) mapView.onLowMemory();
+    }
+
+    @Override
+    protected void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+        if (mapView != null) mapView.onSaveInstanceState(outState);
     }
 
     private void setupPinButton(JourneyOption journey) {
@@ -537,60 +460,4 @@ public class JourneyDetailsActivity extends AppCompatActivity {
         }
     }
 
-    private android.graphics.drawable.Drawable createStartMarkerDrawable() {
-        float density = getResources().getDisplayMetrics().density;
-        int size = (int) (36 * density);
-
-        android.graphics.Bitmap bitmap = android.graphics.Bitmap.createBitmap(size, size, android.graphics.Bitmap.Config.ARGB_8888);
-        android.graphics.Canvas canvas = new android.graphics.Canvas(bitmap);
-        android.graphics.Paint paint = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
-
-        paint.setColor(android.graphics.Color.WHITE);
-        paint.setStyle(android.graphics.Paint.Style.FILL);
-        canvas.drawCircle(size / 2f, size / 2f, size / 2f - (1 * density), paint);
-
-        paint.setColor(android.graphics.Color.parseColor("#22000000"));
-        paint.setStyle(android.graphics.Paint.Style.STROKE);
-        paint.setStrokeWidth(1.5f * density);
-        canvas.drawCircle(size / 2f, size / 2f, size / 2f - (1 * density), paint);
-
-        paint.setColor(android.graphics.Color.BLACK);
-        paint.setStyle(android.graphics.Paint.Style.FILL);
-        canvas.drawCircle(size / 2f, size / 2f, 6 * density, paint);
-
-        return new android.graphics.drawable.BitmapDrawable(getResources(), bitmap);
-    }
-
-    private android.graphics.drawable.Drawable createEndMarkerDrawable() {
-        float density = getResources().getDisplayMetrics().density;
-        int width = (int) (40 * density);
-        int height = (int) (70 * density);
-
-        android.graphics.Bitmap bitmap = android.graphics.Bitmap.createBitmap(width, height, android.graphics.Bitmap.Config.ARGB_8888);
-        android.graphics.Canvas canvas = new android.graphics.Canvas(bitmap);
-        android.graphics.Paint paint = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
-
-        paint.setColor(android.graphics.Color.BLACK);
-        paint.setStyle(android.graphics.Paint.Style.FILL);
-        android.graphics.RectF pillRect = new android.graphics.RectF(0, 0, width, height);
-        canvas.drawRoundRect(pillRect, width / 2f, width / 2f, paint);
-
-        paint.setColor(android.graphics.Color.WHITE);
-        paint.setTextSize(10 * density);
-        paint.setTypeface(android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD));
-        paint.setTextAlign(android.graphics.Paint.Align.CENTER);
-
-        android.graphics.Paint.FontMetrics fontMetrics = paint.getFontMetrics();
-        float textY = (22 * density) - ((fontMetrics.descent + fontMetrics.ascent) / 2f);
-        canvas.drawText("E N D", width / 2f, textY, paint);
-
-        float dotCenterY = height - (20 * density);
-        paint.setColor(android.graphics.Color.WHITE);
-        canvas.drawCircle(width / 2f, dotCenterY, 9 * density, paint);
-
-        paint.setColor(android.graphics.Color.BLACK);
-        canvas.drawCircle(width / 2f, dotCenterY, 4 * density, paint);
-
-        return new android.graphics.drawable.BitmapDrawable(getResources(), bitmap);
-    }
 }
