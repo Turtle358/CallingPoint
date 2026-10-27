@@ -119,7 +119,9 @@ class JourneyPlannerEngine(private val graphManager: GraphManager) {
                         "TRAIN",
                         intermediateStops,
                         getLiveLocationStatus(service.serviceID),
-                        service.estimatedDepartureTime
+                        service.estimatedDepartureTime,
+                        null,
+                        null
                     )
                 )
 
@@ -193,7 +195,9 @@ class JourneyPlannerEngine(private val graphManager: GraphManager) {
                                     "TRAIN",
                                     stops1,
                                     getLiveLocationStatus(t1.serviceID),
-                                    t1.estimatedDepartureTime
+                                    t1.estimatedDepartureTime,
+                                    null,
+                                    null
                                 )
                             )
                             legs.add(
@@ -210,7 +214,9 @@ class JourneyPlannerEngine(private val graphManager: GraphManager) {
                                     "TRAIN",
                                     stops2,
                                     getLiveLocationStatus(t2.serviceID),
-                                    t2.estimatedDepartureTime
+                                    t2.estimatedDepartureTime,
+                                    null,
+                                    null
                                 )
                             )
 
@@ -222,8 +228,8 @@ class JourneyPlannerEngine(private val graphManager: GraphManager) {
                             }
                         }
                     }
-                    if (results.size >= 10) return
                 }
+                if (results.size >= 10) return
             }
         }
     }
@@ -315,7 +321,9 @@ class JourneyPlannerEngine(private val graphManager: GraphManager) {
                                             "TRAIN",
                                             stops1,
                                             getLiveLocationStatus(t1.serviceID),
-                                            t1.estimatedDepartureTime
+                                            t1.estimatedDepartureTime,
+                                            null,
+                                            null
                                         )
                                     )
                                     legs.add(
@@ -332,7 +340,9 @@ class JourneyPlannerEngine(private val graphManager: GraphManager) {
                                             "TRAIN",
                                             stops2,
                                             getLiveLocationStatus(t2.serviceID),
-                                            t2.estimatedDepartureTime
+                                            t2.estimatedDepartureTime,
+                                            null,
+                                            null
                                         )
                                     )
                                     legs.add(
@@ -349,7 +359,9 @@ class JourneyPlannerEngine(private val graphManager: GraphManager) {
                                             "TRAIN",
                                             stops3,
                                             getLiveLocationStatus(t3.serviceID),
-                                            t3.estimatedDepartureTime
+                                            t3.estimatedDepartureTime,
+                                            null,
+                                            null
                                         )
                                     )
 
@@ -446,7 +458,9 @@ class JourneyPlannerEngine(private val graphManager: GraphManager) {
                                     "TRAIN",
                                     stops1,
                                     getLiveLocationStatus(t1.serviceID),
-                                    t1.estimatedDepartureTime
+                                    t1.estimatedDepartureTime,
+                                    null,
+                                    null
                                 )
                             )
                             legs.add(
@@ -462,6 +476,8 @@ class JourneyPlannerEngine(private val graphManager: GraphManager) {
                                     transferInfo.serviceId,
                                     "TRANSFER",
                                     ArrayList<JourneyLeg.Stop?>(),
+                                    null,
+                                    null,
                                     null,
                                     null
                                 )
@@ -481,7 +497,9 @@ class JourneyPlannerEngine(private val graphManager: GraphManager) {
                                     "TRAIN",
                                     stops2,
                                     getLiveLocationStatus(t2.serviceID),
-                                    t2.estimatedDepartureTime
+                                    t2.estimatedDepartureTime,
+                                    null,
+                                    null
                                 )
                             )
 

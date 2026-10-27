@@ -12,37 +12,22 @@
     android:paddingBottom="14dp">
 
     <RelativeLayout
+        android:id="@+id/titleContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
-        <LinearLayout
-            android:id="@+id/titleContainer"
+        <TextView
+            android:id="@+id/titleLine1"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
             android:layout_alignParentStart="true"
             android:layout_toStartOf="@id/refreshFrame"
-            android:layout_marginEnd="8dp">
-
-            <TextView
-                android:id="@+id/titleLine1"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Status"
-                android:textColor="#111111"
-                android:textSize="20sp"
-                android:textStyle="bold"
-                android:letterSpacing="-0.02" />
-
-            <TextView
-                android:id="@+id/titleLine2"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Disruption"
-                android:textColor="#111111"
-                android:textSize="18sp"
-                android:letterSpacing="-0.01" />
-        </LinearLayout>
+            android:layout_marginEnd="8dp"
+            android:text="Status"
+            android:textColor="#111111"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:letterSpacing="-0.02" />
 
         <FrameLayout
             android:id="@+id/refreshFrame"
@@ -73,6 +58,18 @@
                 android:visibility="gone"
                 android:indeterminateTint="#FFFFFF" />
         </FrameLayout>
+
+        <TextView
+            android:id="@+id/titleLine2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/titleLine1"
+            android:layout_alignParentStart="true"
+            android:text="Disruption"
+            android:textColor="#111111"
+            android:textSize="18sp"
+            android:letterSpacing="-0.01" />
+
     </RelativeLayout>
 
     <FrameLayout

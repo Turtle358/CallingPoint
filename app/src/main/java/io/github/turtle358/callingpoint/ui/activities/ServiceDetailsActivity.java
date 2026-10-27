@@ -49,20 +49,17 @@ import retrofit2.Response;
 
 public class ServiceDetailsActivity extends AppCompatActivity {
 
-    private RecyclerView recyclerTimeline;
-    private RecyclerView recyclerCoaches;
+    private RecyclerView recyclerTimeline, recyclerCoaches;
     private SwipeRefreshLayout swipeRefreshLayout;
-
-    private TextView tvHeaderDestination, tvHeaderTime, tvHeaderStatus;
-    private TextView tvHeaderOperator, tvCoachCapacity;
+    private TextView tvHeaderDestination, tvHeaderTime, tvHeaderStatus, tvHeaderOperator, tvCoachCapacity;
     private ImageButton btnPinService;
-
-    private View topHeaderBar, cardTrainDetails, titleCallingPoints, cardTflDisclaimer, cardHeaderInfo, cardCallingPoints;
+    private View topHeaderBar, cardTrainDetails, titleCallingPoints, cardTflDisclaimer, cardHeaderInfo, cardCallingPoints, cardErrorState;
     private ShimmerFrameLayout shimmerTimeline;
+
     private String serviceId = "";
     private String userOrigin;
     private String userDest;
-    private View cardErrorState;
+    private String fallbackOperatorName = "London Underground";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -71,22 +68,26 @@ public class ServiceDetailsActivity extends AppCompatActivity {
 
         userOrigin = getIntent().getStringExtra("USER_ORIGIN");
         userDest = getIntent().getStringExtra("USER_DESTINATION");
+        serviceId = getIntent().getStringExtra("SERVICE_ID");
 
-        topHeaderBar = findViewById(R.id.topHeaderBar);
-        if (topHeaderBar != null) {
-            androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(topHeaderBar, (v, insets) -> {
-                int statusBarHeight = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.statusBars()).top;
-                v.getLayoutParams().height = statusBarHeight;
-                v.requestLayout();
-                return insets;
-            });
+        initViews();
+        setupInsets();
+        setupListeners();
+
+        if (serviceId != null && !serviceId.isEmpty()) {
+            fetchServiceDetails(serviceId);
+        } else {
+            Toast.makeText(this, "Error: No Service ID provided", Toast.LENGTH_SHORT).show();
+            finish();
         }
+    }
 
+    private void initViews() {
+        topHeaderBar = findViewById(R.id.topHeaderBar);
         tvHeaderDestination = findViewById(R.id.tvHeaderDestination);
         tvHeaderTime = findViewById(R.id.tvHeaderTime);
         tvHeaderStatus = findViewById(R.id.tvHeaderStatus);
         tvHeaderOperator = findViewById(R.id.tvHeaderOperator);
-
         cardHeaderInfo = findViewById(R.id.cardHeaderInfo);
         cardCallingPoints = findViewById(R.id.cardCallingPoints);
         cardTrainDetails = findViewById(R.id.cardTrainDetails);
@@ -102,24 +103,26 @@ public class ServiceDetailsActivity extends AppCompatActivity {
 
         recyclerCoaches.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
         recyclerTimeline.setLayoutManager(new LinearLayoutManager(this));
+    }
 
-        View btnBack = findViewById(R.id.btnBack);
-        if (btnBack != null) {
-            btnBack.setOnClickListener(v -> finish());
-        }
-
-        serviceId = getIntent().getStringExtra("SERVICE_ID");
-        if (serviceId != null) {
-            swipeRefreshLayout.setOnRefreshListener(() -> {
-                fetchServiceDetails(serviceId);
-                swipeRefreshLayout.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK);
+    private void setupInsets() {
+        if (topHeaderBar != null) {
+            androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(topHeaderBar, (v, insets) -> {
+                v.getLayoutParams().height = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.statusBars()).top;
+                v.requestLayout();
+                return insets;
             });
-            fetchServiceDetails(serviceId);
-        } else {
-            Toast.makeText(this, "Error: No Service ID provided", Toast.LENGTH_SHORT).show();
-            finish();
-            return;
         }
+    }
+
+    private void setupListeners() {
+        View btnBack = findViewById(R.id.btnBack);
+        if (btnBack != null) btnBack.setOnClickListener(v -> finish());
+
+        swipeRefreshLayout.setOnRefreshListener(() -> {
+            fetchServiceDetails(serviceId);
+            swipeRefreshLayout.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK);
+        });
 
         PinnedDataManager pinnedManager = new PinnedDataManager(this);
         updatePinButtonVisuals(pinnedManager.isServicePinned(serviceId));
@@ -137,132 +140,17 @@ public class ServiceDetailsActivity extends AppCompatActivity {
     }
 
     private void fetchServiceDetails(String serviceId) {
-        System.out.println(serviceId);
         swipeRefreshLayout.setRefreshing(true);
         NationalRailAPI api = APIClient.getClient().create(NationalRailAPI.class);
 
         api.getServiceDetails(serviceId).enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<ServiceDetailsResponse> call, @NonNull Response<ServiceDetailsResponse> response) {
+                if (isFinishing() || isDestroyed()) return;
                 swipeRefreshLayout.setRefreshing(false);
+
                 if (response.isSuccessful() && response.body() != null) {
-                    if (cardErrorState != null) cardErrorState.setVisibility(View.GONE);
-                    if (cardCallingPoints != null) cardCallingPoints.setVisibility(View.VISIBLE);
-                    if (recyclerTimeline != null) recyclerTimeline.setVisibility(View.VISIBLE);
-                    ServiceDetailsResponse data = response.body();
-
-                    if (btnPinService != null) {
-                        btnPinService.setVisibility(View.VISIBLE);
-                    }
-                    if (cardTflDisclaimer != null) cardTflDisclaimer.setVisibility(View.GONE);
-
-                    String operatorName = data.operator != null ? data.operator : "Unknown";
-                    int brandColour = TOCBrandHelper.getColourForToc(operatorName);
-
-                    if (topHeaderBar != null) {
-                        topHeaderBar.setBackgroundColor(brandColour);
-                    }
-
-                    boolean isLightColour = ColorUtils.calculateLuminance(brandColour) > 0.5;
-                    WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView()).setAppearanceLightStatusBars(isLightColour);
-
-                    List<ServiceDetailsResponse.TimelinePoint> allPoints = new ArrayList<>();
-                    if (data.previousCallingPoints != null && !data.previousCallingPoints.isEmpty()) {
-                        allPoints.addAll(data.previousCallingPoints.get(0).callingPoint);
-                    }
-
-                    String schTime = data.scheduledDepartureTime != null ? data.scheduledDepartureTime : (data.scheduledArrivalTime != null ? data.scheduledArrivalTime : "");
-                    String estTime = data.estimatedDepartureTime != null ? data.estimatedDepartureTime : (data.estimatedArrivalTime != null ? data.estimatedArrivalTime : "");
-
-                    boolean isCancelled = data.isCancelled || "Cancelled".equalsIgnoreCase(estTime);
-                    checkDelayRepayEligibility(schTime, estTime, operatorName, isCancelled);
-
-                    ServiceDetailsResponse.TimelinePoint currentStation = new ServiceDetailsResponse.TimelinePoint();
-                    currentStation.locationName = data.locationName != null ? data.locationName : "Current Station";
-                    currentStation.crs = data.crs;
-                    currentStation.scheduledTime = schTime;
-                    currentStation.estimatedTime = estTime;
-                    currentStation.isCancelled = isCancelled;
-                    currentStation.platform = data.platform;
-
-                    if (data.actualDepartureTime != null) currentStation.actualTime = data.actualDepartureTime;
-                    else if (data.actualArrivalTime != null) currentStation.actualTime = data.actualArrivalTime;
-                    allPoints.add(currentStation);
-
-                    if (data.subsequentCallingPoints != null && !data.subsequentCallingPoints.isEmpty()) {
-                        allPoints.addAll(data.subsequentCallingPoints.get(0).callingPoint);
-                    }
-
-                    String originName = allPoints.get(0).locationName;
-                    String destName = allPoints.get(allPoints.size() - 1).locationName;
-
-                    if (originName.equals(destName)) {
-                        tvHeaderDestination.setText(currentStation.locationName);
-                    } else {
-                        String titleText = originName + " to " + destName;
-                        tvHeaderDestination.setText(titleText);
-                        tvHeaderDestination.post(() -> {
-                            if (tvHeaderDestination.getLineCount() > 1) {
-                                tvHeaderDestination.setText(originName + "\nto " + destName);
-                            }
-                        });
-                    }
-
-                    int stopsCount = allPoints.size() - 1;
-                    String durationStr = calculateDuration(allPoints.get(0).scheduledTime, allPoints.get(allPoints.size() - 1).scheduledTime);
-
-                    String subInfoText = "";
-                    if (!durationStr.isEmpty()) subInfoText += durationStr + " • ";
-                    subInfoText += stopsCount + (stopsCount == 1 ? " stop • " : " stops • ");
-                    subInfoText += operatorName;
-
-                    tvHeaderOperator.setText(subInfoText);
-                    tvHeaderTime.setText(schTime);
-
-                    tvHeaderStatus.setText(estTime);
-                    tvHeaderStatus.setVisibility(View.VISIBLE);
-                    if ("On time".equalsIgnoreCase(estTime)) {
-                        tvHeaderStatus.setTextColor(Color.parseColor("#00875A"));
-                    } else if (isCancelled) {
-                        tvHeaderStatus.setTextColor(Color.parseColor("#DE350B"));
-                        tvHeaderStatus.setText("Cancelled");
-                    } else {
-                        tvHeaderStatus.setTextColor(Color.parseColor("#FF8C00"));
-                    }
-
-                    if ((data.formation != null && data.formation.coaches != null && !data.formation.coaches.isEmpty())) {
-                        cardTrainDetails.setVisibility(View.VISIBLE);
-                        tvCoachCapacity.setText(data.formation.coaches.size() + " coaches");
-                        CoachAdapter coachAdapter = new CoachAdapter(data.formation.coaches);
-                        recyclerCoaches.setAdapter(coachAdapter);
-                    } else if (data.length != 0) {
-                        cardTrainDetails.setVisibility(View.VISIBLE);
-                        tvCoachCapacity.setText(data.length + " coaches");
-
-                        List<ServiceDetailsResponse.Coach> basicCoaches = new ArrayList<>();
-                        for (int i = 1; i <= data.length; i++) {
-                            ServiceDetailsResponse.Coach basicCoach = new ServiceDetailsResponse.Coach();
-                            basicCoach.number = String.valueOf(i);
-                            basicCoaches.add(basicCoach);
-                        }
-
-                        CoachAdapter coachAdapter = new CoachAdapter(basicCoaches);
-                        recyclerCoaches.setAdapter(coachAdapter);
-                    } else {
-                        cardTrainDetails.setVisibility(View.GONE);
-                    }
-
-                    if (titleCallingPoints != null) titleCallingPoints.setVisibility(View.VISIBLE);
-                    String originParam = userOrigin != null && !userOrigin.isEmpty() ? userOrigin : currentStation.locationName;
-
-                    TimelineAdapter adapter = new TimelineAdapter(allPoints, brandColour, originParam, userDest, serviceId, api, crs -> {
-                        android.content.Intent intent = new android.content.Intent(ServiceDetailsActivity.this, MainActivity.class);
-                        intent.putExtra("OPEN_STATION_CRS", crs);
-                        startActivity(intent);
-                    });
-
-                    recyclerTimeline.setAdapter(adapter);
-
+                    renderNationalRailDetails(response.body(), api);
                 } else {
                     fetchTflServiceDetails(serviceId);
                 }
@@ -270,23 +158,123 @@ public class ServiceDetailsActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(@NonNull Call<ServiceDetailsResponse> call, @NonNull Throwable t) {
+                if (isFinishing() || isDestroyed()) return;
                 swipeRefreshLayout.setRefreshing(false);
                 fetchTflServiceDetails(serviceId);
             }
         });
     }
 
-    private void fetchTflServiceDetails(String vehicleId) {
-        Log.d("TfL_API", "Fetching TfL vehicle arrivals for ID: " + vehicleId);
-        if (btnPinService != null) {
-            btnPinService.setVisibility(View.GONE);
+    private void renderNationalRailDetails(ServiceDetailsResponse data, NationalRailAPI api) {
+        if (cardErrorState != null) cardErrorState.setVisibility(View.GONE);
+        if (cardCallingPoints != null) cardCallingPoints.setVisibility(View.VISIBLE);
+        if (recyclerTimeline != null) recyclerTimeline.setVisibility(View.VISIBLE);
+        if (btnPinService != null) btnPinService.setVisibility(View.VISIBLE);
+        if (cardTflDisclaimer != null) cardTflDisclaimer.setVisibility(View.GONE);
+
+        String operatorName = data.operator != null ? data.operator : "Unknown";
+        setThemeByOperator(operatorName);
+
+        boolean preferArrival = userDest != null && userDest.equalsIgnoreCase(data.locationName);
+
+        String schTime = preferArrival
+                ? (data.scheduledArrivalTime != null ? data.scheduledArrivalTime : (data.scheduledDepartureTime != null ? data.scheduledDepartureTime : ""))
+                : (data.scheduledDepartureTime != null ? data.scheduledDepartureTime : (data.scheduledArrivalTime != null ? data.scheduledArrivalTime : ""));
+
+        String estTime = preferArrival
+                ? (data.estimatedArrivalTime != null ? data.estimatedArrivalTime : (data.estimatedDepartureTime != null ? data.estimatedDepartureTime : ""))
+                : (data.estimatedDepartureTime != null ? data.estimatedDepartureTime : (data.estimatedArrivalTime != null ? data.estimatedArrivalTime : ""));
+
+        boolean isCancelled = data.isCancelled || "Cancelled".equalsIgnoreCase(estTime);
+        checkDelayRepayEligibility(schTime, estTime, operatorName, isCancelled);
+
+        ServiceDetailsResponse.TimelinePoint currentStation = new ServiceDetailsResponse.TimelinePoint();
+        currentStation.locationName = data.locationName != null ? data.locationName : "Current Station";
+        currentStation.crs = data.crs;
+        currentStation.scheduledTime = schTime;
+        currentStation.estimatedTime = estTime;
+        currentStation.isCancelled = isCancelled;
+        currentStation.platform = data.platform;
+        currentStation.actualTime = preferArrival
+                ? (data.actualArrivalTime != null ? data.actualArrivalTime : data.actualDepartureTime)
+                : (data.actualDepartureTime != null ? data.actualDepartureTime : data.actualArrivalTime);
+
+        List<ServiceDetailsResponse.TimelinePoint> allPoints = new ArrayList<>();
+        if (data.previousCallingPoints != null && !data.previousCallingPoints.isEmpty()) {
+            allPoints.addAll(data.previousCallingPoints.get(0).callingPoint);
         }
+        allPoints.add(currentStation);
+        if (data.subsequentCallingPoints != null && !data.subsequentCallingPoints.isEmpty()) {
+            allPoints.addAll(data.subsequentCallingPoints.get(0).callingPoint);
+        }
+
+        String originName = allPoints.get(0).locationName;
+        String destName = allPoints.get(allPoints.size() - 1).locationName;
+
+        setDestinationTitle(originName, destName, originName.equals(destName) ? currentStation.locationName : null);
+
+        int stopsCount = allPoints.size() - 1;
+        String durationStr = calculateDuration(allPoints.get(0).scheduledTime, allPoints.get(allPoints.size() - 1).scheduledTime);
+        String subInfoText = (!durationStr.isEmpty() ? durationStr + " • " : "") + stopsCount + (stopsCount == 1 ? " stop • " : " stops • ") + operatorName;
+
+        tvHeaderOperator.setText(subInfoText);
+        tvHeaderTime.setText(schTime);
+
+        tvHeaderStatus.setText(estTime);
+        tvHeaderStatus.setVisibility(View.VISIBLE);
+        if ("On time".equalsIgnoreCase(estTime)) {
+            tvHeaderStatus.setTextColor(Color.parseColor("#00875A"));
+        } else if (isCancelled) {
+            tvHeaderStatus.setTextColor(Color.parseColor("#DE350B"));
+            tvHeaderStatus.setText("Cancelled");
+        } else {
+            tvHeaderStatus.setTextColor(Color.parseColor("#FF8C00"));
+        }
+
+        renderCoachData(data);
+
+        if (titleCallingPoints != null) titleCallingPoints.setVisibility(View.VISIBLE);
+        String originParam = userOrigin != null && !userOrigin.isEmpty() ? userOrigin : currentStation.locationName;
+        int brandColour = TOCBrandHelper.getColourForToc(operatorName);
+
+        TimelineAdapter adapter = new TimelineAdapter(allPoints, brandColour, originParam, userDest, serviceId, api, crs -> {
+            android.content.Intent intent = new android.content.Intent(ServiceDetailsActivity.this, MainActivity.class);
+            intent.putExtra("OPEN_STATION_CRS", crs);
+            startActivity(intent);
+        });
+        recyclerTimeline.setAdapter(adapter);
+    }
+
+    private void renderCoachData(ServiceDetailsResponse data) {
+        if (data.formation != null && data.formation.coaches != null && !data.formation.coaches.isEmpty()) {
+            cardTrainDetails.setVisibility(View.VISIBLE);
+            tvCoachCapacity.setText(data.formation.coaches.size() + " coaches");
+            recyclerCoaches.setAdapter(new CoachAdapter(data.formation.coaches));
+        } else if (data.length != 0) {
+            cardTrainDetails.setVisibility(View.VISIBLE);
+            tvCoachCapacity.setText(data.length + " coaches");
+            List<ServiceDetailsResponse.Coach> basicCoaches = new ArrayList<>();
+            for (int i = 1; i <= data.length; i++) {
+                ServiceDetailsResponse.Coach basicCoach = new ServiceDetailsResponse.Coach();
+                basicCoach.number = String.valueOf(i);
+                basicCoaches.add(basicCoach);
+            }
+            recyclerCoaches.setAdapter(new CoachAdapter(basicCoaches));
+        } else {
+            cardTrainDetails.setVisibility(View.GONE);
+        }
+    }
+
+    private void fetchTflServiceDetails(String vehicleId) {
+        if (btnPinService != null) btnPinService.setVisibility(View.GONE);
         TflAPI tflApi = APIClient.getClient().create(TflAPI.class);
 
         tflApi.getVehicleArrivals(vehicleId).enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<List<TflVehicleArrival>> call, @NonNull Response<List<TflVehicleArrival>> response) {
+                if (isFinishing() || isDestroyed()) return;
                 swipeRefreshLayout.setRefreshing(false);
+
                 if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
                     List<TflVehicleArrival> tflArrivals = response.body();
                     tflArrivals.sort((a, b) -> Integer.compare(a.timeToStation, b.timeToStation));
@@ -300,15 +288,14 @@ public class ServiceDetailsActivity extends AppCompatActivity {
                         renderTflTimeline(tflArrivals, null);
                     }
                 } else {
-                    Log.e("TfL_API", "TfL Response Empty. Likely a National Rail dummy ID. Falling back to textual Journey Planner...");
                     fetchFallbackJourneyPlanner();
                 }
             }
 
             @Override
             public void onFailure(@NonNull Call<List<TflVehicleArrival>> call, @NonNull Throwable t) {
+                if (isFinishing() || isDestroyed()) return;
                 swipeRefreshLayout.setRefreshing(false);
-                Log.e("TfL_API", "Network error fetching TfL Vehicle", t);
                 fetchFallbackJourneyPlanner();
             }
         });
@@ -321,24 +308,11 @@ public class ServiceDetailsActivity extends AppCompatActivity {
         }
 
         showLoadingShimmer(true);
-
-        String cleanOrigin = userOrigin;
-        if (cleanOrigin.contains(" via ")) cleanOrigin = cleanOrigin.substring(0, cleanOrigin.indexOf(" via "));
-        cleanOrigin = cleanOrigin.replace(" Underground Station", "")
-                .replace(" DLR Station", "")
-                .replace(" Rail Station", "")
-                .trim();
-
-        String cleanDest = userDest;
-        if (cleanDest.contains(" via ")) cleanDest = cleanDest.substring(0, cleanDest.indexOf(" via "));
-        cleanDest = cleanDest.replace(" Underground Station", "")
-                .replace(" DLR Station", "")
-                .replace(" Rail Station", "")
-                .trim();
+        String cleanOrigin = cleanBaseName(userOrigin);
+        String cleanDest = cleanBaseName(userDest);
 
         String fromNaptan = StationHelper.getNaptanFromName(cleanOrigin);
         String toNaptan = StationHelper.getNaptanFromName(cleanDest);
-
         String fromQuery = (fromNaptan != null && !fromNaptan.isEmpty()) ? fromNaptan : cleanOrigin;
         String toQuery = (toNaptan != null && !toNaptan.isEmpty()) ? toNaptan : cleanDest;
 
@@ -347,102 +321,74 @@ public class ServiceDetailsActivity extends AppCompatActivity {
         tflApi.getJourneyResults(fromQuery, toQuery, false, null, null, null, null, "tube", null).enqueue(new Callback<JsonObject>() {
             @Override
             public void onResponse(@NonNull Call<JsonObject> call, @NonNull Response<JsonObject> response) {
+                if (isFinishing() || isDestroyed()) return;
+                showLoadingShimmer(false);
+
+                List<String> journeyPlannerStops = new ArrayList<>();
                 if (response.isSuccessful() && response.body() != null) {
-                    List<String> journeyPlannerStops = new ArrayList<>();
-                    String operatorName = "London Underground";
+                    extractStopsFromJson(response.body(), journeyPlannerStops);
+                }
 
-                    try {
-                        JsonObject root = response.body();
-                        if (root.has("journeys")) {
-                            JsonArray journeys = root.getAsJsonArray("journeys");
-                            if (journeys.size() > 0) {
-                                JsonObject journey = journeys.get(0).getAsJsonObject();
-                                if (journey.has("legs")) {
-                                    JsonArray legs = journey.getAsJsonArray("legs");
-
-                                    for (JsonElement legElem : legs) {
-                                        JsonObject leg = legElem.getAsJsonObject();
-
-                                        if (leg.has("mode") && leg.getAsJsonObject("mode").has("id")) {
-                                            String modeId = leg.getAsJsonObject("mode").get("id").getAsString();
-                                            if ("tube".equals(modeId) || "elizabeth-line".equals(modeId) || "overground".equals(modeId) || "dlr".equals(modeId) || "national-rail".equals(modeId)) {
-                                                if (leg.has("routeOptions")) {
-                                                    JsonArray routeOptions = leg.getAsJsonArray("routeOptions");
-                                                    if (routeOptions.size() > 0) {
-                                                        JsonObject option = routeOptions.get(0).getAsJsonObject();
-                                                        if (option.has("name")) {
-                                                            operatorName = option.get("name").getAsString();
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-
-                                        if (leg.has("departurePoint") && leg.getAsJsonObject("departurePoint").has("commonName")) {
-                                            String depName = leg.getAsJsonObject("departurePoint").get("commonName").getAsString()
-                                                    .replace(" Underground Station", "")
-                                                    .replace(" DLR Station", "")
-                                                    .replace(" Rail Station", "");
-                                            if (journeyPlannerStops.isEmpty() || !journeyPlannerStops.get(journeyPlannerStops.size() - 1).equals(depName)) {
-                                                journeyPlannerStops.add(depName);
-                                            }
-                                        }
-
-                                        if (leg.has("path")) {
-                                            JsonObject path = leg.getAsJsonObject("path");
-                                            if (path.has("stopPoints")) {
-                                                JsonArray stopPoints = path.getAsJsonArray("stopPoints");
-                                                for (JsonElement elem : stopPoints) {
-                                                    JsonObject stopObj = elem.getAsJsonObject();
-                                                    if (stopObj.has("name")) {
-                                                        String name = stopObj.get("name").getAsString()
-                                                                .replace(" Underground Station", "")
-                                                                .replace(" DLR Station", "")
-                                                                .replace(" Rail Station", "");
-
-                                                        if (journeyPlannerStops.isEmpty() || !journeyPlannerStops.get(journeyPlannerStops.size() - 1).equals(name)) {
-                                                            journeyPlannerStops.add(name);
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-
-                                        if (leg.has("arrivalPoint") && leg.getAsJsonObject("arrivalPoint").has("commonName")) {
-                                            String arrName = leg.getAsJsonObject("arrivalPoint").get("commonName").getAsString()
-                                                    .replace(" Underground Station", "")
-                                                    .replace(" DLR Station", "")
-                                                    .replace(" Rail Station", "");
-                                            if (journeyPlannerStops.isEmpty() || !journeyPlannerStops.get(journeyPlannerStops.size() - 1).equals(arrName)) {
-                                                journeyPlannerStops.add(arrName);
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    } catch (Exception e) {
-                        Log.e("TfL_API", "Error parsing fallback Journey Planner path", e);
-                    }
-
-                    showLoadingShimmer(false);
-                    if (!journeyPlannerStops.isEmpty()) {
-                        renderStaticJourneyTimeline(journeyPlannerStops, operatorName);
-                    } else {
-                        showTrueFallback();
-                    }
+                if (!journeyPlannerStops.isEmpty()) {
+                    renderStaticJourneyTimeline(journeyPlannerStops, fallbackOperatorName);
                 } else {
-                    showLoadingShimmer(false);
                     showTrueFallback();
                 }
             }
 
             @Override
             public void onFailure(@NonNull Call<JsonObject> call, @NonNull Throwable t) {
+                if (isFinishing() || isDestroyed()) return;
                 showLoadingShimmer(false);
                 showTrueFallback();
             }
         });
+    }
+
+    private void extractStopsFromJson(JsonObject root, List<String> stopsOut) {
+        try {
+            if (!root.has("journeys")) return;
+            JsonArray journeys = root.getAsJsonArray("journeys");
+            if (journeys.isEmpty()) return;
+
+            JsonObject journey = journeys.get(0).getAsJsonObject();
+            if (!journey.has("legs")) return;
+            JsonArray legs = journey.getAsJsonArray("legs");
+
+            for (JsonElement legElem : legs) {
+                JsonObject leg = legElem.getAsJsonObject();
+
+                if (leg.has("mode") && leg.getAsJsonObject("mode").has("id")) {
+                    String modeId = leg.getAsJsonObject("mode").get("id").getAsString();
+                    if (modeId.matches("tube|elizabeth-line|overground|dlr|national-rail") && leg.has("routeOptions")) {
+                        JsonArray routeOptions = leg.getAsJsonArray("routeOptions");
+                        if (!routeOptions.isEmpty() && routeOptions.get(0).getAsJsonObject().has("name")) {
+                            fallbackOperatorName = routeOptions.get(0).getAsJsonObject().get("name").getAsString();
+                        }
+                    }
+                }
+                if (leg.has("departurePoint") && leg.getAsJsonObject("departurePoint").has("commonName")) {
+                    String name = cleanStationName(leg.getAsJsonObject("departurePoint").get("commonName").getAsString());
+                    if (stopsOut.isEmpty() || !stopsOut.get(stopsOut.size() - 1).equals(name)) stopsOut.add(name);
+                }
+
+                if (leg.has("path") && leg.getAsJsonObject("path").has("stopPoints")) {
+                    for (JsonElement elem : leg.getAsJsonObject("path").getAsJsonArray("stopPoints")) {
+                        if (elem.getAsJsonObject().has("name")) {
+                            String name = cleanStationName(elem.getAsJsonObject().get("name").getAsString());
+                            if (stopsOut.isEmpty() || !stopsOut.get(stopsOut.size() - 1).equals(name)) stopsOut.add(name);
+                        }
+                    }
+                }
+
+                if (leg.has("arrivalPoint") && leg.getAsJsonObject("arrivalPoint").has("commonName")) {
+                    String name = cleanStationName(leg.getAsJsonObject("arrivalPoint").get("commonName").getAsString());
+                    if (stopsOut.isEmpty() || !stopsOut.get(stopsOut.size() - 1).equals(name)) stopsOut.add(name);
+                }
+            }
+        } catch (Exception e) {
+            Log.e("TfL_API", "Error parsing fallback Journey Planner path", e);
+        }
     }
 
     private void renderStaticJourneyTimeline(List<String> stops, String operatorName) {
@@ -460,47 +406,27 @@ public class ServiceDetailsActivity extends AppCompatActivity {
             allPoints.add(tp);
         }
 
-        int brandColour = TOCBrandHelper.getColourForToc(operatorName);
-        if (topHeaderBar != null) {
-            topHeaderBar.setBackgroundColor(brandColour);
-            boolean isLightColour = ColorUtils.calculateLuminance(brandColour) > 0.5;
-            WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView()).setAppearanceLightStatusBars(isLightColour);
-        }
-
-        String originName = stops.get(0);
-        String destName = stops.get(stops.size() - 1);
-
-        tvHeaderDestination.setText(originName + " to " + destName);
-        tvHeaderDestination.post(() -> {
-            if (tvHeaderDestination.getLineCount() > 1) {
-                tvHeaderDestination.setText(originName + "\nto " + destName);
-            }
-        });
+        setThemeByOperator(operatorName);
+        setDestinationTitle(stops.get(0), stops.get(stops.size() - 1), null);
 
         int stopsCount = allPoints.size() - 1;
-        String subInfoText = stopsCount + (stopsCount == 1 ? " stop • " : " stops • ") + operatorName;
-
-        tvHeaderOperator.setText(subInfoText);
+        tvHeaderOperator.setText(stopsCount + (stopsCount == 1 ? " stop • " : " stops • ") + operatorName);
         tvHeaderTime.setText("Frequent Service");
-
         tvHeaderStatus.setText("Live Tracker");
         tvHeaderStatus.setTextColor(Color.parseColor("#00875A"));
         tvHeaderStatus.setVisibility(View.VISIBLE);
 
         cardTrainDetails.setVisibility(View.GONE);
         if (titleCallingPoints != null) titleCallingPoints.setVisibility(View.VISIBLE);
-
         if (cardTflDisclaimer != null) cardTflDisclaimer.setVisibility(View.VISIBLE);
-
         recyclerTimeline.setVisibility(View.VISIBLE);
 
         String originParam = userOrigin != null && !userOrigin.isEmpty() ? userOrigin : stops.get(0);
-        TimelineAdapter adapter = new TimelineAdapter(allPoints, brandColour, originParam, userDest, null, null, crs -> {
+        TimelineAdapter adapter = new TimelineAdapter(allPoints, TOCBrandHelper.getColourForToc(operatorName), originParam, userDest, null, null, crs -> {
             android.content.Intent intent = new android.content.Intent(ServiceDetailsActivity.this, MainActivity.class);
             intent.putExtra("OPEN_STATION_CRS", crs);
             startActivity(intent);
         });
-
         recyclerTimeline.setAdapter(adapter);
     }
 
@@ -508,47 +434,17 @@ public class ServiceDetailsActivity extends AppCompatActivity {
         tflApi.getJourneyResults(fromNaptan, toNaptan, false, null, null, null, null, "tube", null).enqueue(new Callback<JsonObject>() {
             @Override
             public void onResponse(@NonNull Call<JsonObject> call, @NonNull Response<JsonObject> response) {
+                if (isFinishing() || isDestroyed()) return;
                 List<String> journeyPlannerStops = new ArrayList<>();
                 if (response.isSuccessful() && response.body() != null) {
-                    try {
-                        JsonObject root = response.body();
-                        if (root.has("journeys")) {
-                            JsonArray journeys = root.getAsJsonArray("journeys");
-                            if (!journeys.isEmpty()) {
-                                JsonObject journey = journeys.get(0).getAsJsonObject();
-                                if (journey.has("legs")) {
-                                    JsonArray legs = journey.getAsJsonArray("legs");
-                                    if (!legs.isEmpty()) {
-                                        JsonObject leg = legs.get(0).getAsJsonObject();
-                                        if (leg.has("path")) {
-                                            JsonObject path = leg.getAsJsonObject("path");
-                                            if (path.has("stopPoints")) {
-                                                JsonArray stopPoints = path.getAsJsonArray("stopPoints");
-                                                for (JsonElement elem : stopPoints) {
-                                                    JsonObject stopObj = elem.getAsJsonObject();
-                                                    if (stopObj.has("name")) {
-                                                        String name = stopObj.get("name").getAsString()
-                                                                .replace(" Underground Station", "")
-                                                                .replace(" DLR Station", "")
-                                                                .replace(" Rail Station", "");
-                                                        journeyPlannerStops.add(name);
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    } catch (Exception e) {
-                        Log.e("TfL_API", "Error parsing Journey Planner path stop points", e);
-                    }
+                    extractStopsFromJson(response.body(), journeyPlannerStops);
                 }
                 renderTflTimeline(tflArrivals, journeyPlannerStops);
             }
 
             @Override
             public void onFailure(@NonNull Call<JsonObject> call, @NonNull Throwable t) {
+                if (isFinishing() || isDestroyed()) return;
                 renderTflTimeline(tflArrivals, null);
             }
         });
@@ -557,15 +453,13 @@ public class ServiceDetailsActivity extends AppCompatActivity {
     private void renderTflTimeline(List<TflVehicleArrival> tflArrivals, List<String> journeyPlannerStops) {
         if (cardErrorState != null) cardErrorState.setVisibility(View.GONE);
         if (cardCallingPoints != null) cardCallingPoints.setVisibility(View.VISIBLE);
+
         SimpleDateFormat displayFormat = new SimpleDateFormat("HH:mm", Locale.UK);
         displayFormat.setTimeZone(TimeZone.getTimeZone("Europe/London"));
-
         Map<String, TflVehicleArrival> arrivalMap = new HashMap<>();
+
         for (TflVehicleArrival arr : tflArrivals) {
-            String cleanName = arr.stationName.replace(" Underground Station", "")
-                    .replace(" DLR Station", "")
-                    .replace(" Rail Station", "");
-            arrivalMap.put(cleanName.toLowerCase(), arr);
+            arrivalMap.put(cleanStationName(arr.stationName).toLowerCase(), arr);
         }
 
         List<ServiceDetailsResponse.TimelinePoint> allPoints = new ArrayList<>();
@@ -575,8 +469,8 @@ public class ServiceDetailsActivity extends AppCompatActivity {
             for (String stopName : journeyPlannerStops) {
                 ServiceDetailsResponse.TimelinePoint tp = new ServiceDetailsResponse.TimelinePoint();
                 tp.locationName = stopName;
-
                 TflVehicleArrival matchedArr = arrivalMap.get(stopName.toLowerCase());
+
                 if (matchedArr != null) {
                     tp.platform = matchedArr.platformName;
                     tp.scheduledTime = parseISOToTime(matchedArr.expectedArrival, displayFormat);
@@ -591,9 +485,7 @@ public class ServiceDetailsActivity extends AppCompatActivity {
         } else {
             for (TflVehicleArrival tflPoint : tflArrivals) {
                 ServiceDetailsResponse.TimelinePoint tp = new ServiceDetailsResponse.TimelinePoint();
-                tp.locationName = tflPoint.stationName.replace(" Underground Station", "")
-                        .replace(" DLR Station", "")
-                        .replace(" Rail Station", "");
+                tp.locationName = cleanStationName(tflPoint.stationName);
                 tp.platform = tflPoint.platformName;
                 tp.scheduledTime = parseISOToTime(tflPoint.expectedArrival, displayFormat);
                 tp.estimatedTime = tp.scheduledTime;
@@ -601,46 +493,28 @@ public class ServiceDetailsActivity extends AppCompatActivity {
             }
         }
 
-        int brandColour = TOCBrandHelper.getColourForToc(operatorName);
-        if (topHeaderBar != null) {
-            topHeaderBar.setBackgroundColor(brandColour);
-            boolean isLightColour = ColorUtils.calculateLuminance(brandColour) > 0.5;
-            WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView()).setAppearanceLightStatusBars(isLightColour);
-        }
+        setThemeByOperator(operatorName);
 
         String originName = userOrigin != null && !userOrigin.isEmpty() ? userOrigin : allPoints.get(0).locationName;
         String destName = allPoints.get(allPoints.size() - 1).locationName;
-
-        if (originName.equals(destName)) {
-            tvHeaderDestination.setText(originName);
-        } else {
-            tvHeaderDestination.setText(originName + " to " + destName);
-            tvHeaderDestination.post(() -> {
-                if (tvHeaderDestination.getLineCount() > 1) {
-                    tvHeaderDestination.setText(originName + "\nto " + destName);
-                }
-            });
-        }
+        setDestinationTitle(originName, destName, originName.equals(destName) ? originName : null);
 
         int stopsCount = allPoints.size() - 1;
         String durationStr = calculateDuration(allPoints.get(0).scheduledTime, allPoints.get(allPoints.size() - 1).scheduledTime);
-        String subInfoText = (!durationStr.isEmpty() ? durationStr + " • " : "") +
-                stopsCount + (stopsCount == 1 ? " stop • " : " stops • ") + operatorName;
+        String subInfoText = (!durationStr.isEmpty() ? durationStr + " • " : "") + stopsCount + (stopsCount == 1 ? " stop • " : " stops • ") + operatorName;
 
         tvHeaderOperator.setText(subInfoText);
         tvHeaderTime.setText(allPoints.get(0).scheduledTime);
-
-        String rawPlatform = allPoints.get(0).platform != null ? allPoints.get(0).platform : "";
-
         tvHeaderStatus.setText("Live");
         tvHeaderStatus.setTextColor(Color.parseColor("#00875A"));
         tvHeaderStatus.setVisibility(View.VISIBLE);
         cardTrainDetails.setVisibility(View.GONE);
+
         if (titleCallingPoints != null) titleCallingPoints.setVisibility(View.VISIBLE);
         recyclerTimeline.setVisibility(View.VISIBLE);
 
         String originParam = userOrigin != null && !userOrigin.isEmpty() ? userOrigin : allPoints.get(0).locationName;
-        TimelineAdapter adapter = new TimelineAdapter(allPoints, brandColour, originParam, userDest, null, null, crs -> {
+        TimelineAdapter adapter = new TimelineAdapter(allPoints, TOCBrandHelper.getColourForToc(operatorName), originParam, userDest, null, null, crs -> {
             android.content.Intent intent = new android.content.Intent(ServiceDetailsActivity.this, MainActivity.class);
             intent.putExtra("OPEN_STATION_CRS", crs);
             startActivity(intent);
@@ -649,15 +523,67 @@ public class ServiceDetailsActivity extends AppCompatActivity {
         recyclerTimeline.setAdapter(adapter);
     }
 
+    private void setThemeByOperator(String operatorName) {
+        int brandColour = TOCBrandHelper.getColourForToc(operatorName);
+        if (topHeaderBar != null) {
+            topHeaderBar.setBackgroundColor(brandColour);
+            boolean isLightColour = ColorUtils.calculateLuminance(brandColour) > 0.5;
+            WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView()).setAppearanceLightStatusBars(isLightColour);
+        }
+    }
+
+    private void setDestinationTitle(String origin, String dest, String directOverride) {
+        if (directOverride != null) {
+            tvHeaderDestination.setText(directOverride);
+        } else {
+            tvHeaderDestination.setText(origin + " to " + dest);
+            tvHeaderDestination.post(() -> {
+                if (tvHeaderDestination.getLineCount() > 1) {
+                    tvHeaderDestination.setText(origin + "\nto " + dest);
+                }
+            });
+        }
+    }
+
+    private String cleanBaseName(String name) {
+        if (name == null) return "";
+        if (name.contains(" via ")) name = name.substring(0, name.indexOf(" via "));
+        return cleanStationName(name);
+    }
+
+    private String cleanStationName(String name) {
+        if (name == null) return "Unknown";
+        return name.replace(" Underground Station", "")
+                .replace(" DLR Station", "")
+                .replace(" Rail Station", "")
+                .trim();
+    }
+
+    private int timeToMins(String time) {
+        if (time == null || !time.contains(":")) return -1;
+        try {
+            String[] parts = time.split(":");
+            return Integer.parseInt(parts[0]) * 60 + Integer.parseInt(parts[1]);
+        } catch (Exception e) { return -1; }
+    }
+
+    private String calculateDuration(String start, String end) {
+        int sMins = timeToMins(start);
+        int eMins = timeToMins(end);
+        if (sMins == -1 || eMins == -1) return "";
+
+        int diff = eMins - sMins;
+        if (diff < 0) diff += 1440;
+
+        int h = diff / 60;
+        int m = diff % 60;
+        return h > 0 ? h + "h " + m + "m" : m + "m";
+    }
+
     private String parseISOToTime(String arrivalString, SimpleDateFormat displayFormat) {
         if (arrivalString == null || arrivalString.isEmpty()) return "--:--";
         try {
-            SimpleDateFormat tflFormat;
-            if (arrivalString.contains(".")) {
-                tflFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.UK);
-            } else {
-                tflFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.UK);
-            }
+            SimpleDateFormat tflFormat = new SimpleDateFormat(arrivalString.contains(".") ? "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'" : "yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.UK);
             tflFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
             Date date = tflFormat.parse(arrivalString);
             return date != null ? displayFormat.format(date) : "--:--";
@@ -666,59 +592,11 @@ public class ServiceDetailsActivity extends AppCompatActivity {
         }
     }
 
-    private void showTrueFallback() {
-        if (userOrigin != null && userDest != null && !userDest.isEmpty()) {
-            tvHeaderDestination.setText(userOrigin + " to " + userDest);
-        } else if (userOrigin != null) {
-            tvHeaderDestination.setText(userOrigin + " Departures");
-        } else {
-            tvHeaderDestination.setText("Unknown Service");
-        }
-
-        tvHeaderOperator.setText("");
-        tvHeaderTime.setText("");
-
-        tvHeaderStatus.setText("Unavailable");
-        tvHeaderStatus.setTextColor(Color.parseColor("#DE350B"));
-        tvHeaderStatus.setVisibility(View.VISIBLE);
-
-        if (titleCallingPoints != null) titleCallingPoints.setVisibility(View.GONE);
-        if (cardTflDisclaimer != null) cardTflDisclaimer.setVisibility(View.GONE);
-        recyclerTimeline.setVisibility(View.GONE);
-
-        if (cardTrainDetails != null) cardTrainDetails.setVisibility(View.GONE);
-        if (cardCallingPoints != null) cardCallingPoints.setVisibility(View.GONE);
-
-        if (cardErrorState != null) cardErrorState.setVisibility(View.VISIBLE);
-    }
-
-    private String calculateDuration(String start, String end) {
-        if (start == null || end == null || !start.contains(":") || !end.contains(":")) return "";
-        try {
-            String[] sParts = start.split(":");
-            String[] eParts = end.split(":");
-            int sMins = Integer.parseInt(sParts[0]) * 60 + Integer.parseInt(sParts[1]);
-            int eMins = Integer.parseInt(eParts[0]) * 60 + Integer.parseInt(eParts[1]);
-
-            int diff = eMins - sMins;
-            if (diff < 0) diff += 1440;
-
-            int h = diff / 60;
-            int m = diff % 60;
-
-            if (h > 0) return h + "h " + m + "m";
-            return m + "m";
-        } catch (Exception e) {
-            return "";
-        }
-    }
-
     private void checkDelayRepayEligibility(String schTime, String estTime, String operatorName, boolean isCancelled) {
         View cardDelayRepay = findViewById(R.id.cardContextualDelayRepay);
         TextView tvDelayText = findViewById(R.id.tvDelayRepayContextText);
 
         if (cardDelayRepay == null || schTime == null || estTime == null) return;
-
         String delayRepayUrl = TOCBrandHelper.getDelayRepayUrlForName(operatorName);
         if (delayRepayUrl == null || delayRepayUrl.isEmpty()) {
             cardDelayRepay.setVisibility(View.GONE);
@@ -733,13 +611,10 @@ public class ServiceDetailsActivity extends AppCompatActivity {
         } else if (estTime.equalsIgnoreCase("Delayed")) {
             isEligible = true;
             tvDelayText.setText("This train is heavily delayed. \nYou may be able to create a delay-repay claim from " + operatorName + ".");
-        } else if (estTime.contains(":")) {
-            try {
-                String[] sParts = schTime.split(":");
-                String[] eParts = estTime.split(":");
-                int sMins = Integer.parseInt(sParts[0]) * 60 + Integer.parseInt(sParts[1]);
-                int eMins = Integer.parseInt(eParts[0]) * 60 + Integer.parseInt(eParts[1]);
-
+        } else {
+            int sMins = timeToMins(schTime);
+            int eMins = timeToMins(estTime);
+            if (sMins != -1 && eMins != -1) {
                 int diff = eMins - sMins;
                 if (diff < -720) diff += 1440;
 
@@ -747,39 +622,58 @@ public class ServiceDetailsActivity extends AppCompatActivity {
                     isEligible = true;
                     tvDelayText.setText("This train is delayed by " + diff + " mins. \nYou may be able to create a delay-repay claim from " + operatorName + ".");
                 }
-            } catch (Exception e) {
             }
         }
 
         if (isEligible) {
             cardDelayRepay.setVisibility(View.VISIBLE);
-            cardDelayRepay.setOnClickListener(v -> {
-                CustomTabsIntent customTabsIntent = new CustomTabsIntent.Builder().build();
-                customTabsIntent.launchUrl(this, Uri.parse(delayRepayUrl));
-            });
+            cardDelayRepay.setOnClickListener(v -> new CustomTabsIntent.Builder().build().launchUrl(this, Uri.parse(delayRepayUrl)));
         } else {
             cardDelayRepay.setVisibility(View.GONE);
         }
     }
 
+    private void showTrueFallback() {
+        if (userOrigin != null && userDest != null && !userDest.isEmpty()) {
+            tvHeaderDestination.setText(userOrigin + " to " + userDest);
+        } else if (userOrigin != null) {
+            tvHeaderDestination.setText(userOrigin + " Departures");
+        } else {
+            tvHeaderDestination.setText("Unknown Service");
+        }
+
+        tvHeaderOperator.setText("");
+        tvHeaderTime.setText("");
+        tvHeaderStatus.setText("Unavailable");
+        tvHeaderStatus.setTextColor(Color.parseColor("#DE350B"));
+        tvHeaderStatus.setVisibility(View.VISIBLE);
+
+        if (titleCallingPoints != null) titleCallingPoints.setVisibility(View.GONE);
+        if (cardTflDisclaimer != null) cardTflDisclaimer.setVisibility(View.GONE);
+        recyclerTimeline.setVisibility(View.GONE);
+        if (cardTrainDetails != null) cardTrainDetails.setVisibility(View.GONE);
+        if (cardCallingPoints != null) cardCallingPoints.setVisibility(View.GONE);
+        if (cardErrorState != null) cardErrorState.setVisibility(View.VISIBLE);
+    }
+
     private void showLoadingShimmer(boolean isLoading) {
-        if (shimmerTimeline != null) {
-            if (isLoading) {
-                shimmerTimeline.setVisibility(View.VISIBLE);
-                shimmerTimeline.startShimmer();
-                recyclerTimeline.setVisibility(View.GONE);
-                if (titleCallingPoints != null) titleCallingPoints.setVisibility(View.GONE);
-                if (cardTflDisclaimer != null) cardTflDisclaimer.setVisibility(View.GONE);
-                if (cardHeaderInfo != null) cardHeaderInfo.setVisibility(View.GONE);
-                if (cardCallingPoints != null) cardCallingPoints.setVisibility(View.GONE);
-            } else {
-                shimmerTimeline.stopShimmer();
-                shimmerTimeline.setVisibility(View.GONE);
-                recyclerTimeline.setVisibility(View.VISIBLE);
-                if (titleCallingPoints != null) titleCallingPoints.setVisibility(View.VISIBLE);
-                if (cardHeaderInfo != null) cardHeaderInfo.setVisibility(View.VISIBLE);
-                if (cardCallingPoints != null) cardCallingPoints.setVisibility(View.VISIBLE);
-            }
+        if (shimmerTimeline == null) return;
+
+        if (isLoading) {
+            shimmerTimeline.setVisibility(View.VISIBLE);
+            shimmerTimeline.startShimmer();
+            recyclerTimeline.setVisibility(View.GONE);
+            if (titleCallingPoints != null) titleCallingPoints.setVisibility(View.GONE);
+            if (cardTflDisclaimer != null) cardTflDisclaimer.setVisibility(View.GONE);
+            if (cardHeaderInfo != null) cardHeaderInfo.setVisibility(View.GONE);
+            if (cardCallingPoints != null) cardCallingPoints.setVisibility(View.GONE);
+        } else {
+            shimmerTimeline.stopShimmer();
+            shimmerTimeline.setVisibility(View.GONE);
+            recyclerTimeline.setVisibility(View.VISIBLE);
+            if (titleCallingPoints != null) titleCallingPoints.setVisibility(View.VISIBLE);
+            if (cardHeaderInfo != null) cardHeaderInfo.setVisibility(View.VISIBLE);
+            if (cardCallingPoints != null) cardCallingPoints.setVisibility(View.VISIBLE);
         }
     }
 }

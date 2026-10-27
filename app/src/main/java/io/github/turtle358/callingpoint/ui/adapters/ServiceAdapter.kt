@@ -82,12 +82,10 @@ class ServiceAdapter(private val context: Context, services: MutableList<TrainSe
     }
 
     private fun isServicePassed(service: TrainService): Boolean {
-        if ((service.actualDepartureTime != null && !service.actualDepartureTime.isEmpty()) || (service.actualArrivalTime != null && !service.actualArrivalTime.isEmpty())) {
-            return true
-        }
+        if (actualOf(service) != null) return true
 
-        val schTime = if (service.scheduledDepartureTime != null) service.scheduledDepartureTime else service.scheduledArrivalTime
-        val estTime = if (service.estimatedDepartureTime != null) service.estimatedDepartureTime else service.estimatedArrivalTime
+        val schTime = scheduledOf(service)
+        val estTime = estimatedOf(service)
 
         if ("Cancelled".equals(estTime, ignoreCase = true) || "Delayed".equals(
                 estTime,
@@ -101,10 +99,10 @@ class ServiceAdapter(private val context: Context, services: MutableList<TrainSe
         if (timeToUse == null || !timeToUse.contains(":")) return false
 
         try {
-            val parts: Array<String?> =
+            val parts: Array<String> =
                 timeToUse.split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
             val targetMins =
-                parts[0]!!.trim { it <= ' ' }.toInt() * 60 + parts[1]!!.trim { it <= ' ' }.toInt()
+                parts[0].trim { it <= ' ' }.toInt() * 60 + parts[1].trim { it <= ' ' }.toInt()
 
             val now = Calendar.getInstance(TimeZone.getTimeZone("Europe/London"))
             val currentMins = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE)
@@ -224,10 +222,8 @@ class ServiceAdapter(private val context: Context, services: MutableList<TrainSe
         itemHolder.dotBottom.setBackground(dotBg)
         itemHolder.timelineLine.setBackgroundColor(ColorUtils.setAlphaComponent(brandColour, 102))
 
-        val schTime =
-            if (service.scheduledDepartureTime != null) service.scheduledDepartureTime else (if (service.scheduledArrivalTime != null) service.scheduledArrivalTime else "--:--")
-        val estTime =
-            if (service.estimatedDepartureTime != null) service.estimatedDepartureTime else (if (service.estimatedArrivalTime != null) service.estimatedArrivalTime else "Unknown")
+        val schTime = scheduledOf(service) ?: "--:--"
+        val estTime = estimatedOf(service) ?: "Unknown"
         val countdownText = calculateCountdown(schTime, estTime)
 
         val trueOriginName =
@@ -468,12 +464,12 @@ class ServiceAdapter(private val context: Context, services: MutableList<TrainSe
     private fun calculateDuration(start: String?, end: String?): String {
         if (start == null || end == null || !start.contains(":") || !end.contains(":")) return ""
         try {
-            val sParts: Array<String?> =
+            val sParts: Array<String> =
                 start.split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-            val eParts: Array<String?> =
+            val eParts: Array<String> =
                 end.split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-            val sMins = sParts[0]!!.toInt() * 60 + sParts[1]!!.toInt()
-            val eMins = eParts[0]!!.toInt() * 60 + eParts[1]!!.toInt()
+            val sMins = sParts[0].toInt() * 60 + sParts[1].toInt()
+            val eMins = eParts[0].toInt() * 60 + eParts[1].toInt()
 
             var diff = eMins - sMins
             if (diff < 0) diff += 1440
@@ -615,14 +611,14 @@ class ServiceAdapter(private val context: Context, services: MutableList<TrainSe
     }
 
     private fun scheduledOf(s: TrainService): String? =
-        s.scheduledDepartureTime ?: s.scheduledArrivalTime
+        if (isArrivals) s.scheduledArrivalTime ?: s.scheduledDepartureTime else s.scheduledDepartureTime ?: s.scheduledArrivalTime
 
     private fun estimatedOf(s: TrainService): String? =
-        s.estimatedDepartureTime ?: s.estimatedArrivalTime
+        if (isArrivals) s.estimatedArrivalTime ?: s.estimatedDepartureTime else s.estimatedDepartureTime ?: s.estimatedArrivalTime
 
     private fun actualOf(s: TrainService): String? =
-        s.actualDepartureTime?.takeIf { it.isNotEmpty() }
-            ?: s.actualArrivalTime?.takeIf { it.isNotEmpty() }
+        if (isArrivals) s.actualArrivalTime?.takeIf { it.isNotEmpty() } ?: s.actualDepartureTime?.takeIf { it.isNotEmpty() }
+        else s.actualDepartureTime?.takeIf { it.isNotEmpty() } ?: s.actualArrivalTime?.takeIf { it.isNotEmpty() }
 
     private fun sortKey(s: TrainService, nowMins: Int): Int =
         minutesFromNow(actualOf(s), nowMins)
@@ -636,7 +632,6 @@ class ServiceAdapter(private val context: Context, services: MutableList<TrainSe
 
         list.sortWith(
             compareBy<TrainService> { sortKey(it, nowMins) }
-                // tie-break so equal estimates keep scheduled order
                 .thenBy { minutesFromNow(scheduledOf(it), nowMins) ?: Int.MAX_VALUE }
         )
     }
