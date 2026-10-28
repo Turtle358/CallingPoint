@@ -60,7 +60,7 @@
                         android:orientation="vertical"
                         android:layout_marginStart="8dp"
                         android:layout_marginEnd="8dp"
-                        app:layout_constraintEnd_toStartOf="@id/btnPinJourney"
+                        app:layout_constraintEnd_toStartOf="@id/btnShareJourney"
                         app:layout_constraintStart_toEndOf="@id/btnBack"
                         app:layout_constraintTop_toTopOf="parent"
                         app:layout_constraintBottom_toBottomOf="parent">
@@ -91,6 +91,18 @@
                             android:textSize="14sp"
                             android:textColor="@color/text_secondary" />
                     </LinearLayout>
+
+                    <ImageButton
+                        android:id="@+id/btnShareJourney"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:src="@drawable/ic_share"
+                        android:contentDescription="Share journey"
+                        app:tint="@color/text_primary"
+                        app:layout_constraintEnd_toStartOf="@id/btnPinJourney"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintBottom_toBottomOf="parent" />
 
                     <ImageButton
                         android:id="@+id/btnPinJourney"

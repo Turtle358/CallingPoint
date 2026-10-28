@@ -2,6 +2,7 @@ package io.github.turtle358.callingpoint.ui.activities;
 
 import android.annotation.SuppressLint;
 import android.os.Bundle;
+import android.content.Intent;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.TextView;
@@ -34,6 +35,7 @@ import io.github.turtle358.callingpoint.ui.adapters.JourneyLegAdapter;
 import io.github.turtle358.callingpoint.utils.JourneyPlanner.LiveLocationEngine;
 import io.github.turtle358.callingpoint.utils.JourneyPlanner.PinnedJourneyManager;
 import io.github.turtle358.callingpoint.utils.StationHelper;
+import io.github.turtle358.callingpoint.utils.SharedJourneyLink;
 import io.github.turtle358.callingpoint.utils.TOCBrandHelper;
 import io.github.turtle358.callingpoint.utils.CallingPointMapNetwork;
 import io.github.turtle358.callingpoint.utils.MapLibreWalkingMap;
@@ -129,6 +131,7 @@ public class JourneyDetailsActivity extends AppCompatActivity {
         tvSummary.setText(summary);
 
         setupPinButton(journey);
+        setupShareButton(journey);
 
         androidx.cardview.widget.CardView cardTimeline = findViewById(R.id.cardTimeline);
         androidx.cardview.widget.CardView cardWalkOnlyMap = findViewById(R.id.cardWalkOnlyMap);
@@ -277,6 +280,24 @@ public class JourneyDetailsActivity extends AppCompatActivity {
     protected void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
         if (mapView != null) mapView.onSaveInstanceState(outState);
+    }
+
+    private void setupShareButton(JourneyOption journey) {
+        ImageButton btnShareJourney = findViewById(R.id.btnShareJourney);
+        btnShareJourney.setOnClickListener(v -> {
+            try {
+                String link = SharedJourneyLink.create(journey);
+                String journeyShare = "Check out my journey with CallingPoint:\n\n" + link;
+                Intent shareIntent = new Intent(Intent.ACTION_SEND);
+                shareIntent.setType("text/plain");
+                shareIntent.putExtra(Intent.EXTRA_SUBJECT, "CallingPoint shared journey");
+                shareIntent.putExtra(Intent.EXTRA_TEXT, journeyShare);
+                startActivity(Intent.createChooser(shareIntent, "Share journey"));
+            } catch (Exception e) {
+                Toast.makeText(this, "Unable to share this journey: " + e.getMessage(),
+                        Toast.LENGTH_LONG).show();
+            }
+        });
     }
 
     private void setupPinButton(JourneyOption journey) {

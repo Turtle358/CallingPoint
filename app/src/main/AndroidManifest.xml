@@ -64,6 +64,20 @@
             android:name="io.github.turtle358.callingpoint.ui.activities.StationActivity"
             android:screenOrientation="portrait" />
 
+        <activity
+            android:name=".ui.activities.SharedJourneyActivity"
+            android:exported="true">
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="app.callingpoint.co.uk"
+                    android:path="/journey" />
+            </intent-filter>
+        </activity>
+
         <receiver
             android:name="io.github.turtle358.callingpoint.widget.AppWidgetProvider"
             android:exported="false">
