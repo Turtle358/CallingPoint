@@ -1,6 +1,7 @@
 package io.github.turtle358.callingpoint.ui.fragments;
 
 import android.content.Intent;
+import com.google.gson.Gson;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -16,6 +17,7 @@ import androidx.browser.customtabs.CustomTabsIntent;
 import androidx.cardview.widget.CardView;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
@@ -42,6 +44,7 @@ public class JourneyPlannerFragment extends Fragment {
     private PinnedJourneyAdapter adapter;
     private PinnedJourneyManager pinnedJourneyManager;
     private RecyclerView recyclerSavedRoutes;
+    private View tvSavedRoutesHeader;
     private SavedRoutesManager savedRoutesManager;
 
     @Nullable
@@ -56,6 +59,7 @@ public class JourneyPlannerFragment extends Fragment {
 
         recyclerPinnedJourneys = view.findViewById(R.id.recyclerPinnedJourneys);
         recyclerSavedRoutes = view.findViewById(R.id.recyclerSavedRoutes);
+        tvSavedRoutesHeader = view.findViewById(R.id.tvSavedRoutesHeader);
         layoutEmptyState = view.findViewById(R.id.layoutEmptyState);
         tvListHeader = view.findViewById(R.id.tvListHeader);
         CardView cardMockSearch = view.findViewById(R.id.cardMockSearch);
@@ -64,18 +68,118 @@ public class JourneyPlannerFragment extends Fragment {
 
         if (recyclerSavedRoutes != null) {
             recyclerSavedRoutes.setLayoutManager(new LinearLayoutManager(requireContext()));
-            setupSavedRoutesTouchHelper();
+            recyclerSavedRoutes.setNestedScrollingEnabled(false);
         }
 
         pinnedJourneyManager = new PinnedJourneyManager(requireContext());
         savedRoutesManager = new SavedRoutesManager(requireContext());
         setupDragAndDrop();
+        setupSavedRouteSwipe();
 
         cardMockSearch.setOnClickListener(v -> {
             startActivity(new Intent(requireContext(), JourneySearchActivity.class));
         });
 
         setupDelayRepayHub(view);
+    }
+
+    private void setupSavedRouteSwipe() {
+        if (recyclerSavedRoutes == null) return;
+
+        ItemTouchHelper.SimpleCallback callback = new ItemTouchHelper.SimpleCallback(
+                0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
+            @Override
+            public boolean onMove(@NonNull RecyclerView recyclerView,
+                                  @NonNull RecyclerView.ViewHolder viewHolder,
+                                  @NonNull RecyclerView.ViewHolder target) {
+                return false;
+            }
+
+            @Override
+            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
+                if (!(recyclerSavedRoutes.getAdapter() instanceof SavedRoutesAdapter)) return;
+                SavedRoutesAdapter savedAdapter = (SavedRoutesAdapter) recyclerSavedRoutes.getAdapter();
+                int position = viewHolder.getBindingAdapterPosition();
+                if (position == RecyclerView.NO_POSITION || position >= savedAdapter.getItemCount()) {
+                    loadSavedRoutes();
+                    return;
+                }
+                SavedRoute route = savedAdapter.getRoutes().get(position);
+                deleteSavedRoute(route, position);
+            }
+
+            @Override
+            public void onChildDraw(@NonNull android.graphics.Canvas c,
+                                    @NonNull RecyclerView recyclerView,
+                                    @NonNull RecyclerView.ViewHolder viewHolder,
+                                    float dX, float dY, int actionState, boolean isCurrentlyActive) {
+                if (actionState == ItemTouchHelper.ACTION_STATE_SWIPE && dX != 0f) {
+                    drawSavedRouteSwipeBackground(c, viewHolder.itemView, dX);
+                }
+                super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
+            }
+        };
+        new ItemTouchHelper(callback).attachToRecyclerView(recyclerSavedRoutes);
+    }
+
+    private void drawSavedRouteSwipeBackground(@NonNull android.graphics.Canvas canvas,
+                                               @NonNull View item,
+                                               float dX) {
+        float density = getResources().getDisplayMetrics().density;
+        float radius = 22f * density;
+        float bottomMargin = 8f * density;
+
+        android.graphics.RectF area = new android.graphics.RectF(
+                item.getLeft(), item.getTop(),
+                item.getRight(), item.getBottom() - bottomMargin
+        );
+        android.graphics.Paint paint = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+        paint.setColor(android.graphics.Color.parseColor("#FFB4AB"));
+        canvas.drawRoundRect(area, radius, radius, paint);
+
+        android.graphics.drawable.Drawable bin = androidx.core.content.ContextCompat.getDrawable(
+                requireContext(), android.R.drawable.ic_menu_delete);
+        if (bin == null) return;
+
+        int iconSize = Math.round(24f * density);
+        int iconInset = Math.round(28f * density);
+        int top = Math.round(area.centerY() - iconSize / 2f);
+        int left = dX > 0f
+                ? Math.round(area.left) + iconInset
+                : Math.round(area.right) - iconInset - iconSize;
+
+        if (Math.abs(dX) < iconInset + iconSize) return;
+
+        bin = bin.mutate();
+        bin.setTint(android.graphics.Color.parseColor("#690005"));
+        bin.setBounds(left, top, left + iconSize, top + iconSize);
+        bin.draw(canvas);
+    }
+
+    private void deleteSavedRoute(@NonNull SavedRoute route, int previousPosition) {
+        savedRoutesManager.removeRoute(route);
+        loadSavedRoutes();
+        updateEmptyState();
+
+        com.google.android.material.snackbar.Snackbar.make(requireView(),
+                "Saved route removed", com.google.android.material.snackbar.Snackbar.LENGTH_LONG)
+                .setAction("Undo", view -> {
+                    List<SavedRoute> current = new ArrayList<>(savedRoutesManager.getSavedRoutes());
+                    boolean exists = false;
+                    for (SavedRoute candidate : current) {
+                        if (candidate.routeKey().equals(route.routeKey())) {
+                            exists = true;
+                            break;
+                        }
+                    }
+                    if (!exists) {
+                        current.add(Math.min(Math.max(previousPosition, 0), current.size()), route);
+                        savedRoutesManager.saveAll(current);
+                    }
+                    loadSavedRoutes();
+                    updateEmptyState();
+                })
+                .show();
     }
 
     private void setupDragAndDrop() {
@@ -373,120 +477,41 @@ public class JourneyPlannerFragment extends Fragment {
     }
 
     private void updateEmptyState() {
-        if (adapter != null && adapter.getItemCount() > 0) {
-            tvListHeader.setVisibility(View.VISIBLE);
-            layoutEmptyState.setVisibility(View.GONE);
-            recyclerPinnedJourneys.setVisibility(View.VISIBLE);
-        } else {
-            tvListHeader.setVisibility(View.GONE);
-            recyclerPinnedJourneys.setVisibility(View.GONE);
-            layoutEmptyState.setVisibility(View.VISIBLE);
-        }
+        boolean hasPinned = adapter != null && adapter.getItemCount() > 0;
+        boolean hasRoutes = savedRoutesManager != null
+                && !savedRoutesManager.getSavedRoutes().isEmpty();
+        tvListHeader.setVisibility(hasPinned ? View.VISIBLE : View.GONE);
+        recyclerPinnedJourneys.setVisibility(hasPinned ? View.VISIBLE : View.GONE);
+        layoutEmptyState.setVisibility(!hasPinned && !hasRoutes ? View.VISIBLE : View.GONE);
     }
 
     private void loadSavedRoutes() {
         if (savedRoutesManager == null || recyclerSavedRoutes == null) return;
 
-        List<SavedRoute> savedRoutes = savedRoutesManager.getSavedRoutes();
+        List<SavedRoute> savedRoutes = new ArrayList<>(savedRoutesManager.getSavedRoutes());
+        boolean hasRoutes = !savedRoutes.isEmpty();
+        if (tvSavedRoutesHeader != null) {
+            tvSavedRoutesHeader.setVisibility(hasRoutes ? View.VISIBLE : View.GONE);
+        }
 
-        if (savedRoutes != null && !savedRoutes.isEmpty()) {
+        if (hasRoutes) {
             recyclerSavedRoutes.setVisibility(View.VISIBLE);
 
             SavedRoutesAdapter savedAdapter = new SavedRoutesAdapter(
                     savedRoutes,
                     route -> {
                         Intent intent = new Intent(requireContext(), JourneySearchActivity.class);
-                        intent.putExtra("AUTO_FROM", route.getFromName());
-                        intent.putExtra("AUTO_TO", route.getToName());
+                        intent.putExtra("AUTO_SAVED_ROUTE_JSON", new Gson().toJson(route));
                         startActivity(intent);
                     },
-                    (route, position) -> {
-                        savedRoutesManager.removeRoute(route.getFromName(), route.getToName());
-                        loadSavedRoutes();
-                    }
+                    this::deleteSavedRoute
             );
 
             recyclerSavedRoutes.setAdapter(savedAdapter);
         } else {
+            recyclerSavedRoutes.setAdapter(null);
             recyclerSavedRoutes.setVisibility(View.GONE);
         }
-    }
-
-    private void setupSavedRoutesTouchHelper() {
-        androidx.recyclerview.widget.ItemTouchHelper touchHelper = new androidx.recyclerview.widget.ItemTouchHelper(
-                // 1. Add UP and DOWN drag directions
-                new androidx.recyclerview.widget.ItemTouchHelper.SimpleCallback(
-                        androidx.recyclerview.widget.ItemTouchHelper.UP | androidx.recyclerview.widget.ItemTouchHelper.DOWN,
-                        androidx.recyclerview.widget.ItemTouchHelper.LEFT | androidx.recyclerview.widget.ItemTouchHelper.RIGHT) {
-
-                    @Override
-                    public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) {
-                        // 2. Call the swapItems method we added to the adapter
-                        RecyclerView.Adapter adapter = recyclerSavedRoutes.getAdapter();
-                        if (!(adapter instanceof SavedRoutesAdapter)) return false;
-
-                        int fromPos = viewHolder.getBindingAdapterPosition();
-                        int toPos = target.getBindingAdapterPosition();
-
-                        if (fromPos != RecyclerView.NO_POSITION && toPos != RecyclerView.NO_POSITION) {
-                            ((SavedRoutesAdapter) adapter).swapItems(fromPos, toPos);
-                        }
-                        return true;
-                    }
-
-                    @Override
-                    public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
-                        viewHolder.itemView.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS);
-
-                        int position = viewHolder.getBindingAdapterPosition();
-                        if (position == RecyclerView.NO_POSITION) return;
-
-                        RecyclerView.Adapter adapter = recyclerSavedRoutes.getAdapter();
-                        if (!(adapter instanceof SavedRoutesAdapter)) return;
-                        SavedRoutesAdapter savedAdapter = (SavedRoutesAdapter) adapter;
-
-                        SavedRoute unpinnedRoute = savedAdapter.getRoutes().get(position);
-                        savedAdapter.getRoutes().remove(position);
-                        savedAdapter.notifyItemRemoved(position);
-
-                        savedRoutesManager.removeRoute(unpinnedRoute.getFromName(), unpinnedRoute.getToName());
-                        loadSavedRoutes();
-
-                        com.google.android.material.snackbar.Snackbar.make(requireView(), "Saved route removed", com.google.android.material.snackbar.Snackbar.LENGTH_LONG)
-                                .setAction("Undo", v -> {
-                                    v.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY);
-                                    savedRoutesManager.saveRoute(unpinnedRoute);
-                                    loadSavedRoutes();
-                                }).show();
-                    }
-
-                    @Override
-                    public void onSelectedChanged(@androidx.annotation.Nullable RecyclerView.ViewHolder viewHolder, int actionState) {
-                        super.onSelectedChanged(viewHolder, actionState);
-                        if (viewHolder != null && (actionState == androidx.recyclerview.widget.ItemTouchHelper.ACTION_STATE_DRAG || actionState == androidx.recyclerview.widget.ItemTouchHelper.ACTION_STATE_SWIPE)) {
-                            viewHolder.itemView.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS);
-                        }
-                    }
-
-                    @Override
-                    public void clearView(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
-                        super.clearView(recyclerView, viewHolder);
-
-                        RecyclerView.Adapter adapter = recyclerSavedRoutes.getAdapter();
-                        if (adapter instanceof SavedRoutesAdapter && savedRoutesManager != null) {
-                            savedRoutesManager.saveAll(((SavedRoutesAdapter) adapter).getRoutes());
-                        }
-                    }
-
-                    @Override
-                    public void onChildDraw(@NonNull android.graphics.Canvas c, @NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, float dX, float dY, int actionState, boolean isCurrentlyActive) {
-                        if (actionState == androidx.recyclerview.widget.ItemTouchHelper.ACTION_STATE_SWIPE) {
-                            drawSwipeBackground(c, viewHolder.itemView, dX);
-                        }
-                        super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
-                    }
-                });
-
-        touchHelper.attachToRecyclerView(recyclerSavedRoutes);
+        updateEmptyState();
     }
 }

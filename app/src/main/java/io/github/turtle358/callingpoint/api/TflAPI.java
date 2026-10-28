@@ -36,6 +36,14 @@ public interface TflAPI {
             @Query("accessibilityPreference") String accessibilityPreference
     );
 
+
+    @GET("tfl/StopPoint/Search/{query}")
+    Call<JsonObject> searchJourneyStations(
+            @Path("query") String query,
+            @Query("modes") String modes,
+            @Query("maxResults") int maxResults
+    );
+
     @GET("tfl/Vehicle/{vehicleId}/Arrivals")
     Call<List<TflVehicleArrival>> getVehicleArrivals(@Path("vehicleId") String vehicleId);
 }

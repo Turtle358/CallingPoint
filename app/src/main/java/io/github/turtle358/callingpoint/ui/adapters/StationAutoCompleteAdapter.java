@@ -46,7 +46,6 @@ public class StationAutoCompleteAdapter extends ArrayAdapter<String> {
         return input.toLowerCase().replaceAll("[^a-z0-9 ]", "");
     }
 
-    // Smart logic to find the exact highlight boundaries, even if punctuation is skipped!
     private int[] getHighlightBounds(String original, String constraint) {
         String normOrig = original.toLowerCase();
         String normConst = constraint.toLowerCase();
@@ -114,12 +113,10 @@ public class StationAutoCompleteAdapter extends ArrayAdapter<String> {
 
         if (stationName != null) {
             if (currentConstraint.isEmpty()) {
-                // Recent History item
                 tv.setText(stationName);
                 ivLogo.setImageResource(android.R.drawable.ic_menu_recent_history);
                 ivLogo.setColorFilter(Color.parseColor("#888888"));
             } else {
-                // Search result
                 ivLogo.setImageResource(StationHelper.getIconForStation(stationName));
                 ivLogo.clearColorFilter();
 
@@ -128,7 +125,6 @@ public class StationAutoCompleteAdapter extends ArrayAdapter<String> {
                     SpannableString spannable = new SpannableString(stationName);
                     int brandColor = ContextCompat.getColor(getContext(), R.color.brand_primary);
 
-                    // Emphasize the matching letters with boldness AND color
                     spannable.setSpan(new StyleSpan(Typeface.BOLD), bounds[0], bounds[1], Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
                     spannable.setSpan(new ForegroundColorSpan(brandColor), bounds[0], bounds[1], Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
                     tv.setText(spannable);
@@ -175,7 +171,7 @@ public class StationAutoCompleteAdapter extends ArrayAdapter<String> {
                 }
 
                 java.util.Collections.sort(suggestions, (s1, s2) -> {
-                    if (currentConstraint.isEmpty()) return 0; // Preserve history order
+                    if (currentConstraint.isEmpty()) return 0;
 
                     String n1 = normalize(s1);
                     String n2 = normalize(s2);

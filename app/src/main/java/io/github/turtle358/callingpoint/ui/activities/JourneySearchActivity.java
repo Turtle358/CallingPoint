@@ -5,16 +5,15 @@ import android.animation.AnimatorListenerAdapter;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
+import com.google.gson.Gson;
+import io.github.turtle358.callingpoint.utils.JourneySavedPlaces;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.text.TextUtils;
-import android.view.KeyEvent;
 import android.view.View;
-import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
-import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.ImageButton;
@@ -30,10 +29,8 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.facebook.shimmer.ShimmerFrameLayout;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
-import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.google.android.material.switchmaterial.SwitchMaterial;
 
-import org.w3c.dom.Text;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -44,11 +41,10 @@ import io.github.turtle358.callingpoint.R;
 import io.github.turtle358.callingpoint.models.JourneyOption;
 import io.github.turtle358.callingpoint.models.SavedRoute;
 import io.github.turtle358.callingpoint.ui.adapters.JourneyAdapter;
-import io.github.turtle358.callingpoint.ui.adapters.StationAutoCompleteAdapter;
+import io.github.turtle358.callingpoint.models.JourneyLocation;
 import io.github.turtle358.callingpoint.utils.JourneyPlanner.GraphManager;
 import io.github.turtle358.callingpoint.utils.JourneyPlanner.JourneyPlannerEngine;
 import io.github.turtle358.callingpoint.utils.JourneyPlanner.SavedRoutesManager;
-import io.github.turtle358.callingpoint.utils.RecentStationsManager;
 import io.github.turtle358.callingpoint.utils.StationHelper;
 import io.github.turtle358.callingpoint.utils.JourneyPlanner.TflJourneyPlannerEngine;
 
@@ -70,7 +66,7 @@ public class JourneySearchActivity extends AppCompatActivity {
     private SavedRoutesManager savedRoutesManager;
     private SharedPreferences journeyPrefs;
 
-    private StationAutoCompleteAdapter autoCompleteAdapter;
+    private JourneyLocationPickerController locationPicker;
     private ShimmerFrameLayout shimmerView;
 
     private Calendar selectedCalendar = null;
@@ -115,23 +111,22 @@ public class JourneySearchActivity extends AppCompatActivity {
         tflPlannerEngine = new TflJourneyPlannerEngine();
         savedRoutesManager = new SavedRoutesManager(this);
 
-        setupAdaptersAndListeners(btnSearch);
+        locationPicker = new JourneyLocationPickerController(this, StationHelper.getStationNames());
+        locationPicker.setOnSelectionChanged(this::updateSaveButtonState);
         setupDateTimePickers();
 
-        etFromCrs.setOnClickListener(v -> {
-            if (etFromCrs.getText().length() > 0) etFromCrs.showDropDown();
+        etFromCrs.setOnEditorActionListener((v, actionId, event) -> {
+            if (locationPicker.getFrom() != null) {
+                etToCrs.requestFocus();
+            } else {
+                Toast.makeText(this, "Choose a suggested starting point", Toast.LENGTH_SHORT).show();
+            }
+            return true;
         });
-        etFromCrs.setOnFocusChangeListener((v, hasFocus) -> {
-            if (hasFocus && etFromCrs.getText().length() > 0) etFromCrs.showDropDown();
-            if (!hasFocus) updateSaveButtonState();
-        });
-
-        etToCrs.setOnClickListener(v -> {
-            if (etToCrs.getText().length() > 0) etToCrs.showDropDown();
-        });
-        etToCrs.setOnFocusChangeListener((v, hasFocus) -> {
-            if (hasFocus && etToCrs.getText().length() > 0) etToCrs.showDropDown();
-            if (!hasFocus) updateSaveButtonState();
+        etToCrs.setOnEditorActionListener((v, actionId, event) -> {
+            if (locationPicker.hasBothLocations()) handleSearch();
+            else Toast.makeText(this, "Choose both locations from the suggestions", Toast.LENGTH_SHORT).show();
+            return true;
         });
 
         View btnBack = findViewById(R.id.btnBack);
@@ -151,11 +146,7 @@ public class JourneySearchActivity extends AppCompatActivity {
         recyclerSearchResults.setAdapter(adapter);
 
         btnSwap.setOnClickListener(v -> {
-            String tempText = etFromCrs.getText().toString();
-            etFromCrs.setText(etToCrs.getText().toString());
-            etToCrs.setText(tempText);
-            etFromCrs.dismissDropDown();
-            etToCrs.dismissDropDown();
+            locationPicker.swap();
             updateSaveButtonState();
         });
 
@@ -168,17 +159,30 @@ public class JourneySearchActivity extends AppCompatActivity {
         }
 
         Intent intent = getIntent();
-        if (intent != null && intent.hasExtra("AUTO_FROM") && intent.hasExtra("AUTO_TO")) {
-            etFromCrs.setText(intent.getStringExtra("AUTO_FROM"));
-            etToCrs.setText(intent.getStringExtra("AUTO_TO"));
-
-            etFromCrs.dismissDropDown();
-            etToCrs.dismissDropDown();
-            updateSaveButtonState();
-
-            btnSearch.post(this::handleSearch);
+        if (intent != null && intent.hasExtra("AUTO_SAVED_ROUTE_JSON")) {
+            try {
+                SavedRoute route = new Gson().fromJson(
+                        intent.getStringExtra("AUTO_SAVED_ROUTE_JSON"), SavedRoute.class);
+                if (route == null) throw new IllegalArgumentException("Missing saved route");
+                restoreSavedRoute(route, btnSearch);
+            } catch (RuntimeException e) {
+                Toast.makeText(this, "Unable to open saved route", Toast.LENGTH_LONG).show();
+            }
+        } else if (intent != null && intent.hasExtra("AUTO_FROM") && intent.hasExtra("AUTO_TO")) {
+            String from = intent.getStringExtra("AUTO_FROM");
+            String to = intent.getStringExtra("AUTO_TO");
+            if (from != null && to != null && !from.trim().isEmpty() && !to.trim().isEmpty()) {
+                locationPicker.setFrom(JourneyLocation.station(from, StationHelper.getNaptanFromName(from)));
+                locationPicker.setTo(JourneyLocation.station(to, StationHelper.getNaptanFromName(to)));
+                updateSaveButtonState();
+                btnSearch.post(this::handleSearch);
+            }
         } else {
-            etFromCrs.requestFocus();
+            etFromCrs.post(() -> {
+                if (!isFinishing() && !isDestroyed()) {
+                    etFromCrs.requestFocus();
+                }
+            });
         }
     }
 
@@ -416,26 +420,61 @@ public class JourneySearchActivity extends AppCompatActivity {
 
         dialog.show();
     }
+    private boolean canSaveRoute() {
+        if (locationPicker == null || !locationPicker.hasBothLocations()) return false;
+        JourneyLocation from = locationPicker.getFrom();
+        JourneyLocation to = locationPicker.getTo();
+        if (from.stableKey().equals(to.stableKey())) return false;
+        String fs = locationPicker.getFromSavedSlot();
+        String ts = locationPicker.getToSavedSlot();
+        if (fs != null && fs.equals(ts)) return false;
+        return true;
+    }
+
+    @androidx.annotation.NonNull
+    private SavedRoute buildSavedRoute() {
+        JourneyLocation from = locationPicker.getFrom();
+        JourneyLocation to = locationPicker.getTo();
+        String fromSource = bookmarkSource(from, locationPicker.getFromSavedSlot());
+        String toSource = bookmarkSource(to, locationPicker.getToSavedSlot());
+        JourneyLocation persistedFrom = "FIXED".equals(fromSource) ? from : null;
+        JourneyLocation persistedTo = "FIXED".equals(toSource) ? to : null;
+        String fromName = bookmarkName(from, fromSource);
+        String toName = bookmarkName(to, toSource);
+        String fromCrs = from.type == JourneyLocation.Type.STATION ? StationHelper.getCrsFromName(from.displayName()) : null;
+        String toCrs = to.type == JourneyLocation.Type.STATION ? StationHelper.getCrsFromName(to.displayName()) : null;
+        String fromNaptan = from.type == JourneyLocation.Type.STATION ? from.stationId : null;
+        String toNaptan = to.type == JourneyLocation.Type.STATION ? to.stationId : null;
+        return new SavedRoute(fromName, toName, fromCrs, toCrs,
+                fromNaptan, toNaptan, persistedFrom, persistedTo, fromSource, toSource);
+    }
+
+    private static String bookmarkSource(JourneyLocation location, String savedSlot) {
+        if (location.type == JourneyLocation.Type.CURRENT_LOCATION) return "CURRENT";
+        if (JourneySavedPlaces.HOME.equals(savedSlot)) return "HOME";
+        if (JourneySavedPlaces.WORK.equals(savedSlot)) return "WORK";
+        return "FIXED";
+    }
+
+    private static String bookmarkName(JourneyLocation location, String source) {
+        switch (source) {
+            case "CURRENT": return "Current location";
+            case "HOME": return "Home";
+            case "WORK": return "Work";
+            default: return location.displayName();
+        }
+    }
 
     private void toggleRouteSavedState() {
-        String fromName = etFromCrs.getText().toString().trim();
-        String toName = etToCrs.getText().toString().trim();
-
-        if (fromName.isEmpty() || toName.isEmpty() || fromName.equalsIgnoreCase(toName)) {
-            Toast.makeText(this, "Enter valid, distinct stations to save", Toast.LENGTH_SHORT).show();
+        if (!canSaveRoute()) {
+            Toast.makeText(this, "Select two different locations to save a route", Toast.LENGTH_SHORT).show();
             return;
         }
-
-        if (savedRoutesManager.isRouteSaved(fromName, toName)) {
-            savedRoutesManager.removeRoute(fromName, toName);
+        SavedRoute route = buildSavedRoute();
+        if (savedRoutesManager.isRouteSaved(route)) {
+            savedRoutesManager.removeRoute(route);
             Toast.makeText(this, "Saved route removed", Toast.LENGTH_SHORT).show();
         } else {
-            String fromCrs = StationHelper.getCrsFromName(fromName);
-            String toCrs = StationHelper.getCrsFromName(toName);
-            String fromNaptan = StationHelper.getNaptanFromName(fromName);
-            String toNaptan = StationHelper.getNaptanFromName(toName);
-
-            SavedRoute route = new SavedRoute(fromName, toName, fromCrs, toCrs, fromNaptan, toNaptan);
             savedRoutesManager.saveRoute(route);
             Toast.makeText(this, "Route saved!", Toast.LENGTH_SHORT).show();
         }
@@ -443,24 +482,57 @@ public class JourneySearchActivity extends AppCompatActivity {
     }
 
     private void updateSaveButtonState() {
-        if (btnSaveRoute == null) return;
+        if (btnSaveRoute == null || savedRoutesManager == null || locationPicker == null) return;
+        boolean valid = canSaveRoute();
+        btnSaveRoute.setEnabled(valid);
+        btnSaveRoute.setAlpha(valid ? 1f : 0.4f);
+        btnSaveRoute.setContentDescription(valid ? "Save or remove route" : "Select two different locations");
+        boolean isSaved = valid && savedRoutesManager.isRouteSaved(buildSavedRoute());
+        btnSaveRoute.setImageResource(isSaved ? R.drawable.ic_bookmark : R.drawable.ic_bookmark_outline);
+        btnSaveRoute.setColorFilter(androidx.core.content.ContextCompat.getColor(this, R.color.brand_primary));
+    }
 
-        String fromName = etFromCrs.getText().toString().trim();
-        String toName = etToCrs.getText().toString().trim();
-
-        boolean isSaved = !fromName.isEmpty() && !toName.isEmpty() &&
-                !fromName.equalsIgnoreCase(toName) &&
-                savedRoutesManager.isRouteSaved(fromName, toName);
-
-        if (isSaved) {
-            btnSaveRoute.setImageResource(R.drawable.ic_bookmark);
-        } else {
-            btnSaveRoute.setImageResource(R.drawable.ic_bookmark_outline);
+    private void restoreSavedRoute(SavedRoute route, Button btnSearch) {
+        JourneySavedPlaces places = new JourneySavedPlaces(this);
+        JourneyLocation from = endpointForSavedRoute(route.getFromSource(), route.getFromLocation(),
+                route.getFromName(), route.getFromNaptan(), places);
+        JourneyLocation to = endpointForSavedRoute(route.getToSource(), route.getToLocation(),
+                route.getToName(), route.getToNaptan(), places);
+        boolean fromCurrent = "CURRENT".equalsIgnoreCase(route.getFromSource());
+        boolean toCurrent = "CURRENT".equalsIgnoreCase(route.getToSource());
+        if (fromCurrent && toCurrent) {
+            Toast.makeText(this, "Both ends cannot be Current location", Toast.LENGTH_LONG).show();
+            return;
         }
+        if ((!fromCurrent && from == null) || (!toCurrent && to == null)) {
+            Toast.makeText(this, "Set Home or Work again before using this saved route", Toast.LENGTH_LONG).show();
+            return;
+        }
+        if (from != null) locationPicker.setFrom(from, slotForSource(route.getFromSource()));
+        if (to != null) locationPicker.setTo(to, slotForSource(route.getToSource()));
+        updateSaveButtonState();
+        if (fromCurrent || toCurrent) {
+            locationPicker.restoreCurrentLocation(fromCurrent, () -> btnSearch.post(this::handleSearch));
+        } else {
+            btnSearch.post(this::handleSearch);
+        }
+    }
 
-        btnSaveRoute.setColorFilter(
-                androidx.core.content.ContextCompat.getColor(this, R.color.brand_primary)
-        );
+    private static String slotForSource(String source) {
+        if ("HOME".equalsIgnoreCase(source)) return JourneySavedPlaces.HOME;
+        if ("WORK".equalsIgnoreCase(source)) return JourneySavedPlaces.WORK;
+        return null;
+    }
+
+    @androidx.annotation.Nullable
+    private static JourneyLocation endpointForSavedRoute(String source, JourneyLocation fixed,
+                                                         String name, String naptan,
+                                                         JourneySavedPlaces places) {
+        if ("CURRENT".equalsIgnoreCase(source)) return null;
+        if ("HOME".equalsIgnoreCase(source)) return places.get(JourneySavedPlaces.HOME);
+        if ("WORK".equalsIgnoreCase(source)) return places.get(JourneySavedPlaces.WORK);
+        if (fixed != null) return fixed;
+        return JourneyLocation.station(name, naptan);
     }
 
     private void updateDateTimeUI() {
@@ -495,100 +567,67 @@ public class JourneySearchActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        Button btnSearch = findViewById(R.id.btnSearchJourney);
-        setupAdaptersAndListeners(btnSearch);
         updateSaveButtonState();
     }
 
-    private void setupAdaptersAndListeners(Button btnSearch) {
-        List<String> stations = StationHelper.getStationNames();
-        StationAutoCompleteAdapter fromAdapter = new StationAutoCompleteAdapter(this, stations);
-        StationAutoCompleteAdapter toAdapter = new StationAutoCompleteAdapter(this, stations);
-
-        etFromCrs.setAdapter(fromAdapter);
-        etToCrs.setAdapter(toAdapter);
-
-        RecentStationsManager recentManager = new RecentStationsManager(this);
-
-        etFromCrs.setOnItemClickListener((parent, v, position, id) -> {
-            recentManager.addStation(fromAdapter.getItem(position));
-            updateSaveButtonState();
-            etToCrs.requestFocus();
-        });
-
-        etToCrs.setOnItemClickListener((parent, v, position, id) -> {
-            recentManager.addStation(toAdapter.getItem(position));
-            updateSaveButtonState();
-            hideKeyboard();
-            if (btnSearch != null) btnSearch.performClick();
-        });
-
-        etFromCrs.setOnFocusChangeListener((v, hasFocus) -> {
-            if (hasFocus) etFromCrs.showDropDown();
-        });
-        etToCrs.setOnFocusChangeListener((v, hasFocus) -> {
-            if (hasFocus) etToCrs.showDropDown();
-        });
-
-        setupAutoCompleteEnterBehavior(etFromCrs, fromAdapter, etToCrs, null);
-        setupAutoCompleteEnterBehavior(etToCrs, toAdapter, null, () -> {
-            if (btnSearch != null) btnSearch.performClick();
-        });
-    }
-
     private void handleSearch() {
-        etFromCrs.dismissDropDown();
-        etToCrs.dismissDropDown();
+        if (locationPicker == null || !locationPicker.hasBothLocations()) {
+            Toast.makeText(this, "Select an origin and destination from the suggestions", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        JourneyLocation from = locationPicker.getFrom();
+        JourneyLocation to = locationPicker.getTo();
+        if (from.stableKey().equals(to.stableKey())
+                || (from.type == JourneyLocation.Type.STATION && to.type == JourneyLocation.Type.STATION
+                && from.displayName().equalsIgnoreCase(to.displayName()))) {
+            Toast.makeText(this, "Origin and destination cannot be the same", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        final String fromTfl;
+        final String toTfl;
+        try {
+            fromTfl = from.tflValue();
+            toTfl = to.tflValue();
+        } catch (IllegalArgumentException error) {
+            Toast.makeText(this, "Invalid journey location", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        locationPicker.close();
+        hideKeyboard();
         shimmerView.stopShimmer();
         shimmerView.setVisibility(View.GONE);
         updateSaveButtonState();
 
-        String fromName = etFromCrs.getText().toString().trim();
-        String toName = etToCrs.getText().toString().trim();
-
-        String fromCrs = StationHelper.getCrsFromName(fromName);
-        String toCrs = StationHelper.getCrsFromName(toName);
-
-        String fromNaptan = StationHelper.getNaptanFromName(fromName);
-        String toNaptan = StationHelper.getNaptanFromName(toName);
-
-        if (fromCrs == null && fromName.length() == 3) fromCrs = fromName.toUpperCase();
-        if (toCrs == null && toName.length() == 3) toCrs = toName.toUpperCase();
-
-        if ((fromCrs == null && fromNaptan == null) || (toCrs == null && toNaptan == null)) {
-            Toast.makeText(this, "Please select valid stations", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        boolean sameName = fromName.equalsIgnoreCase(toName);
-        boolean sameCrs = fromCrs != null && !fromCrs.isEmpty() && fromCrs.equalsIgnoreCase(toCrs);
-        boolean sameNaptan = fromNaptan != null && !fromNaptan.isEmpty() && fromNaptan.equalsIgnoreCase(toNaptan);
-
-        if (sameName || sameCrs || sameNaptan) {
-            Toast.makeText(this, "Origin and Destination cannot be the same", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        hideKeyboard();
+        boolean bothStations = from.type == JourneyLocation.Type.STATION
+                && to.type == JourneyLocation.Type.STATION;
+        String fromCrs = bothStations ? StationHelper.getCrsFromName(from.displayName()) : null;
+        String toCrs = bothStations ? StationHelper.getCrsFromName(to.displayName()) : null;
+        String fromNaptan = bothStations ? (from.stationId != null ? from.stationId
+                : StationHelper.getNaptanFromName(from.displayName())) : null;
+        String toNaptan = bothStations ? (to.stationId != null ? to.stationId
+                : StationHelper.getNaptanFromName(to.displayName())) : null;
 
         String dateParam = null;
         String timeParam = null;
         String timeIsParam = null;
-
         if (selectedCalendar != null) {
-            java.text.SimpleDateFormat dateFmt = new java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.UK);
-            java.text.SimpleDateFormat timeFmt = new java.text.SimpleDateFormat("HHmm", java.util.Locale.UK);
+            java.text.SimpleDateFormat dateFmt = new java.text.SimpleDateFormat("yyyyMMdd", Locale.UK);
+            java.text.SimpleDateFormat timeFmt = new java.text.SimpleDateFormat("HHmm", Locale.UK);
             dateParam = dateFmt.format(selectedCalendar.getTime());
             timeParam = timeFmt.format(selectedCalendar.getTime());
             timeIsParam = isArriving ? "arriving" : "departing";
         }
 
-        if (fromNaptan != null && !fromNaptan.isEmpty() && toNaptan != null && !toNaptan.isEmpty()) {
+        if (!bothStations) {
+            startTflRouting(fromTfl, toTfl, null, null, dateParam, timeParam, timeIsParam);
+        } else if (fromNaptan != null && !fromNaptan.isEmpty()
+                && toNaptan != null && !toNaptan.isEmpty()) {
             startTflRouting(fromNaptan, toNaptan, fromCrs, toCrs, dateParam, timeParam, timeIsParam);
         } else if (fromCrs != null && toCrs != null && selectedCalendar == null) {
             startInternalRouting(fromCrs, toCrs);
         } else {
-            Toast.makeText(this, "National Rail routing is only available for 'Now'. Switch to 'Now' or use TfL stations.", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "National Rail-only routing is available for 'Now'. For a future journey, choose TfL-supported stops.", Toast.LENGTH_LONG).show();
         }
     }
 
@@ -708,9 +747,18 @@ public class JourneySearchActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (plannerEngine != null) {
-            plannerEngine.shutdown();
+        if (plannerEngine != null) plannerEngine.shutdown();
+        if (tflPlannerEngine != null) tflPlannerEngine.shutdown();
+        if (locationPicker != null) locationPicker.destroy();
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (locationPicker != null && locationPicker.isOpen()) {
+            locationPicker.close();
+            return;
         }
+        super.onBackPressed();
     }
 
     private void hideKeyboard() {
@@ -720,36 +768,6 @@ public class JourneySearchActivity extends AppCompatActivity {
             imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
         }
     }
-
-    private void setupAutoCompleteEnterBehavior(AutoCompleteTextView autoCompleteTextView, ArrayAdapter<String> adapter, View nextFocus, Runnable onDone) {
-        autoCompleteTextView.setOnEditorActionListener((v, actionId, event) -> {
-            boolean isEnterPressed = event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER && event.getAction() == KeyEvent.ACTION_DOWN;
-
-            if (actionId == EditorInfo.IME_ACTION_NEXT || actionId == EditorInfo.IME_ACTION_DONE || actionId == EditorInfo.IME_ACTION_SEARCH || isEnterPressed) {
-
-                String currentText = autoCompleteTextView.getText().toString();
-                if (!currentText.isEmpty() && adapter.getCount() > 0) {
-                    String firstMatch = adapter.getItem(0);
-                    if (firstMatch != null) {
-                        autoCompleteTextView.setText(firstMatch);
-                        autoCompleteTextView.dismissDropDown();
-                        autoCompleteTextView.setSelection(firstMatch.length());
-                    }
-                }
-
-                updateSaveButtonState();
-
-                if (nextFocus != null) {
-                    nextFocus.requestFocus();
-                } else if (onDone != null) {
-                    onDone.run();
-                }
-                return true;
-            }
-            return false;
-        });
-    }
-
 
     private void fadeInWarningCard() {
         if (cardFallbackWarning.getVisibility() == View.VISIBLE && cardFallbackWarning.getAlpha() == 1f) return;

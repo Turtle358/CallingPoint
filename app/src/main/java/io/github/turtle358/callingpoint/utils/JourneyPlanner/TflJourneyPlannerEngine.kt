@@ -33,8 +33,15 @@ class TflJourneyPlannerEngine {
     fun findRoutes(
         fromNaptan: String?, toNaptan: String?, date: String?, time: String?, timeIs: String?,
         journeyPreference: String?, modes: String?, accessibilityPreference: String?, callback: JourneyCallback
+    ) = findRoutes(fromNaptan, toNaptan, date, time, timeIs, journeyPreference,
+        modes, accessibilityPreference, false, callback)
+
+    fun findRoutes(
+        fromNaptan: String?, toNaptan: String?, date: String?, time: String?, timeIs: String?,
+        journeyPreference: String?, modes: String?, accessibilityPreference: String?,
+        nationalSearch: Boolean, callback: JourneyCallback
     ) {
-        tflApi.getJourneyResults(fromNaptan, toNaptan, false, date, time, timeIs, journeyPreference, modes, accessibilityPreference)
+        tflApi.getJourneyResults(fromNaptan, toNaptan, nationalSearch, date, time, timeIs, journeyPreference, modes, accessibilityPreference)
             .enqueue(object : Callback<JsonObject?> {
                 override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
                     if (response.isSuccessful && response.body() != null) {
@@ -52,7 +59,16 @@ class TflJourneyPlannerEngine {
                             }
                         }
                     } else {
-                        mainHandler.post { callback.onError("TfL Planner unavailable.") }
+                        val detail = when (response.code()) {
+                            300 -> "TfL couldn't identify one of the locations. Please select a specific suggestion."
+                            400 -> "TfL rejected the journey locations or routing options (400)."
+                            401, 403 -> "TfL API access was rejected (${response.code()}); check the proxy/API key."
+                            404 -> "TfL couldn't plan a route here (404)."
+                            429 -> "TfL request limit reached (429). Please try again later."
+                            in 500..599 -> "TfL service is currently unavailable (${response.code()})."
+                            else -> "TfL route request failed (HTTP ${response.code()})."
+                        }
+                        mainHandler.post { callback.onError(detail) }
                     }
                 }
 

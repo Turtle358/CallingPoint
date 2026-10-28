@@ -87,9 +87,8 @@ public class JourneyAdapter extends RecyclerView.Adapter<JourneyAdapter.ViewHold
                 if (primaryBrand.equalsIgnoreCase("bus")) {
                     holder.tvOperatorName.setText("Bus");
                 } else {
-                    holder.tvOperatorName.setText(
-                            primaryBrand.equalsIgnoreCase("LNER") ? "LNER" : primaryBrand
-                    );
+                    String formattedName = primaryBrand.substring(0, 1).toUpperCase() + primaryBrand.substring(1).toLowerCase();
+                    holder.tvOperatorName.setText(formattedName);
                 }
             }
 
@@ -115,8 +114,10 @@ public class JourneyAdapter extends RecyclerView.Adapter<JourneyAdapter.ViewHold
 
         holder.tvJourneyDate.setText(getFormattedDate(route.departureDate));
 
-        holder.tvOriginStation.setText(origin);
-        holder.tvDestStation.setText(dest);
+        holder.tvOriginStation.setText(compactPlaceName(origin));
+        holder.tvDestStation.setText(compactPlaceName(dest));
+        holder.tvOriginStation.setContentDescription(origin == null ? "" : origin);
+        holder.tvDestStation.setContentDescription(dest == null ? "" : dest);
         holder.tvDepTime.setText(route.departTime != null ? route.departTime : "--:--");
         holder.tvArrTime.setText(route.arriveTime != null ? route.arriveTime : "--:--");
 
@@ -143,6 +144,29 @@ public class JourneyAdapter extends RecyclerView.Adapter<JourneyAdapter.ViewHold
         holder.tvJourneyChanges.setText(route.changesSummary != null ? route.changesSummary : "Direct");
 
         holder.itemView.setOnClickListener(v -> listener.onJourneyClick(route));
+    }
+
+
+    private static String compactPlaceName(String fullName) {
+        if (fullName == null) return "";
+        String place = fullName.trim().replaceAll("\\s+", " ");
+        int comma = place.indexOf(',');
+        if (comma > 0) place = place.substring(0, comma).trim();
+
+        if (!place.isEmpty()
+                && place.equals(place.toUpperCase(Locale.UK))
+                && !place.equals(place.toLowerCase(Locale.UK))) {
+            String[] words = place.toLowerCase(Locale.UK).split(" ");
+            StringBuilder result = new StringBuilder();
+            for (String word : words) {
+                if (word.isEmpty()) continue;
+                if (result.length() > 0) result.append(' ');
+                result.append(Character.toUpperCase(word.charAt(0)));
+                result.append(word.substring(1));
+            }
+            return result.toString();
+        }
+        return place;
     }
 
     private String getFormattedDate(String isoDate) {

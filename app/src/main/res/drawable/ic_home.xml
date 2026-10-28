@@ -1,0 +1,59 @@
+
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="960"
+    android:viewportHeight="960"
+    android:tint="@color/text_primary">
+
+    <!-- Background flat block with right wall and bottom floor -->
+    <path
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="@android:color/white"
+        android:strokeWidth="80"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="
+            M440,220
+            L440,200
+            Q440,160 480,160
+            L840,160
+            Q880,160 880,200
+            L880,800
+            L690,800" />
+
+    <!-- Small window -->
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="
+            M700,280
+            L740,280
+            Q760,280 760,300
+            L760,340
+            Q760,360 740,360
+            L700,360
+            Q680,360 680,340
+            L680,300
+            Q680,280 700,280
+            Z" />
+
+    <!-- Foreground house -->
+    <path
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="@android:color/white"
+        android:strokeWidth="80"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="
+            M80,480
+            L320,300
+            L560,480
+            L560,800
+            L400,800
+            L400,640
+            L240,640
+            L240,800
+            L80,800
+            Z" />
+
+</vector>

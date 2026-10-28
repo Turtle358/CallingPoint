@@ -81,7 +81,10 @@ public class JourneyDetailsActivity extends AppCompatActivity {
             return;
         }
 
-        TextView tvTitle = findViewById(R.id.tvDetailTitle);
+        TextView tvFromName = findViewById(R.id.tvDetailFromName);
+        TextView tvFromArea = findViewById(R.id.tvDetailFromArea);
+        TextView tvToName = findViewById(R.id.tvDetailToName);
+        TextView tvToArea = findViewById(R.id.tvDetailToArea);
         TextView tvDate = findViewById(R.id.tvJourneyDate);
         TextView tvSummary = findViewById(R.id.tvDetailSummary);
 
@@ -116,14 +119,8 @@ public class JourneyDetailsActivity extends AppCompatActivity {
         String origin = journey.legs.get(0).fromStationName;
         String dest = journey.legs.get(journey.legs.size() - 1).toStationName;
 
-        String titleText = origin + " to " + dest;
-        tvTitle.setText(titleText);
-
-        tvTitle.post(() -> {
-            if (tvTitle.getLineCount() > 1) {
-                tvTitle.setText(origin + "\nto " + dest);
-            }
-        });
+        bindHeaderLocation(tvFromName, tvFromArea, origin);
+        bindHeaderLocation(tvToName, tvToArea, dest);
 
         tvDate.setText(getFormattedDate(journey.departureDate));
 
@@ -174,6 +171,42 @@ public class JourneyDetailsActivity extends AppCompatActivity {
 
             fetchLiveServiceDetails(journey);
         }
+    }
+    private static final int MAX_ADDRESS_PARTS = 2;
+
+    private void bindHeaderLocation(@NonNull TextView primary,
+                                    @NonNull TextView secondary,
+                                    String fullLocation) {
+        String full = (fullLocation == null || fullLocation.trim().isEmpty())
+                ? "Unknown location" : fullLocation.trim();
+
+        String[] parts = full.split(",", -1);
+        StringBuilder shortened = new StringBuilder();
+        for (int i = 0; i < Math.min(MAX_ADDRESS_PARTS, parts.length); i++) {
+            String part = parts[i].trim();
+            if (part.isEmpty()) continue;
+            if (shortened.length() > 0) shortened.append(", ");
+            shortened.append(part);
+        }
+
+        String display = shortened.length() > 0 ? shortened.toString() : full;
+        primary.setText(titleCaseUppercaseWords(display));
+        primary.setContentDescription(full);
+        secondary.setVisibility(View.GONE);
+    }
+
+    private String titleCaseUppercaseWords(String value) {
+        if (!value.equals(value.toUpperCase(java.util.Locale.UK))) return value;
+        java.util.regex.Matcher matcher = java.util.regex.Pattern
+                .compile("\\b[A-Z]{4,}\\b").matcher(value);
+        StringBuffer result = new StringBuffer();
+        while (matcher.find()) {
+            String word = matcher.group().toLowerCase(java.util.Locale.UK);
+            String replacement = Character.toUpperCase(word.charAt(0)) + word.substring(1);
+            matcher.appendReplacement(result, java.util.regex.Matcher.quoteReplacement(replacement));
+        }
+        matcher.appendTail(result);
+        return result.toString();
     }
 
     private String getFormattedDate(String isoDate) {
