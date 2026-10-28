@@ -86,6 +86,67 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="@id/contentContainer" />
 
+    <!-- A compact change card for consecutive vehicle legs (e.g. train to train). -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/cardChange"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginBottom="10dp"
+        android:visibility="gone"
+        app:cardBackgroundColor="@color/bg_screen"
+        app:cardCornerRadius="28dp"
+        app:cardElevation="0dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="44dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="9dp">
+
+            <!-- Tint the user's existing transfer icon with the theme's text colour. -->
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_transfer"
+                app:tint="@color/text_primary" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tvChangeTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp"
+                    tools:text="Change at East Croydon" />
+
+                <TextView
+                    android:id="@+id/tvChangeTime"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp"
+                    android:visibility="gone"
+                    tools:text="20 minutes to change"
+                    tools:visibility="visible" />
+            </LinearLayout>
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
+
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/contentContainer"
         android:layout_width="match_parent"
@@ -97,70 +158,73 @@
         android:translationZ="3dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintTop_toBottomOf="@id/cardChange">
 
         <ImageView
             android:id="@+id/ivModeIcon"
-            android:layout_width="20dp"
-            android:layout_height="20dp"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
             android:layout_marginStart="16dp"
-            android:layout_marginTop="16dp"
             android:adjustViewBounds="true"
             android:src="@drawable/ic_train"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintTop_toTopOf="@id/tvOperatorName"
+            app:layout_constraintBottom_toBottomOf="@id/tvTrainDestination" />
 
         <TextView
             android:id="@+id/tvOperatorName"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="10dp"
-            android:layout_marginEnd="12dp"
+            android:layout_marginEnd="8dp"
             android:paddingHorizontal="8dp"
             android:paddingVertical="4dp"
+            android:ellipsize="end"
+            android:maxLines="2"
             android:textColor="#FFFFFF"
             android:textSize="13sp"
             android:textStyle="bold"
             app:layout_constrainedWidth="true"
-            app:layout_constraintBottom_toBottomOf="@id/ivModeIcon"
-            app:layout_constraintEnd_toStartOf="@id/tvTrainDestination"
+            app:layout_constraintEnd_toStartOf="@id/ivManagerLogo"
             app:layout_constraintHorizontal_bias="0.0"
             app:layout_constraintStart_toEndOf="@id/ivModeIcon"
-            app:layout_constraintTop_toTopOf="@id/ivModeIcon"
-            tools:text="Operator" />
+            android:layout_marginTop="16dp"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:text="" />
 
         <TextView
             android:id="@+id/tvTrainDestination"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="8dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="16dp"
             android:ellipsize="end"
             android:maxLines="2"
             android:textColor="@color/text_secondary"
             android:textSize="13sp"
             android:textStyle="bold"
-            app:layout_constraintBottom_toBottomOf="@id/ivModeIcon"
             app:layout_constraintEnd_toStartOf="@id/ivManagerLogo"
-            app:layout_constraintStart_toEndOf="@id/tvOperatorName"
-            app:layout_constraintTop_toTopOf="@id/ivModeIcon"
-            tools:text="to Destination" />
+            app:layout_constraintStart_toStartOf="@id/tvOperatorName"
+            app:layout_constraintTop_toBottomOf="@id/tvOperatorName"
+            tools:text="" />
 
         <ImageView
             android:id="@+id/ivManagerLogo"
             android:layout_width="wrap_content"
-            android:layout_height="24dp"
+            android:layout_height="30dp"
             android:layout_marginEnd="16dp"
             android:adjustViewBounds="true"
-            app:layout_constraintBottom_toBottomOf="@id/ivModeIcon"
+            app:layout_constraintBottom_toBottomOf="@id/tvTrainDestination"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="@id/ivModeIcon" />
+            app:layout_constraintTop_toTopOf="@id/tvOperatorName" />
 
         <LinearLayout
             android:id="@+id/layoutTimeline"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
+            android:layout_marginTop="12dp"
             android:orientation="vertical"
+            android:translationX="-10dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/tvTrainDestination" />

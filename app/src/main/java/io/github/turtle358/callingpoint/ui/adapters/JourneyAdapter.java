@@ -87,8 +87,9 @@ public class JourneyAdapter extends RecyclerView.Adapter<JourneyAdapter.ViewHold
                 if (primaryBrand.equalsIgnoreCase("bus")) {
                     holder.tvOperatorName.setText("Bus");
                 } else {
-                    String formattedName = primaryBrand.substring(0, 1).toUpperCase() + primaryBrand.substring(1).toLowerCase();
-                    holder.tvOperatorName.setText(formattedName);
+                    holder.tvOperatorName.setText(
+                            primaryBrand.equalsIgnoreCase("LNER") ? "LNER" : primaryBrand
+                    );
                 }
             }
 

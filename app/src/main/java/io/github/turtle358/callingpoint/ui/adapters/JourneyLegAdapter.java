@@ -71,7 +71,25 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
     public void onBindViewHolder(@NonNull LegViewHolder holder, int position) {
         JourneyLeg currentLeg = legs.get(position);
 
+        // RecyclerView holders are reused: always reset the change card and spacing.
+        holder.cardChange.setVisibility(View.GONE);
+        holder.tvChangeTime.setVisibility(View.GONE);
 
+        // If the following leg has a change card, remove the extra bottom padding
+        // from this leg. This evens the spacing above/below the change card,
+        // while keeping the usual bottom breathing room on the final leg.
+        boolean nextIsChange = position + 1 < legs.size()
+                && hasChangeBetween(currentLeg, legs.get(position + 1));
+        holder.itemView.setPadding(
+                holder.itemView.getPaddingLeft(), holder.itemView.getPaddingTop(),
+                holder.itemView.getPaddingRight(),
+                nextIsChange ? 0 : holder.defaultItemBottomPadding);
+        holder.contentContainer.setPadding(
+                holder.contentContainer.getPaddingLeft(), holder.contentContainer.getPaddingTop(),
+                holder.contentContainer.getPaddingRight(),
+                nextIsChange ? 0 : holder.defaultContentBottomPadding);
+
+        // Explicit walking/transfer legs retain their existing dedicated card and map.
         if ("TUBE/WALK".equals(currentLeg.transportMode)) {
             holder.contentContainer.setVisibility(View.GONE);
             holder.cardTransfer.setVisibility(View.VISIBLE);
@@ -113,6 +131,24 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
         holder.mapContainer.setVisibility(View.GONE);
         holder.releaseMap();
 
+        // Two consecutive vehicle legs can require a change without a separate
+        // walking leg. Display the transfer card above the next train/bus.
+        if (position > 0) {
+            JourneyLeg previousLeg = legs.get(position - 1);
+            if (hasChangeBetween(previousLeg, currentLeg)) {
+                String changeStation = getChangeStation(previousLeg, currentLeg);
+                holder.tvChangeTitle.setText("Change at " + changeStation);
+                holder.cardChange.setVisibility(View.VISIBLE);
+
+                int minutes = calculateChangeMinutes(previousLeg, currentLeg);
+                if (minutes >= 0) {
+                    holder.tvChangeTime.setText(minutes + (minutes == 1
+                            ? " minute to change" : " minutes to change"));
+                    holder.tvChangeTime.setVisibility(View.VISIBLE);
+                }
+            }
+        }
+
         boolean isBus = "BUS".equalsIgnoreCase(currentLeg.transportMode)
                 || "bus".equalsIgnoreCase(currentLeg.transportMode)
                 || (currentLeg.operatorName != null && currentLeg.operatorName.matches("^[a-zA-Z]{0,2}\\d+[a-zA-Z]?$") && !currentLeg.operatorName.equalsIgnoreCase("c2c"));
@@ -134,10 +170,23 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
             }
             holder.tvOperatorName.setText(busTitle);
         } else {
-            holder.tvOperatorName.setText(currentLeg.operatorName);
+            String operatorName = currentLeg.operatorName;
+            // Preserve official capitalisation; never render "Lner".
+            if (operatorName != null && operatorName.equalsIgnoreCase("LNER")) {
+                operatorName = "LNER";
+            }
+            holder.tvOperatorName.setText(operatorName);
         }
 
-        holder.tvTrainDestination.setText("to " + currentLeg.trainDestination);
+        // The XML now puts the train destination on its own line below the operator.
+        String trainDestination = currentLeg.trainDestination;
+        if (trainDestination == null || trainDestination.trim().isEmpty()) {
+            holder.tvTrainDestination.setText(null);
+            holder.tvTrainDestination.setVisibility(View.GONE);
+        } else {
+            holder.tvTrainDestination.setVisibility(View.VISIBLE);
+            holder.tvTrainDestination.setText("to " + trainDestination.trim());
+        }
         holder.ivModeIcon.setImageResource(lookupName.equalsIgnoreCase("bus") ? R.drawable.ic_bus : R.drawable.ic_train);
         holder.ivManagerLogo.setImageResource(TOCBrandHelper.getIconForToc(lookupName));
         holder.ivManagerLogo.setOnClickListener(v -> TOCBrandHelper.showTOCInfoDialog(v.getContext(), lookupName));
@@ -586,6 +635,64 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
         return null;
     }
 
+    private static String getChangeStation(JourneyLeg previous, JourneyLeg current) {
+        String name = current == null ? null : current.fromStationName;
+        if (name == null || name.trim().isEmpty()) {
+            name = previous == null ? null : previous.toStationName;
+        }
+        return name == null ? "" : name.trim();
+    }
+
+    private static boolean hasChangeBetween(JourneyLeg previous, JourneyLeg current) {
+        if (previous == null || current == null
+                || isWalkingLeg(previous) || isWalkingLeg(current)) {
+            return false;
+        }
+        if (previous.serviceId != null && !previous.serviceId.isEmpty()
+                && previous.serviceId.equals(current.serviceId)) {
+            return false; // Still the same service, so there's no change to make.
+        }
+        return !getChangeStation(previous, current).isEmpty();
+    }
+
+    // Prefer valid live expected/actual times when a leg was enriched; otherwise
+    // use the original journey timetable. Invalid live statuses are ignored.
+    private String getConnectionTime(JourneyLeg leg, String stationName,
+                                     String fallbackTime) {
+        ServiceDetailsResponse details = liveDataMap.get(leg.serviceId);
+        if (details != null && !details.isCancelled) {
+            ServiceDetailsResponse.TimelinePoint point = findLivePoint(details, stationName);
+            if (point != null && !point.isCancelled) {
+                if (timeToMins(point.actualTime) != -1) return point.actualTime;
+                if (timeToMins(point.estimatedTime) != -1) return point.estimatedTime;
+            }
+        }
+        return fallbackTime;
+    }
+
+    private int calculateChangeMinutes(JourneyLeg previous, JourneyLeg current) {
+        int arrival = timeToMins(getConnectionTime(
+                previous, previous.toStationName, previous.arrivalTime));
+        int departure = timeToMins(getConnectionTime(
+                current, current.fromStationName, current.departureTime));
+        if (arrival < 0 || departure < 0) return -1;
+
+        // A small negative clock difference is usually a missed connection,
+        // not an overnight wait. Large differences can be valid after midnight.
+        if (departure < arrival) {
+            if (arrival - departure < 12 * 60) return -1;
+            departure += 24 * 60;
+        }
+        int minutes = departure - arrival;
+        return minutes <= 12 * 60 ? minutes : -1;
+    }
+
+    private static boolean isWalkingLeg(JourneyLeg leg) {
+        return leg != null && leg.transportMode != null
+                && ("TUBE/WALK".equalsIgnoreCase(leg.transportMode)
+                || "WALK".equalsIgnoreCase(leg.transportMode));
+    }
+
     @Override
     public int getItemCount() { return legs != null ? legs.size() : 0; }
 
@@ -593,8 +700,9 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
         ConstraintLayout contentContainer;
         LinearLayout layoutTimeline;
         TextView tvOperatorName, tvTrainDestination;
-        CardView cardTransfer;
-        TextView tvTransferTitle;
+        CardView cardTransfer, cardChange;
+        TextView tvTransferTitle, tvChangeTitle, tvChangeTime;
+        final int defaultItemBottomPadding, defaultContentBottomPadding;
         ImageView ivManagerLogo, btnMapTransfer, ivModeIcon, ivTransferIcon;
         FrameLayout mapContainer;
         MapView mapViewTransferLeg;
@@ -611,7 +719,12 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
             ivModeIcon = itemView.findViewById(R.id.ivModeIcon);
             layoutTimeline = itemView.findViewById(R.id.layoutTimeline);
             cardTransfer = itemView.findViewById(R.id.cardTransfer);
+            cardChange = itemView.findViewById(R.id.cardChange);
             tvTransferTitle = itemView.findViewById(R.id.tvTransferTitle);
+            tvChangeTitle = itemView.findViewById(R.id.tvChangeTitle);
+            tvChangeTime = itemView.findViewById(R.id.tvChangeTime);
+            defaultItemBottomPadding = itemView.getPaddingBottom();
+            defaultContentBottomPadding = contentContainer.getPaddingBottom();
             btnMapTransfer = itemView.findViewById(R.id.btnMapTransfer);
             ivTransferIcon = itemView.findViewById(R.id.ivTransferIcon);
             mapContainer = itemView.findViewById(R.id.mapViewTransferLeg);
