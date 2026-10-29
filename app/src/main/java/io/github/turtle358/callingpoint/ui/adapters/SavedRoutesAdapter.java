@@ -122,6 +122,18 @@ public class SavedRoutesAdapter extends RecyclerView.Adapter<SavedRoutesAdapter.
         notifyItemMoved(fromPosition, toPosition);
     }
 
+    public void moveItem(int fromPosition, int toPosition) {
+        if (fromPosition < 0 || toPosition < 0
+                || fromPosition >= routes.size() || toPosition >= routes.size()
+                || fromPosition == toPosition) {
+            return;
+        }
+
+        SavedRoute movedRoute = routes.remove(fromPosition);
+        routes.add(toPosition, movedRoute);
+        notifyItemMoved(fromPosition, toPosition);
+    }
+
     public static class ViewHolder extends RecyclerView.ViewHolder {
         TextView textOrigin;
         TextView textDestination;

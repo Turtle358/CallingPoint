@@ -34,7 +34,6 @@ import io.github.turtle358.callingpoint.ui.adapters.SavedRoutesAdapter;
 import io.github.turtle358.callingpoint.utils.JourneyPlanner.PinnedJourneyManager;
 import io.github.turtle358.callingpoint.utils.JourneyPlanner.SavedRoutesManager;
 import io.github.turtle358.callingpoint.utils.TOCBrandHelper;
-import io.github.turtle358.callingpoint.utils.JourneyPlanner.JourneyLocationCache;
 
 public class JourneyPlannerFragment extends Fragment {
 
@@ -57,8 +56,6 @@ public class JourneyPlannerFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-
-        JourneyLocationCache.warmIfPermitted(requireContext());
 
         recyclerPinnedJourneys = view.findViewById(R.id.recyclerPinnedJourneys);
         recyclerSavedRoutes = view.findViewById(R.id.recyclerSavedRoutes);
@@ -90,12 +87,32 @@ public class JourneyPlannerFragment extends Fragment {
         if (recyclerSavedRoutes == null) return;
 
         ItemTouchHelper.SimpleCallback callback = new ItemTouchHelper.SimpleCallback(
-                0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
+                ItemTouchHelper.UP | ItemTouchHelper.DOWN,
+                ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
+
+            private boolean orderChanged = false;
+
             @Override
             public boolean onMove(@NonNull RecyclerView recyclerView,
                                   @NonNull RecyclerView.ViewHolder viewHolder,
                                   @NonNull RecyclerView.ViewHolder target) {
-                return false;
+                if (!(recyclerView.getAdapter() instanceof SavedRoutesAdapter)) return false;
+
+                int fromPosition = viewHolder.getBindingAdapterPosition();
+                int toPosition = target.getBindingAdapterPosition();
+                SavedRoutesAdapter savedAdapter = (SavedRoutesAdapter) recyclerView.getAdapter();
+
+                if (fromPosition == RecyclerView.NO_POSITION
+                        || toPosition == RecyclerView.NO_POSITION
+                        || fromPosition >= savedAdapter.getItemCount()
+                        || toPosition >= savedAdapter.getItemCount()
+                        || fromPosition == toPosition) {
+                    return false;
+                }
+
+                savedAdapter.moveItem(fromPosition, toPosition);
+                orderChanged = true;
+                return true;
             }
 
             @Override
@@ -109,6 +126,29 @@ public class JourneyPlannerFragment extends Fragment {
                 }
                 SavedRoute route = savedAdapter.getRoutes().get(position);
                 deleteSavedRoute(route, position);
+            }
+
+            @Override
+            public void onSelectedChanged(@Nullable RecyclerView.ViewHolder viewHolder,
+                                          int actionState) {
+                super.onSelectedChanged(viewHolder, actionState);
+                if (actionState == ItemTouchHelper.ACTION_STATE_DRAG && viewHolder != null) {
+                    viewHolder.itemView.performHapticFeedback(
+                            android.view.HapticFeedbackConstants.LONG_PRESS);
+                }
+            }
+
+            @Override
+            public void clearView(@NonNull RecyclerView recyclerView,
+                                  @NonNull RecyclerView.ViewHolder viewHolder) {
+                super.clearView(recyclerView, viewHolder);
+
+                if (orderChanged && savedRoutesManager != null
+                        && recyclerView.getAdapter() instanceof SavedRoutesAdapter) {
+                    SavedRoutesAdapter savedAdapter = (SavedRoutesAdapter) recyclerView.getAdapter();
+                    savedRoutesManager.saveAll(new ArrayList<>(savedAdapter.getRoutes()));
+                }
+                orderChanged = false;
             }
 
             @Override
@@ -165,7 +205,7 @@ public class JourneyPlannerFragment extends Fragment {
         updateEmptyState();
 
         com.google.android.material.snackbar.Snackbar.make(requireView(),
-                "Saved route removed", com.google.android.material.snackbar.Snackbar.LENGTH_LONG)
+                        "Saved route removed", com.google.android.material.snackbar.Snackbar.LENGTH_LONG)
                 .setAction("Undo", view -> {
                     List<SavedRoute> current = new ArrayList<>(savedRoutesManager.getSavedRoutes());
                     boolean exists = false;
@@ -462,7 +502,6 @@ public class JourneyPlannerFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        JourneyLocationCache.warmIfPermitted(requireContext());
         loadPinnedJourneys();
         loadSavedRoutes();
     }
