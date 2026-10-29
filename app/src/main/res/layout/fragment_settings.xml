@@ -47,14 +47,22 @@
                     android:orientation="vertical"
                     android:padding="16dp">
 
-                    <TextView
-                        android:layout_width="wrap_content"
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="8dp"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+
+                        <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
                         android:text="Appearance"
                         android:textColor="@color/text_primary"
                         android:textSize="18sp"
                         android:textStyle="bold" />
+                    </LinearLayout>
 
                     <TextView
                         android:layout_width="match_parent"
@@ -154,14 +162,22 @@
                         android:orientation="vertical"
                         android:padding="16dp">
 
-                        <TextView
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="4dp"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical">
+
+
+                            <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Widget"
                             android:textColor="@color/text_primary"
                             android:textSize="16sp"
-                            android:textStyle="bold"
-                            android:layout_marginBottom="4dp"/>
+                            android:textStyle="bold"/>
+                        </LinearLayout>
 
                         <TextView
                             android:id="@+id/tvWidgetDescription"
@@ -202,14 +218,21 @@
                         android:orientation="vertical"
                         android:padding="16dp">
 
-                        <TextView
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="4dp"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical">
+
+                            <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Data Sync"
                             android:textColor="@color/text_primary"
                             android:textSize="16sp"
-                            android:textStyle="bold"
-                            android:layout_marginBottom="4dp"/>
+                            android:textStyle="bold"/>
+                        </LinearLayout>
 
                         <TextView
                             android:layout_width="match_parent"
@@ -259,14 +282,21 @@
                         android:orientation="vertical"
                         android:padding="16dp">
 
-                        <TextView
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="12dp"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical">
+
+                            <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="App Icon"
                             android:textColor="@color/text_primary"
                             android:textSize="16sp"
-                            android:textStyle="bold"
-                            android:layout_marginBottom="12dp"/>
+                            android:textStyle="bold"/>
+                        </LinearLayout>
 
                         <LinearLayout
                             android:layout_width="match_parent"
@@ -346,14 +376,22 @@
                         android:orientation="vertical"
                         android:padding="16dp">
 
-                        <TextView
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="4dp"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical">
+
+
+                            <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Donate"
                             android:textColor="@color/text_primary"
                             android:textSize="16sp"
-                            android:textStyle="bold"
-                            android:layout_marginBottom="4dp"/>
+                            android:textStyle="bold"/>
+                        </LinearLayout>
 
                         <TextView
                             android:layout_width="match_parent"
@@ -373,6 +411,163 @@
                             android:textStyle="bold"
                             android:backgroundTint="#FF8C00"
                             android:textColor="#FFFFFF"/>
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+            </LinearLayout>
+
+            <!-- Saved Home and Work -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="12dp"
+                android:layout_marginBottom="16dp"
+                android:baselineAligned="false"
+                android:orientation="horizontal">
+                <androidx.cardview.widget.CardView
+                    android:layout_width="0dp"
+                    android:layout_height="156dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="6dp"
+                    app:cardBackgroundColor="@color/bg_card"
+                    app:cardCornerRadius="28dp"
+                    app:cardElevation="2dp"
+                    app:cardPreventCornerOverlap="false"
+                    app:cardUseCompatPadding="true">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical"
+                        android:paddingHorizontal="14dp"
+                        android:paddingTop="14dp"
+                        android:paddingBottom="14dp">
+
+                        <LinearLayout
+                            android:id="@+id/rowSettingsHome"
+                            android:layout_width="match_parent"
+                            android:layout_height="0dp"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:background="?attr/selectableItemBackground"
+                            android:contentDescription="Edit saved Home location">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginBottom="12dp"
+                                android:orientation="horizontal"
+                                android:gravity="center_vertical">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text=" Home"
+                                    android:textColor="@color/text_primary"
+                                    android:textSize="16sp"
+                                    android:textStyle="bold"/>
+                            </LinearLayout>
+
+                            <TextView
+                                android:id="@+id/tvSettingsHomePlace"
+                                android:layout_width="match_parent"
+                                android:layout_height="40dp"
+                                android:layout_marginTop="8dp"
+                                android:ellipsize="end"
+                                android:maxLines="2"
+                                android:text="Not set"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="13sp" />
+                        </LinearLayout>
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnSettingsChangeHome"
+                            android:layout_width="match_parent"
+                            android:layout_height="40dp"
+                            android:minHeight="0dp"
+                            android:text="Set"
+                            android:textAllCaps="false"
+                            android:textColor="@android:color/white"
+                            android:textSize="13sp"
+                            android:textStyle="bold"
+                            app:backgroundTint="@color/brand_primary"
+                            app:cornerRadius="20dp"
+                            />
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
+                <androidx.cardview.widget.CardView
+                    android:layout_width="0dp"
+                    android:layout_height="156dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="6dp"
+                    app:cardBackgroundColor="@color/bg_card"
+                    app:cardCornerRadius="28dp"
+                    app:cardElevation="2dp"
+                    app:cardPreventCornerOverlap="false"
+                    app:cardUseCompatPadding="true">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical"
+                        android:paddingHorizontal="14dp"
+                        android:paddingTop="14dp"
+                        android:paddingBottom="14dp">
+
+                        <LinearLayout
+                            android:id="@+id/rowSettingsWork"
+                            android:layout_width="match_parent"
+                            android:layout_height="0dp"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:background="?attr/selectableItemBackground"
+                            android:contentDescription="Edit saved Work location">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginBottom="12dp"
+                                android:orientation="horizontal"
+                                android:gravity="center_vertical">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text=" Work"
+                                    android:textColor="@color/text_primary"
+                                    android:textSize="16sp"
+                                    android:textStyle="bold"/>
+                            </LinearLayout>
+
+                            <TextView
+                                android:id="@+id/tvSettingsWorkPlace"
+                                android:layout_width="match_parent"
+                                android:layout_height="40dp"
+                                android:layout_marginTop="8dp"
+                                android:ellipsize="end"
+                                android:maxLines="2"
+                                android:text="Not set"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="13sp" />
+                        </LinearLayout>
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnSettingsChangeWork"
+                            android:layout_width="match_parent"
+                            android:layout_height="40dp"
+                            android:minHeight="0dp"
+                            android:text="Set"
+                            android:textAllCaps="false"
+                            android:textColor="@android:color/white"
+                            android:textSize="13sp"
+                            android:textStyle="bold"
+                            app:backgroundTint="@color/brand_primary"
+                            app:cornerRadius="20dp"
+                            />
                     </LinearLayout>
                 </androidx.cardview.widget.CardView>
             </LinearLayout>
@@ -398,14 +593,22 @@
                         android:orientation="vertical"
                         android:padding="16dp">
 
-                        <TextView
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="8dp"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical">
+
+
+                            <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Tracked Operators"
                             android:textColor="@color/text_primary"
                             android:textSize="18sp"
-                            android:textStyle="bold"
-                            android:layout_marginBottom="8dp"/>
+                            android:textStyle="bold"/>
+                        </LinearLayout>
 
                         <TextView
                             android:layout_width="match_parent"
@@ -450,14 +653,21 @@
                         android:orientation="vertical"
                         android:padding="16dp">
 
-                        <TextView
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="4dp"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical">
+
+                            <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Support"
                             android:textColor="@color/text_primary"
                             android:textSize="16sp"
-                            android:textStyle="bold"
-                            android:layout_marginBottom="4dp"/>
+                            android:textStyle="bold"/>
+                        </LinearLayout>
 
                         <TextView
                             android:layout_width="match_parent"
@@ -497,14 +707,22 @@
                         android:orientation="vertical"
                         android:padding="16dp">
 
-                        <TextView
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="4dp"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical">
+
+
+                            <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Privacy Policy"
                             android:textColor="@color/text_primary"
                             android:textSize="16sp"
-                            android:textStyle="bold"
-                            android:layout_marginBottom="4dp"/>
+                            android:textStyle="bold"/>
+                        </LinearLayout>
 
                         <TextView
                             android:layout_width="match_parent"

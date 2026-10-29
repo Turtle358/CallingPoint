@@ -2,7 +2,6 @@ package io.github.turtle358.callingpoint.ui.activities;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
-import android.content.Context;
 import android.location.Location;
 import android.os.SystemClock;
 import android.content.pm.PackageManager;
@@ -18,7 +17,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.AutoCompleteTextView;
 import android.widget.PopupWindow;
 import android.widget.TextView;
@@ -54,6 +52,7 @@ import io.github.turtle358.callingpoint.api.TflAPI;
 import io.github.turtle358.callingpoint.models.JourneyLocation;
 import io.github.turtle358.callingpoint.ui.adapters.JourneyLocationSuggestionsAdapter;
 import io.github.turtle358.callingpoint.utils.JourneySavedPlaces;
+import io.github.turtle358.callingpoint.utils.JourneyPlanner.JourneyLocationCache;
 import io.github.turtle358.callingpoint.utils.RecentStationsManager;
 import io.github.turtle358.callingpoint.utils.StationHelper;
 import retrofit2.Call;
@@ -66,6 +65,9 @@ public final class JourneyLocationPickerController {
     private final View cardSearchInput, popupView;
     private final RecyclerView listView;
     private final TextView header, empty, status, homeLabel, workLabel;
+    private final View quickLocations;
+    private final View currentOriginChip;
+    private boolean originChipEditing;
     private final JourneyLocationSuggestionsAdapter adapter;
     private final JourneySavedPlaces saved;
     private final List<String> stations;
@@ -85,6 +87,8 @@ public final class JourneyLocationPickerController {
     private AutoCompleteTextView restoringCurrentField;
     private Runnable onRestoredCurrent;
     private String pendingSave;
+    @Nullable private String editorSavedPlaceSlot;
+    @Nullable private Runnable onEditorPlaceSaved;
     private Runnable onSelectionChanged;
     private boolean suppressTextEvents;
     private boolean locatingNow;
@@ -106,7 +110,17 @@ public final class JourneyLocationPickerController {
         fromField = host.findViewById(R.id.etFromCrs);
         toField = host.findViewById(R.id.etToCrs);
         cardSearchInput = host.findViewById(R.id.cardSearchInput);
+        currentOriginChip = host.findViewById(R.id.chipCurrentOrigin);
+        currentOriginChip.setOnClickListener(v -> {
+            originChipEditing = true;
+            updateCurrentOriginChip();
+            fromField.requestFocus();
+            fromField.selectAll();
+            open(fromField);
+            showSearch("");
+        });
         popupView = LayoutInflater.from(host).inflate(R.layout.popup_journey_location_suggestions, null);
+        quickLocations = popupView.findViewById(R.id.layoutJourneyQuickLocations);
         header = popupView.findViewById(R.id.tvJourneyLocationHeader);
         empty = popupView.findViewById(R.id.tvJourneyLocationEmpty);
         status = popupView.findViewById(R.id.tvJourneyLocationStatus);
@@ -164,6 +178,26 @@ public final class JourneyLocationPickerController {
     public boolean hasBothLocations() { return from != null && to != null; }
     public boolean isOpen() { return popup.isShowing(); }
     public void setOnSelectionChanged(@Nullable Runnable listener) { onSelectionChanged = listener; }
+
+    public void beginSavedPlaceEditor(@NonNull String slot, @Nullable Runnable whenSaved) {
+        if (!JourneySavedPlaces.HOME.equals(slot) && !JourneySavedPlaces.WORK.equals(slot))
+            throw new IllegalArgumentException("Only Home or Work can be edited");
+        editorSavedPlaceSlot = slot;
+        onEditorPlaceSaved = whenSaved;
+        fromField.setHint("Search for " + slot + " address or station");
+        suppressTextEvents = true;
+        try { fromField.setText(""); }
+        finally { suppressTextEvents = false; }
+        from = null;
+        fromSavedSlot = null;
+        updateCurrentOriginChip();
+        fromField.post(() -> {
+            if (!activity.isFinishing() && !activity.isDestroyed()) {
+                fromField.requestFocus();
+                open(fromField);
+            }
+        });
+    }
     private void notifySelectionChanged() { if (onSelectionChanged != null) onSelectionChanged.run(); }
 
     public void swap() {
@@ -178,6 +212,7 @@ public final class JourneyLocationPickerController {
             fromField.setText(from == null ? "" : from.displayName());
             toField.setText(to == null ? "" : to.displayName());
         } finally { suppressTextEvents = false; }
+        updateCurrentOriginChip();
         notifySelectionChanged();
         close();
     }
@@ -187,14 +222,30 @@ public final class JourneyLocationPickerController {
         field.setThreshold(Integer.MAX_VALUE);
         field.setOnClickListener(v -> open(field));
         field.setOnFocusChangeListener((v, focused) -> {
-            if (focused) open(field);
-            else if (active == field) close();
+            if (focused) {
+                if (field == fromField && from != null
+                        && from.type == JourneyLocation.Type.CURRENT_LOCATION) {
+                    originChipEditing = true;
+                    updateCurrentOriginChip();
+                    field.selectAll();
+                }
+                open(field);
+            } else if (active == field) close();
+            if (!focused && field == fromField) {
+                originChipEditing = false;
+                updateCurrentOriginChip();
+            }
         });
         field.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
                 if (suppressTextEvents) return;
-                if (field == fromField) { from = null; fromSavedSlot = null; }
+                if (field == fromField) {
+                    from = null;
+                    fromSavedSlot = null;
+                    originChipEditing = false;
+                    updateCurrentOriginChip();
+                }
                 else { to = null; toSavedSlot = null; }
                 notifySelectionChanged();
                 if (field.hasFocus()) {
@@ -243,20 +294,35 @@ public final class JourneyLocationPickerController {
 
     private void select(@NonNull JourneyLocation loc, @Nullable String selectedSavedSlot) {
         if (active == null) return;
-        if (pendingSave != null) {
+        final boolean choseOrigin = active == fromField;
+        final boolean choseDestination = active == toField;
+        String slotToSave = editorSavedPlaceSlot != null ? editorSavedPlaceSlot : pendingSave;
+        if (slotToSave != null) {
             if (loc.type == JourneyLocation.Type.CURRENT_LOCATION) {
                 Toast.makeText(activity, "Choose an address or station for Home/Work", Toast.LENGTH_SHORT).show();
                 return;
             }
-            saved.save(pendingSave, loc);
-            Toast.makeText(activity, (JourneySavedPlaces.HOME.equals(pendingSave) ? "Home" : "Work") + " saved", Toast.LENGTH_SHORT).show();
-            selectedSavedSlot = pendingSave;
+            saved.save(slotToSave, loc);
+            Toast.makeText(activity, (JourneySavedPlaces.HOME.equals(slotToSave) ? "Home" : "Work") + " saved", Toast.LENGTH_SHORT).show();
+            selectedSavedSlot = slotToSave;
             pendingSave = null;
             updateQuickLabels();
         }
         saved.remember(loc);
         setChoice(active, loc, selectedSavedSlot);
         close();
+        if (editorSavedPlaceSlot != null) {
+            editorSavedPlaceSlot = null;
+            Runnable callback = onEditorPlaceSaved;
+            onEditorPlaceSaved = null;
+            if (callback != null) callback.run();
+            return;
+        }
+        if (choseOrigin && to == null) {
+            toField.post(() -> toField.requestFocus());
+        } else if (choseDestination && from == null) {
+            fromField.post(() -> fromField.requestFocus());
+        }
     }
 
     private void setChoice(@NonNull AutoCompleteTextView field, @NonNull JourneyLocation loc,
@@ -264,9 +330,19 @@ public final class JourneyLocationPickerController {
         suppressTextEvents = true;
         try { field.setText(loc.displayName()); field.setSelection(field.length()); }
         finally { suppressTextEvents = false; }
-        if (field == fromField) { from = loc; fromSavedSlot = savedSlot; }
-        else { to = loc; toSavedSlot = savedSlot; }
+        if (field == fromField) {
+            from = loc;
+            fromSavedSlot = savedSlot;
+            originChipEditing = false;
+            updateCurrentOriginChip();
+        } else { to = loc; toSavedSlot = savedSlot; }
         notifySelectionChanged();
+    }
+
+    private void updateCurrentOriginChip() {
+        boolean show = !originChipEditing && from != null
+                && from.type == JourneyLocation.Type.CURRENT_LOCATION;
+        currentOriginChip.setVisibility(show ? View.VISIBLE : View.GONE);
     }
 
     private void clickSaved(String slot) {
@@ -296,6 +372,7 @@ public final class JourneyLocationPickerController {
     }
 
     private void showSearch(@NonNull String typed) {
+        quickLocations.setVisibility(editorSavedPlaceSlot == null && typed.isEmpty() ? View.VISIBLE : View.GONE);
         cancelPending();
         final int token = serial;
         localStations = new ArrayList<>();
@@ -306,8 +383,9 @@ public final class JourneyLocationPickerController {
         awaitingTfl = false;
         addressError = "";
         tflError = "";
+        String selectionSlot = editorSavedPlaceSlot != null ? editorSavedPlaceSlot : pendingSave;
         if (typed.isEmpty()) {
-            header.setText(pendingSave == null ? "RECENT DESTINATIONS" : "CHOOSE " + pendingSave.toUpperCase(Locale.UK));
+            header.setText(selectionSlot == null ? "RECENT DESTINATIONS" : "CHOOSE " + selectionSlot.toUpperCase(Locale.UK));
             List<JourneyLocation> recents = saved.recents();
             if (recents.isEmpty()) for (String station : new RecentStationsManager(activity).getRecentStations()) {
                 if (station != null && !station.trim().isEmpty()) recents.add(JourneyLocation.station(station, null));
@@ -315,7 +393,7 @@ public final class JourneyLocationPickerController {
             updateResults(recents, "", true, recents.isEmpty() ? "No recent destinations" : null);
             return;
         }
-        header.setText(pendingSave == null ? "STATIONS, ADDRESSES & POSTCODES" : "CHOOSE " + pendingSave.toUpperCase(Locale.UK));
+        header.setText(selectionSlot == null ? "STATIONS, ADDRESSES & POSTCODES" : "CHOOSE " + selectionSlot.toUpperCase(Locale.UK));
         String postcode = normalizedPostcode(typed);
         if (postcode != null) postcodeMatch = JourneyLocation.postcode(postcode);
         localStations = findStations(typed);
@@ -398,16 +476,21 @@ public final class JourneyLocationPickerController {
     private void displayCombined(String query) {
         List<JourneyLocation> all = new ArrayList<>();
         if (postcodeMatch != null) all.add(postcodeMatch);
-        all.addAll(remoteStations.subList(0, Math.min(3, remoteStations.size())));
-        all.addAll(localStations.subList(0, Math.min(5, localStations.size())));
+        all.addAll(localStations.subList(0, Math.min(7, localStations.size())));
+        all.addAll(remoteStations.subList(0, Math.min(5, remoteStations.size())));
         all.addAll(remoteAddresses.subList(0, Math.min(5, remoteAddresses.size())));
         Map<String, JourneyLocation> distinct = new LinkedHashMap<>();
         for (JourneyLocation place : all) {
             String key = place.type == JourneyLocation.Type.STATION
-                    ? "station:" + place.displayName().toLowerCase(Locale.UK)
-                    .replace(" underground station", "").replace(" rail station", "")
+                    ? "station:" + canonicalStationName(place.displayName()).toLowerCase(Locale.UK)
                     : place.stableKey();
-            distinct.putIfAbsent(key, place);
+            JourneyLocation previous = distinct.get(key);
+            if (previous == null) {
+                distinct.put(key, place);
+            } else if (place.type == JourneyLocation.Type.STATION
+                    && !hasStationId(previous) && hasStationId(place)) {
+                distinct.put(key, place);
+            }
         }
         List<JourneyLocation> display = new ArrayList<>(distinct.values());
         if (display.size() > 11) display = display.subList(0, 11);
@@ -426,6 +509,16 @@ public final class JourneyLocationPickerController {
         resizePopup();
     }
 
+    static String canonicalStationName(@NonNull String value) {
+        return value.trim().replaceAll(
+                "(?i)\\s+(?:rail|underground|tube|overground|dlr)\\s+station$", "")
+                .replaceAll("(?i)\\s+station$", "").trim();
+    }
+
+    private static boolean hasStationId(@NonNull JourneyLocation value) {
+        return value.stationId != null && !value.stationId.trim().isEmpty();
+    }
+
     private void updateResults(List<JourneyLocation> display, String query, boolean recent, String emptyMessage) {
         displayedCount = display.size();
         adapter.show(display, query, recent);
@@ -442,18 +535,25 @@ public final class JourneyLocationPickerController {
         activity.getWindow().getDecorView().getWindowVisibleDisplayFrame(visible);
         int[] anchor = new int[2];
         cardSearchInput.getLocationOnScreen(anchor);
-        int availableBelow = Math.max(dp(80), visible.bottom - anchor[1]
+        int availableBelow = Math.max(0, visible.bottom - anchor[1]
                 - cardSearchInput.getHeight() - dp(14));
-        int baseHeight = dp(186) + (empty.getVisibility() == View.VISIBLE ? dp(48) : 0)
+        int baseHeight = dp(68) + (quickLocations.getVisibility() == View.VISIBLE ? dp(126) : 0)
+                + (empty.getVisibility() == View.VISIBLE ? dp(48) : 0)
                 + (status.getVisibility() == View.VISIBLE ? dp(36) : 0);
-        int listTarget = Math.min(displayedCount, 5) * dp(62);
-        int listMax = Math.max(0, Math.min(dp(300), availableBelow - baseHeight));
+
+        int listTarget = Math.min(displayedCount, 5) * dp(68);
+        if (displayedCount > 0 && quickLocations.getVisibility() == View.GONE) {
+            listTarget = Math.max(listTarget, dp(178));
+        }
+        int listMax = Math.max(0, Math.min(dp(345), availableBelow - baseHeight));
         ViewGroup.LayoutParams params = listView.getLayoutParams();
-        params.height = Math.min(listTarget, listMax);
-        listView.setLayoutParams(params);
-        popup.setWidth(cardSearchInput.getWidth());
-        popup.setHeight(Math.min(availableBelow, baseHeight + params.height));
-        popup.update();
+        int newListHeight = Math.min(listTarget, listMax);
+        if (params.height != newListHeight) {
+            params.height = newListHeight;
+            listView.setLayoutParams(params);
+        }
+        int newPopupHeight = Math.min(availableBelow, baseHeight + newListHeight);
+        popup.update(cardSearchInput, 0, dp(8), cardSearchInput.getWidth(), newPopupHeight);
     }
 
     private List<JourneyLocation> findStations(String input) {
@@ -485,7 +585,10 @@ public final class JourneyLocationPickerController {
             String name = getString(match, "name", "");
             String id = getString(match, "id", "");
             if (!name.isEmpty() && !id.isEmpty()) {
-                JourneyLocation place = JourneyLocation.station(name, id);
+                String canonicalName = canonicalStationName(name);
+                String localId = StationHelper.getNaptanFromName(canonicalName);
+                JourneyLocation place = JourneyLocation.station(name,
+                        localId != null && !localId.isEmpty() ? localId : id);
                 place.subtitle = "TfL station";
                 result.add(place);
             }
@@ -578,11 +681,48 @@ public final class JourneyLocationPickerController {
 
     private void useResolvedLocation(@NonNull Location location) {
         locatingNow = false;
+        JourneyLocationCache.remember(activity, location);
         if (activity.isFinishing() || activity.isDestroyed()) return;
         if (active != null && locationTarget != null && active != locationTarget) return;
         if (active == null) active = locationTarget == null ? fromField : locationTarget;
         select(JourneyLocation.currentLocation(
                 location.getLatitude(), location.getLongitude()));
+    }
+
+    @SuppressLint("MissingPermission")
+    public void prefillCurrentOriginIfPermitted() {
+        if (from != null || fromField.length() != 0) return;
+        boolean fine = ContextCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED;
+        boolean coarse = ContextCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_COARSE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED;
+        if (!fine && !coarse) return;
+        Location warmed = JourneyLocationCache.getFresh(activity);
+        if (warmed != null) {
+            setChoice(fromField, JourneyLocation.currentLocation(
+                    warmed.getLatitude(), warmed.getLongitude()), null);
+            return;
+        }
+        fusedLocation.getLastLocation()
+                .addOnSuccessListener(activity, location -> {
+                    if (from != null || fromField.length() != 0 || activity.isDestroyed()) return;
+                    if (isUsableCachedLocation(location)) {
+                        JourneyLocationCache.remember(activity, location);
+                        setChoice(fromField, JourneyLocation.currentLocation(
+                                location.getLatitude(), location.getLongitude()), null);
+                    } else {
+                        fusedLocation.getCurrentLocation(LocationRequest.PRIORITY_HIGH_ACCURACY,
+                                        new CancellationTokenSource().getToken())
+                                .addOnSuccessListener(activity, fix -> {
+                                    if (fix != null && from == null && fromField.length() == 0
+                                            && !activity.isDestroyed()) {
+                                        JourneyLocationCache.remember(activity, fix);
+                                        setChoice(fromField, JourneyLocation.currentLocation(
+                                                fix.getLatitude(), fix.getLongitude()), null);
+                                    }
+                                });
+                    }
+                });
     }
 
     public void restoreCurrentLocation(boolean fromSide, @NonNull Runnable onReady) {

@@ -241,34 +241,75 @@
             <androidx.cardview.widget.CardView
                 android:id="@+id/cardWalkOnlyMap"
                 android:layout_width="match_parent"
-                android:layout_height="400dp"
+                android:layout_height="wrap_content"
                 android:layout_marginHorizontal="12dp"
                 android:layout_marginBottom="24dp"
-                app:cardBackgroundColor="#E3E9ED"
+                app:cardBackgroundColor="@color/bg_card"
                 app:cardCornerRadius="28dp"
                 app:cardElevation="2dp"
                 android:visibility="gone">
 
-                <RelativeLayout
+                <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent">
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
 
-                    <org.maplibre.android.maps.MapView
-                        android:id="@+id/mapViewTransfer"
+                    <LinearLayout
                         android:layout_width="match_parent"
-                        android:layout_height="match_parent" />
-
-                    <com.google.android.material.floatingactionbutton.FloatingActionButton
-                        android:id="@+id/fabOpenExternalMap"
-                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_alignParentEnd="true"
-                        android:layout_alignParentBottom="true"
-                        android:layout_margin="16dp"
-                        android:src="@drawable/ic_map"
-                        app:backgroundTint="@color/bg_card"
-                        app:tint="#3F51B5" />
-                </RelativeLayout>
+                        android:padding="16dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/ic_walk"
+                            app:tint="@color/text_primary" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:layout_marginStart="12dp"
+                            android:text="Walking route"
+                            android:textColor="@color/text_primary"
+                            android:textSize="16sp" />
+
+                        <ImageView
+                            android:id="@+id/btnWalkOnlyMapToggle"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:background="@drawable/bg_map_button"
+                            android:padding="8dp"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:contentDescription="Show walking map"
+                            android:src="@drawable/ic_map" />
+                    </LinearLayout>
+
+                    <FrameLayout
+                        android:id="@+id/walkOnlyMapBody"
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:visibility="gone">
+
+                        <org.maplibre.android.maps.MapView
+                            android:id="@+id/mapViewTransfer"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent" />
+
+                        <com.google.android.material.floatingactionbutton.FloatingActionButton
+                            android:id="@+id/fabOpenExternalMap"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="bottom|end"
+                            android:layout_margin="16dp"
+                            android:src="@drawable/ic_map"
+                            app:backgroundTint="@color/bg_card"
+                            app:tint="#3F51B5" />
+                    </FrameLayout>
+                </LinearLayout>
             </androidx.cardview.widget.CardView>
 
             <TextView

@@ -1,9 +1,15 @@
 package io.github.turtle358.callingpoint.ui.adapters;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.ValueAnimator;
+import android.annotation.SuppressLint;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.drawable.GradientDrawable;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
+import android.view.ViewParent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
@@ -44,6 +50,7 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
     private final int COLOUR_FUTURE_LINE = Color.parseColor("#444444");
     private final int COLOUR_FUTURE_DOT = Color.parseColor("#888888");
 
+    private final Set<JourneyLeg> expandedWalkingMaps = new HashSet<>();
     private final Set<String> expandedBeforeSet = new HashSet<>();
     private final Set<String> expandedAfterSet = new HashSet<>();
     private final Map<String, Float> previousBiasMap = new HashMap<>();
@@ -71,13 +78,9 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
     public void onBindViewHolder(@NonNull LegViewHolder holder, int position) {
         JourneyLeg currentLeg = legs.get(position);
 
-        // RecyclerView holders are reused: always reset the change card and spacing.
         holder.cardChange.setVisibility(View.GONE);
         holder.tvChangeTime.setVisibility(View.GONE);
 
-        // If the following leg has a change card, remove the extra bottom padding
-        // from this leg. This evens the spacing above/below the change card,
-        // while keeping the usual bottom breathing room on the final leg.
         boolean nextIsChange = position + 1 < legs.size()
                 && hasChangeBetween(currentLeg, legs.get(position + 1));
         holder.itemView.setPadding(
@@ -89,50 +92,55 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
                 holder.contentContainer.getPaddingRight(),
                 nextIsChange ? 0 : holder.defaultContentBottomPadding);
 
-        // Explicit walking/transfer legs retain their existing dedicated card and map.
-        if ("TUBE/WALK".equals(currentLeg.transportMode)) {
+        if ("TUBE/WALK".equalsIgnoreCase(currentLeg.transportMode)
+                || "WALK".equalsIgnoreCase(currentLeg.transportMode)) {
+            if (holder.mapAnimator != null) {
+                holder.mapAnimator.cancel();
+                holder.mapAnimator = null;
+            }
+            if (holder.renderedLeg != null && holder.renderedLeg != currentLeg) holder.releaseMap();
             holder.contentContainer.setVisibility(View.GONE);
             holder.cardTransfer.setVisibility(View.VISIBLE);
-
-            holder.tvTransferTitle.setText(
-                    "Walk " + currentLeg.durationMinutes + " min"
-            );
+            holder.mapContainer.setVisibility(View.VISIBLE);
+            holder.tvTransferTitle.setText("Walk " + currentLeg.durationMinutes + " min");
             holder.ivTransferIcon.setImageResource(R.drawable.ic_walk);
 
-            View mapCard = (View) holder.mapContainer.getParent();
-
-            mapCard.setVisibility(View.VISIBLE);
-            holder.mapContainer.setVisibility(View.VISIBLE);
-            holder.btnMapTransfer.setVisibility(View.VISIBLE);
-
-            if (holder.attached) {
-                showWalkingMap(holder, currentLeg);
-            }
-
-            holder.cardTransfer.setOnClickListener(v -> {
-                if (mapCard.getVisibility() != View.VISIBLE) {
-                    return;
-                }
-
-                if (holder.mapContainer.getVisibility() == View.VISIBLE) {
-                    holder.mapContainer.setVisibility(View.GONE);
-                } else {
-                    holder.mapContainer.setVisibility(View.VISIBLE);
-                    showWalkingMap(holder, currentLeg);
-                }
+            boolean expanded = expandedWalkingMaps.contains(currentLeg);
+            holder.cardWalkingMap.setVisibility(expanded ? View.VISIBLE : View.GONE);
+            ViewGroup.LayoutParams mapParams = holder.cardWalkingMap.getLayoutParams();
+            mapParams.height = dp(holder.itemView, 200);
+            holder.cardWalkingMap.setLayoutParams(mapParams);
+            holder.btnMapTransfer.setContentDescription(expanded ? "Hide walking map" : "Show walking map");
+            holder.btnMapTransfer.setOnClickListener(v -> {
+                int index = holder.getBindingAdapterPosition();
+                if (index == RecyclerView.NO_POSITION || index >= legs.size()
+                        || legs.get(index) != currentLeg) return;
+                setWalkingMapExpanded(holder, currentLeg,
+                        !expandedWalkingMaps.contains(currentLeg), true);
             });
-
+            if (expanded && holder.attached) {
+                holder.cardWalkingMap.post(() -> {
+                    int index = holder.getBindingAdapterPosition();
+                    if (holder.attached && index != RecyclerView.NO_POSITION
+                            && index < legs.size() && legs.get(index) == currentLeg
+                            && expandedWalkingMaps.contains(currentLeg)) {
+                        showWalkingMap(holder, currentLeg);
+                    }
+                });
+            }
             return;
         }
 
-
+        if (holder.mapAnimator != null) {
+            holder.mapAnimator.cancel();
+            holder.mapAnimator = null;
+        }
+        holder.releaseMap();
+        holder.cardWalkingMap.setVisibility(View.GONE);
         holder.contentContainer.setVisibility(View.VISIBLE);
         holder.cardTransfer.setVisibility(View.GONE);
         holder.mapContainer.setVisibility(View.GONE);
-        holder.releaseMap();
 
-        // Two consecutive vehicle legs can require a change without a separate
-        // walking leg. Display the transfer card above the next train/bus.
         if (position > 0) {
             JourneyLeg previousLeg = legs.get(position - 1);
             if (hasChangeBetween(previousLeg, currentLeg)) {
@@ -171,14 +179,12 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
             holder.tvOperatorName.setText(busTitle);
         } else {
             String operatorName = currentLeg.operatorName;
-            // Preserve official capitalisation; never render "Lner".
             if (operatorName != null && operatorName.equalsIgnoreCase("LNER")) {
                 operatorName = "LNER";
             }
             holder.tvOperatorName.setText(operatorName);
         }
 
-        // The XML now puts the train destination on its own line below the operator.
         String trainDestination = currentLeg.trainDestination;
         if (trainDestination == null || trainDestination.trim().isEmpty()) {
             holder.tvTrainDestination.setText(null);
@@ -334,7 +340,11 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
     public void onHostDestroy() {
         hostResumed = false;
         hostStarted = false;
-        for (LegViewHolder h : new ArrayList<>(knownHolders)) h.releaseMap();
+        for (LegViewHolder h : new ArrayList<>(knownHolders)) {
+            if (h.mapAnimator != null) { h.mapAnimator.cancel(); h.mapAnimator = null; }
+            h.releaseMap();
+        }
+        expandedWalkingMaps.clear();
         knownHolders.clear();
     }
 
@@ -351,8 +361,12 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
 
             JourneyLeg leg = legs.get(position);
 
-            if ("TUBE/WALK".equals(leg.transportMode)) {
-                showWalkingMap(holder, leg);
+            if (("TUBE/WALK".equalsIgnoreCase(leg.transportMode)
+                    || "WALK".equalsIgnoreCase(leg.transportMode))
+                    && expandedWalkingMaps.contains(leg)) {
+                holder.cardWalkingMap.post(() -> {
+                    if (holder.attached && expandedWalkingMaps.contains(leg)) showWalkingMap(holder, leg);
+                });
             }
         }
 
@@ -362,12 +376,14 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
     @Override
     public void onViewDetachedFromWindow(@NonNull LegViewHolder holder) {
         holder.attached = false;
-        holder.syncMapLifecycle(hostStarted, hostResumed);
+        if (holder.mapAnimator != null) { holder.mapAnimator.cancel(); holder.mapAnimator = null; }
+        holder.releaseMap();
         super.onViewDetachedFromWindow(holder);
     }
 
     @Override
     public void onViewRecycled(@NonNull LegViewHolder holder) {
+        if (holder.mapAnimator != null) { holder.mapAnimator.cancel(); holder.mapAnimator = null; }
         holder.releaseMap();
         super.onViewRecycled(holder);
     }
@@ -650,13 +666,11 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
         }
         if (previous.serviceId != null && !previous.serviceId.isEmpty()
                 && previous.serviceId.equals(current.serviceId)) {
-            return false; // Still the same service, so there's no change to make.
+            return false;
         }
         return !getChangeStation(previous, current).isEmpty();
     }
 
-    // Prefer valid live expected/actual times when a leg was enriched; otherwise
-    // use the original journey timetable. Invalid live statuses are ignored.
     private String getConnectionTime(JourneyLeg leg, String stationName,
                                      String fallbackTime) {
         ServiceDetailsResponse details = liveDataMap.get(leg.serviceId);
@@ -677,8 +691,6 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
                 current, current.fromStationName, current.departureTime));
         if (arrival < 0 || departure < 0) return -1;
 
-        // A small negative clock difference is usually a missed connection,
-        // not an overnight wait. Large differences can be valid after midnight.
         if (departure < arrival) {
             if (arrival - departure < 12 * 60) return -1;
             departure += 24 * 60;
@@ -700,12 +712,14 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
         ConstraintLayout contentContainer;
         LinearLayout layoutTimeline;
         TextView tvOperatorName, tvTrainDestination;
-        CardView cardTransfer, cardChange;
+        CardView cardTransfer, cardChange, cardWalkingMap;
         TextView tvTransferTitle, tvChangeTitle, tvChangeTime;
         final int defaultItemBottomPadding, defaultContentBottomPadding;
         ImageView ivManagerLogo, btnMapTransfer, ivModeIcon, ivTransferIcon;
         FrameLayout mapContainer;
         MapView mapViewTransferLeg;
+        JourneyLeg renderedLeg;
+        ValueAnimator mapAnimator;
         boolean attached;
         private boolean mapStarted;
         private boolean mapResumed;
@@ -720,6 +734,7 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
             layoutTimeline = itemView.findViewById(R.id.layoutTimeline);
             cardTransfer = itemView.findViewById(R.id.cardTransfer);
             cardChange = itemView.findViewById(R.id.cardChange);
+            cardWalkingMap = itemView.findViewById(R.id.cardWalkingMap);
             tvTransferTitle = itemView.findViewById(R.id.tvTransferTitle);
             tvChangeTitle = itemView.findViewById(R.id.tvChangeTitle);
             tvChangeTime = itemView.findViewById(R.id.tvChangeTime);
@@ -733,7 +748,11 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
         void ensureMap(boolean hostStarted, boolean hostResumed) {
             if (mapViewTransferLeg == null) {
                 MapLibreMapOptions options = new MapLibreMapOptions()
-                        .textureMode(true);
+                        .textureMode(true)
+                        .scrollGesturesEnabled(true)
+                        .zoomGesturesEnabled(true)
+                        .rotateGesturesEnabled(true)
+                        .tiltGesturesEnabled(true);
 
                 mapViewTransferLeg = new MapView(
                         itemView.getContext(),
@@ -744,6 +763,7 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
                         FrameLayout.LayoutParams.MATCH_PARENT,
                         FrameLayout.LayoutParams.MATCH_PARENT));
                 mapViewTransferLeg.onCreate(null);
+                enableMapGestures(mapViewTransferLeg);
             }
             syncMapLifecycle(hostStarted, hostResumed);
         }
@@ -772,6 +792,7 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
         }
 
         void releaseMap() {
+            renderedLeg = null;
             if (mapViewTransferLeg == null) return;
             MapLibreWalkingMap.invalidate(mapViewTransferLeg);
             if (mapResumed) mapViewTransferLeg.onPause();
@@ -785,15 +806,91 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
     }
 
 
-    private void showWalkingMap(
-            LegViewHolder holder,
-            JourneyLeg leg
-    ) {
+    private static int dp(View view, int value) {
+        return Math.round(value * view.getResources().getDisplayMetrics().density);
+    }
+
+    private void setWalkingMapExpanded(LegViewHolder holder, JourneyLeg leg,
+                                       boolean expand, boolean animate) {
+        if (expand) expandedWalkingMaps.add(leg);
+        else expandedWalkingMaps.remove(leg);
+
+        if (holder.mapAnimator != null) {
+            holder.mapAnimator.cancel();
+            holder.mapAnimator = null;
+        }
+        holder.btnMapTransfer.setContentDescription(expand ? "Hide walking map" : "Show walking map");
+        CardView card = holder.cardWalkingMap;
+        int target = expand ? dp(holder.itemView, 200) : 0;
+        int start = card.getVisibility() == View.VISIBLE ? card.getHeight() : 0;
+        if (expand && card.getVisibility() != View.VISIBLE) {
+            ViewGroup.LayoutParams initial = card.getLayoutParams();
+            initial.height = 0;
+            card.setLayoutParams(initial);
+            card.setVisibility(View.VISIBLE);
+        }
+        if (!animate || start == target) {
+            ViewGroup.LayoutParams lp = card.getLayoutParams();
+            lp.height = expand ? target : dp(holder.itemView, 200);
+            card.setLayoutParams(lp);
+            if (expand) card.post(() -> { if (holder.attached) showWalkingMap(holder, leg); });
+            else { card.setVisibility(View.GONE); holder.releaseMap(); }
+            return;
+        }
+        ValueAnimator animator = ValueAnimator.ofInt(start, target);
+        holder.mapAnimator = animator;
+        animator.setDuration(240);
+        animator.addUpdateListener(value -> {
+            if (holder.mapAnimator != animator) return;
+            ViewGroup.LayoutParams lp = card.getLayoutParams();
+            lp.height = (Integer) value.getAnimatedValue();
+            card.setLayoutParams(lp);
+        });
+        animator.addListener(new AnimatorListenerAdapter() {
+            private boolean cancelled;
+            @Override public void onAnimationCancel(Animator animation) { cancelled = true; }
+            @Override public void onAnimationEnd(Animator animation) {
+                if (cancelled || holder.mapAnimator != animator) return;
+                holder.mapAnimator = null;
+                if (expand) {
+                    if (holder.attached && expandedWalkingMaps.contains(leg)) {
+                        card.post(() -> {
+                            if (holder.attached && expandedWalkingMaps.contains(leg)) showWalkingMap(holder, leg);
+                        });
+                    }
+                } else {
+                    card.setVisibility(View.GONE);
+                    ViewGroup.LayoutParams lp = card.getLayoutParams();
+                    lp.height = dp(holder.itemView, 200);
+                    card.setLayoutParams(lp);
+                    holder.releaseMap();
+                }
+            }
+        });
+        animator.start();
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
+    private static void enableMapGestures(MapView map) {
+        map.getMapAsync(mapLibre -> mapLibre.getUiSettings().setAllGesturesEnabled(true));
+        map.setOnTouchListener((view, event) -> {
+            ViewParent parent = view.getParent();
+            if (parent != null) {
+                int action = event.getActionMasked();
+                parent.requestDisallowInterceptTouchEvent(action != MotionEvent.ACTION_UP
+                        && action != MotionEvent.ACTION_CANCEL);
+            }
+            return false;
+        });
+    }
+
+    private void showWalkingMap(LegViewHolder holder, JourneyLeg leg) {
+        if (!holder.attached || !expandedWalkingMaps.contains(leg)
+                || holder.cardWalkingMap.getVisibility() != View.VISIBLE) return;
+        if (holder.renderedLeg == leg && holder.mapViewTransferLeg != null) return;
         holder.ensureMap(hostStarted, hostResumed);
-
         MapView currentMap = holder.mapViewTransferLeg;
-
-        View mapCard = (View) holder.mapContainer.getParent();
+        holder.renderedLeg = leg;
 
         MapLibreWalkingMap.render(
                 holder.itemView.getContext(),
@@ -802,19 +899,13 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
                 leg.toStationName,
                 () -> {
                     int position = holder.getBindingAdapterPosition();
-
-                    if (position == RecyclerView.NO_POSITION
-                            || position >= legs.size()
+                    if (position == RecyclerView.NO_POSITION || position >= legs.size()
                             || legs.get(position) != leg
-                            || holder.mapViewTransferLeg != currentMap) {
-                        return;
-                    }
-
-                    mapCard.setVisibility(View.GONE);
-
-                    holder.btnMapTransfer.setVisibility(View.GONE);
-
-                    holder.releaseMap();
+                            || holder.mapViewTransferLeg != currentMap) return;
+                    holder.renderedLeg = null;
+                    setWalkingMapExpanded(holder, leg, false, true);
+                    android.widget.Toast.makeText(holder.itemView.getContext(),
+                            "Walking map unavailable right now", android.widget.Toast.LENGTH_SHORT).show();
                 }
         );
     }

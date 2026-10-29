@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Locale;
 
 import io.github.turtle358.callingpoint.R;
+import io.github.turtle358.callingpoint.utils.JourneyPlanner.JourneyChangeSummary;
 import io.github.turtle358.callingpoint.models.JourneyOption;
 import io.github.turtle358.callingpoint.utils.TOCBrandHelper;
 
@@ -141,7 +142,7 @@ public class JourneyAdapter extends RecyclerView.Adapter<JourneyAdapter.ViewHold
         }
 
         holder.tvJourneyDuration.setText(route.duration != null ? route.duration : "");
-        holder.tvJourneyChanges.setText(route.changesSummary != null ? route.changesSummary : "Direct");
+        holder.tvJourneyChanges.setText(JourneyChangeSummary.label(route));
 
         holder.itemView.setOnClickListener(v -> listener.onJourneyClick(route));
     }

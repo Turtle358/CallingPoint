@@ -15,6 +15,12 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.RadioGroup;
 import android.widget.Toast;
+import android.widget.TextView;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.widget.PopupMenu;
+import io.github.turtle358.callingpoint.models.JourneyLocation;
+import io.github.turtle358.callingpoint.ui.activities.JourneySearchActivity;
+import io.github.turtle358.callingpoint.utils.JourneySavedPlaces;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -63,6 +69,9 @@ public class SettingsFragment extends Fragment {
     private Set<String> trackedTocs;
     private SharedPreferences prefs;
     private TocSettingAdapter adapter;
+    private JourneySavedPlaces savedPlaces;
+    private TextView homePlaceDescription;
+    private TextView workPlaceDescription;
 
     private BillingClient billingClient;
     private ProductDetails coffeeProductDetails;
@@ -77,6 +86,15 @@ public class SettingsFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+        savedPlaces = new JourneySavedPlaces(requireContext());
+        homePlaceDescription = view.findViewById(R.id.tvSettingsHomePlace);
+        workPlaceDescription = view.findViewById(R.id.tvSettingsWorkPlace);
+
+        view.findViewById(R.id.rowSettingsHome).setOnClickListener(v -> openSavedPlaceEditor(JourneySavedPlaces.HOME));
+        view.findViewById(R.id.rowSettingsWork).setOnClickListener(v -> openSavedPlaceEditor(JourneySavedPlaces.WORK));
+        view.findViewById(R.id.btnSettingsChangeHome).setOnClickListener(v -> showSavedPlaceActions(JourneySavedPlaces.HOME, v));
+        view.findViewById(R.id.btnSettingsChangeWork).setOnClickListener(v -> showSavedPlaceActions(JourneySavedPlaces.WORK, v));
+        updateSavedPlacesUi();
         androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(view, (v, insets) -> {
             androidx.core.graphics.Insets systemBars = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.statusBars());
             v.setPadding(0, systemBars.top, 0, 0);
@@ -210,6 +228,72 @@ public class SettingsFragment extends Fragment {
         android.widget.TextView tvAttributions = view.findViewById(R.id.tvAttributions);
         String attributionHtml = "Powered by data from the <b>National Rail Data Portal</b>, <b>Transport for London (TfL)</b>, and <b>OpenStreetMap</b>.<br>Some icons sourced from <b>SVGRepo.com</b> under open licenses.";
         tvAttributions.setText(android.text.Html.fromHtml(attributionHtml, android.text.Html.FROM_HTML_MODE_COMPACT));
+    }
+
+    /** Reuses the existing journey location autocomplete, including stations and Geoapify addresses. */
+    private void openSavedPlaceEditor(@NonNull String slot) {
+        Intent edit = new Intent(requireContext(), JourneySearchActivity.class);
+        edit.putExtra(JourneySearchActivity.EXTRA_EDIT_SAVED_PLACE, slot);
+        startActivity(edit);
+    }
+
+    /** A saved place's Change button doubles as its action menu; Set opens the picker directly. */
+    private void showSavedPlaceActions(@NonNull String slot, @NonNull View anchor) {
+        if (savedPlaces == null || savedPlaces.get(slot) == null) {
+            openSavedPlaceEditor(slot);
+            return;
+        }
+
+        String label = JourneySavedPlaces.HOME.equals(slot) ? "Home" : "Work";
+        PopupMenu menu = new PopupMenu(requireContext(), anchor);
+        menu.getMenu().add(0, 1, 0, "Change location");
+        menu.getMenu().add(0, 2, 1, "Remove " + label);
+        menu.setOnMenuItemClickListener(item -> {
+            if (item.getItemId() == 1) {
+                openSavedPlaceEditor(slot);
+                return true;
+            }
+            if (item.getItemId() == 2) {
+                confirmClearSavedPlace(slot);
+                return true;
+            }
+            return false;
+        });
+        menu.show();
+    }
+
+    private void confirmClearSavedPlace(@NonNull String slot) {
+        if (savedPlaces == null || savedPlaces.get(slot) == null) return;
+        String label = JourneySavedPlaces.HOME.equals(slot) ? "Home" : "Work";
+        new AlertDialog.Builder(requireContext())
+                .setTitle("Remove " + label + "?")
+                .setMessage("This removes your saved " + label.toLowerCase(java.util.Locale.UK)
+                        + " location. Routes using this shortcut may need updating.")
+                .setNegativeButton("Cancel", null)
+                .setPositiveButton("Remove", (dialog, which) -> {
+                    savedPlaces.clear(slot);
+                    updateSavedPlacesUi();
+                })
+                .show();
+    }
+
+    private void updateSavedPlacesUi() {
+        if (savedPlaces == null || getView() == null) return;
+        JourneyLocation home = savedPlaces.get(JourneySavedPlaces.HOME);
+        JourneyLocation work = savedPlaces.get(JourneySavedPlaces.WORK);
+        if (homePlaceDescription != null) {
+            homePlaceDescription.setText(home == null ? "Not set" : home.displayName());
+        }
+        if (workPlaceDescription != null) {
+            workPlaceDescription.setText(work == null ? "Not set" : work.displayName());
+        }
+        View v = getView();
+        ((TextView) v.findViewById(R.id.btnSettingsChangeHome)).setText(home == null ? "Set" : "Change");
+        ((TextView) v.findViewById(R.id.btnSettingsChangeWork)).setText(work == null ? "Set" : "Change");
+        v.findViewById(R.id.btnSettingsChangeHome).setContentDescription(
+                home == null ? "Set Home location" : "Change or remove Home location");
+        v.findViewById(R.id.btnSettingsChangeWork).setContentDescription(
+                work == null ? "Set Work location" : "Change or remove Work location");
     }
 
     private void setupThemeControl() {
@@ -415,6 +499,7 @@ public class SettingsFragment extends Fragment {
     public void onResume() {
         super.onResume();
         checkWidgetStatus();
+        updateSavedPlacesUi();
 
         if (adapter != null && prefs != null) {
             String savedTocs = prefs.getString("WIDGET_TRACKED_TOCS", "");

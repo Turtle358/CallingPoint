@@ -53,14 +53,19 @@
                     android:layout_height="40dp"
                     android:background="@drawable/bg_map_button"
                     android:padding="8dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:contentDescription="Show walking map"
                     android:src="@drawable/ic_map" />
             </LinearLayout>
 
             <androidx.cardview.widget.CardView
+                android:id="@+id/cardWalkingMap"
                 android:layout_width="match_parent"
                 android:layout_height="200dp"
                 android:layout_marginHorizontal="12dp"
                 android:layout_marginBottom="12dp"
+                android:visibility="gone"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="0dp">
 
@@ -86,7 +91,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="@id/contentContainer" />
 
-    <!-- A compact change card for consecutive vehicle legs (e.g. train to train). -->
     <androidx.cardview.widget.CardView
         android:id="@+id/cardChange"
         android:layout_width="0dp"
@@ -110,7 +114,6 @@
             android:paddingHorizontal="12dp"
             android:paddingVertical="9dp">
 
-            <!-- Tint the user's existing transfer icon with the theme's text colour. -->
             <ImageView
                 android:layout_width="24dp"
                 android:layout_height="24dp"

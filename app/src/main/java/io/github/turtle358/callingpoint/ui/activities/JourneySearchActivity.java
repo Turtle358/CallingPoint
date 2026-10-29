@@ -6,11 +6,16 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import io.github.turtle358.callingpoint.utils.JourneySavedPlaces;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.TextUtils;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
@@ -36,8 +41,15 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 import io.github.turtle358.callingpoint.R;
+import io.github.turtle358.callingpoint.api.APIClient;
+import io.github.turtle358.callingpoint.api.GeoapifyAutocompleteAPI;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 import io.github.turtle358.callingpoint.models.JourneyOption;
 import io.github.turtle358.callingpoint.models.SavedRoute;
 import io.github.turtle358.callingpoint.ui.adapters.JourneyAdapter;
@@ -50,10 +62,14 @@ import io.github.turtle358.callingpoint.utils.JourneyPlanner.TflJourneyPlannerEn
 
 public class JourneySearchActivity extends AppCompatActivity {
 
+    public static final String EXTRA_EDIT_SAVED_PLACE = "EDIT_SAVED_PLACE";
+    private boolean savedPlaceEditMode;
+
     private AutoCompleteTextView etFromCrs, etToCrs;
     private RecyclerView recyclerSearchResults;
     private TextView tvTimeSelection;
-    private TextView tvTravelOptionsSummary, tvModesSummary;
+    private TextView tvTravelOptionsSummary;
+    private TextView tvSearchHint, tvResultsHeading;
 
     private View cardFallbackWarning;
     private TextView cardTextFallbackWarning;
@@ -71,6 +87,11 @@ public class JourneySearchActivity extends AppCompatActivity {
 
     private Calendar selectedCalendar = null;
     private boolean isArriving = false;
+    private final Handler searchHandler = new Handler(Looper.getMainLooper());
+    private final Runnable pendingAutoSearch = this::searchIfChanged;
+    private boolean automaticSearchReady = false;
+    private String lastSearchSignature;
+    private int searchVersion = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -79,92 +100,78 @@ public class JourneySearchActivity extends AppCompatActivity {
         setContentView(R.layout.activity_journey_search);
 
         journeyPrefs = getSharedPreferences("JourneyPrefs", Context.MODE_PRIVATE);
-
         etFromCrs = findViewById(R.id.etFromCrs);
         etToCrs = findViewById(R.id.etToCrs);
         ImageButton btnSwap = findViewById(R.id.btnSwapStations);
-        Button btnSearch = findViewById(R.id.btnSearchJourney);
         recyclerSearchResults = findViewById(R.id.recyclerSearchResults);
         shimmerView = findViewById(R.id.shimmer_journey_container);
-
         btnTimeSelector = findViewById(R.id.btnTimeSelector);
         tvTimeSelection = findViewById(R.id.tvTimeSelection);
         cardFallbackWarning = findViewById(R.id.cardFallbackWarning);
         cardTextFallbackWarning = findViewById(R.id.cardTextFallbackWarning);
         btnSaveRoute = findViewById(R.id.btnSaveRoute);
-
         tvTravelOptionsSummary = findViewById(R.id.tvTravelOptionsSummary);
-        tvModesSummary = findViewById(R.id.tvModesSummary);
-        View btnTravelOptions = findViewById(R.id.btnTravelOptions);
-        View btnPreferredModes = findViewById(R.id.btnPreferredModes);
+        tvSearchHint = findViewById(R.id.tvJourneySearchHint);
+        tvResultsHeading = findViewById(R.id.tvJourneyResultsHeading);
 
-        if (btnTravelOptions != null) btnTravelOptions.setOnClickListener(v -> showTravelOptionsDialog());
-        if (btnPreferredModes != null) btnPreferredModes.setOnClickListener(v -> showPreferredModesDialog());
-
-        if (tvTravelOptionsSummary != null && tvModesSummary != null) {
-            updateSearchOptionsUI();
-        }
+        findViewById(R.id.btnTravelOptions).setOnClickListener(v -> showJourneyOptionsDialog());
+        cardFallbackWarning.setOnClickListener(v -> {
+            if (locationPicker != null && locationPicker.hasBothLocations()) handleSearch();
+        });
+        updateSearchOptionsUI();
 
         GraphManager graphManager = GraphManager.getInstance(this);
-
         plannerEngine = new JourneyPlannerEngine(graphManager);
         tflPlannerEngine = new TflJourneyPlannerEngine();
         savedRoutesManager = new SavedRoutesManager(this);
 
         locationPicker = new JourneyLocationPickerController(this, StationHelper.getStationNames());
-        locationPicker.setOnSelectionChanged(this::updateSaveButtonState);
+        locationPicker.setOnSelectionChanged(this::onLocationsChanged);
         setupDateTimePickers();
 
         etFromCrs.setOnEditorActionListener((v, actionId, event) -> {
-            if (locationPicker.getFrom() != null) {
-                etToCrs.requestFocus();
-            } else {
-                Toast.makeText(this, "Choose a suggested starting point", Toast.LENGTH_SHORT).show();
+            if (savedPlaceEditMode) {
+                Toast.makeText(this, "Select a location from the suggestions", Toast.LENGTH_SHORT).show();
+                return true;
             }
+            if (locationPicker.getFrom() != null) etToCrs.requestFocus();
+            else Toast.makeText(this, "Choose a starting point from the suggestions", Toast.LENGTH_SHORT).show();
             return true;
         });
         etToCrs.setOnEditorActionListener((v, actionId, event) -> {
             if (locationPicker.hasBothLocations()) handleSearch();
-            else Toast.makeText(this, "Choose both locations from the suggestions", Toast.LENGTH_SHORT).show();
+            else Toast.makeText(this, "Choose a location from the suggestions", Toast.LENGTH_SHORT).show();
             return true;
         });
 
-        View btnBack = findViewById(R.id.btnBack);
-        if (btnBack != null) {
-            btnBack.setOnClickListener(v -> {
-                hideKeyboard();
-                finish();
-            });
-        }
+        findViewById(R.id.btnBack).setOnClickListener(v -> {
+            hideKeyboard();
+            finish();
+        });
 
         recyclerSearchResults.setLayoutManager(new LinearLayoutManager(this));
         adapter = new JourneyAdapter(new ArrayList<>(), route -> {
-            Intent intent = new Intent(this, JourneyDetailsActivity.class);
-            intent.putExtra("JOURNEY_OPTION", route);
-            startActivity(intent);
+            Intent detail = new Intent(this, JourneyDetailsActivity.class);
+            detail.putExtra("JOURNEY_OPTION", route);
+            startActivity(detail);
         });
         recyclerSearchResults.setAdapter(adapter);
 
-        btnSwap.setOnClickListener(v -> {
-            locationPicker.swap();
-            updateSaveButtonState();
-        });
-
-        btnSearch.setOnClickListener(v -> handleSearch());
-
-        if (btnSaveRoute != null) {
-            btnSaveRoute.setOnClickListener(v -> {
-                toggleRouteSavedState();
-            });
-        }
+        btnSwap.setOnClickListener(v -> locationPicker.swap());
+        btnSaveRoute.setOnClickListener(v -> toggleRouteSavedState());
 
         Intent intent = getIntent();
+        String editingPlace = intent == null ? null : intent.getStringExtra(EXTRA_EDIT_SAVED_PLACE);
+        if (JourneySavedPlaces.HOME.equals(editingPlace) || JourneySavedPlaces.WORK.equals(editingPlace)) {
+            configureSavedPlaceEditor(editingPlace);
+            return;
+        }
         if (intent != null && intent.hasExtra("AUTO_SAVED_ROUTE_JSON")) {
             try {
                 SavedRoute route = new Gson().fromJson(
                         intent.getStringExtra("AUTO_SAVED_ROUTE_JSON"), SavedRoute.class);
                 if (route == null) throw new IllegalArgumentException("Missing saved route");
-                restoreSavedRoute(route, btnSearch);
+                restoreSavedRoute(route);
             } catch (RuntimeException e) {
                 Toast.makeText(this, "Unable to open saved route", Toast.LENGTH_LONG).show();
             }
@@ -174,52 +181,146 @@ public class JourneySearchActivity extends AppCompatActivity {
             if (from != null && to != null && !from.trim().isEmpty() && !to.trim().isEmpty()) {
                 locationPicker.setFrom(JourneyLocation.station(from, StationHelper.getNaptanFromName(from)));
                 locationPicker.setTo(JourneyLocation.station(to, StationHelper.getNaptanFromName(to)));
-                updateSaveButtonState();
-                btnSearch.post(this::handleSearch);
             }
         } else {
-            etFromCrs.post(() -> {
-                if (!isFinishing() && !isDestroyed()) {
-                    etFromCrs.requestFocus();
+            locationPicker.prefillCurrentOriginIfPermitted();
+            etToCrs.post(() -> {
+                if (!isFinishing() && !isDestroyed() && locationPicker.getTo() == null) {
+                    etToCrs.requestFocus();
                 }
             });
         }
+
+        automaticSearchReady = true;
+        updateSaveButtonState();
+        scheduleAutomaticSearch();
+    }
+
+    private void configureSavedPlaceEditor(@androidx.annotation.NonNull String slot) {
+        savedPlaceEditMode = true;
+        boolean home = JourneySavedPlaces.HOME.equals(slot);
+        etFromCrs.setImeOptions(android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH);
+        ((TextView) findViewById(R.id.tvJourneySearchTitle)).setText(home ? "Set Home" : "Set Work");
+        btnSaveRoute.setVisibility(View.GONE);
+        findViewById(R.id.layoutJourneyEndpointMarker).setVisibility(View.GONE);
+        findViewById(R.id.dividerJourneyEndpoints).setVisibility(View.GONE);
+        findViewById(R.id.tilToCrs).setVisibility(View.GONE);
+        findViewById(R.id.btnSwapStations).setVisibility(View.GONE);
+        findViewById(R.id.layoutJourneySearchOptions).setVisibility(View.GONE);
+        tvResultsHeading.setVisibility(View.GONE);
+        tvSearchHint.setVisibility(View.GONE);
+        recyclerSearchResults.setVisibility(View.GONE);
+        shimmerView.setVisibility(View.GONE);
+        cardFallbackWarning.setVisibility(View.GONE);
+        findViewById(R.id.tvSavedPlaceEditorHint).setVisibility(View.VISIBLE);
+        automaticSearchReady = false;
+        locationPicker.beginSavedPlaceEditor(slot, () -> {
+            setResult(RESULT_OK);
+            hideKeyboard();
+            finish();
+        });
     }
 
     private void updateSearchOptionsUI() {
-        String pref = journeyPrefs.getString("journeyPreference", "leasttime");
-        boolean isAccessible = journeyPrefs.getBoolean("accessibilityRequired", false);
+        if (tvTravelOptionsSummary == null) return;
+        String preference = journeyPrefs.getString("journeyPreference", "leasttime");
+        boolean stepFree = journeyPrefs.getBoolean("accessibilityRequired", false);
+        Set<String> selectedModes = parsePreferredModes(
+                journeyPrefs.getString("preferredModes", null));
 
-        String routeText = "Fastest route";
-        if (pref.equals("leastinterchange")) routeText = "Fewest changes";
-        if (pref.equals("leastwalking")) routeText = "Least walking";
+        StringBuilder label = new StringBuilder("Options");
+        if ("leastinterchange".equals(preference)) label.append(" · Fewest changes");
+        else if ("leastwalking".equals(preference)) label.append(" · Least walking");
+        if (stepFree) label.append(" · Step-free");
 
-        if (isAccessible) routeText += " • Step-free";
-        tvTravelOptionsSummary.setText(routeText);
-
-        String modes = journeyPrefs.getString("preferredModes", null);
-        if (modes == null || modes.isEmpty()) {
-            tvModesSummary.setText("All modes");
-        } else {
-            boolean hasTrain = modes.contains("national-rail");
-            boolean hasTram = modes.contains("tram");
-            boolean hasTube = modes.contains("tube");
-            boolean hasBus = modes.contains("bus");
-
-            int activeToggles = (hasTrain ? 1 : 0) + (hasTram ? 1 : 0) +
-                    (hasTube ? 1 : 0) + (hasBus ? 1 : 0);
-
-            if (activeToggles == 0 || activeToggles == 4) {
-                tvModesSummary.setText("All modes");
-            } else if (activeToggles == 1) {
-                if (hasTrain) tvModesSummary.setText("Train");
-                else if (hasTram) tvModesSummary.setText("Tram");
-                else if (hasTube) tvModesSummary.setText("Underground");
-                else if (hasBus) tvModesSummary.setText("Bus");
-            } else {
-                tvModesSummary.setText(activeToggles + " selected");
+        boolean train = hasTrainMode(selectedModes);
+        boolean underground = hasUndergroundMode(selectedModes);
+        boolean bus = selectedModes.contains("bus");
+        boolean tram = selectedModes.contains("tram");
+        int selectedCount = (train ? 1 : 0) + (underground ? 1 : 0)
+                + (bus ? 1 : 0) + (tram ? 1 : 0);
+        boolean hasOtherMode = false;
+        for (String mode : selectedModes) {
+            if (!("national-rail".equals(mode) || "overground".equals(mode)
+                    || "elizabeth-line".equals(mode) || "tube".equals(mode)
+                    || "dlr".equals(mode) || "bus".equals(mode) || "tram".equals(mode))) {
+                hasOtherMode = true;
+                break;
             }
         }
+        if (selectedCount == 1 && !hasOtherMode) {
+            label.append(" · ").append(train ? "Train"
+                    : underground ? "Underground" : bus ? "Bus" : "Tram");
+        } else if (!selectedModes.isEmpty()) {
+            label.append(" · Modes");
+        }
+        tvTravelOptionsSummary.setText(label.toString());
+    }
+
+    private static Set<String> parsePreferredModes(String value) {
+        Set<String> result = new LinkedHashSet<>();
+        if (value != null) {
+            for (String token : value.split(",")) {
+                if (!token.trim().isEmpty()) result.add(token.trim().toLowerCase(Locale.UK));
+            }
+        }
+        return result;
+    }
+
+    private static boolean hasTrainMode(Set<String> modes) {
+        return modes.contains("national-rail") || modes.contains("overground")
+                || modes.contains("elizabeth-line");
+    }
+
+    private static boolean hasUndergroundMode(Set<String> modes) {
+        return modes.contains("tube") || modes.contains("dlr");
+    }
+
+    private void onLocationsChanged() {
+        updateSaveButtonState();
+        if (!automaticSearchReady) return;
+        if (!locationPicker.hasBothLocations()) {
+            searchHandler.removeCallbacks(pendingAutoSearch);
+            searchVersion++;
+            lastSearchSignature = null;
+            if (adapter != null) adapter.updateData(new ArrayList<>());
+            recyclerSearchResults.setVisibility(View.GONE);
+            shimmerView.stopShimmer();
+            shimmerView.setVisibility(View.GONE);
+            tvResultsHeading.setVisibility(View.GONE);
+            tvSearchHint.setText(locationPicker.getTo() == null
+                    ? "Choose a destination to see journeys"
+                    : "Choose a starting point to see journeys");
+            tvSearchHint.setVisibility(View.VISIBLE);
+            fadeOutWarningCard();
+        } else {
+            scheduleAutomaticSearch();
+        }
+    }
+
+    private void scheduleAutomaticSearch() {
+        if (!automaticSearchReady || locationPicker == null || !locationPicker.hasBothLocations()) return;
+        searchHandler.removeCallbacks(pendingAutoSearch);
+        searchHandler.postDelayed(pendingAutoSearch, 180);
+    }
+
+    private void searchIfChanged() {
+        if (isFinishing() || isDestroyed() || !locationPicker.hasBothLocations()) return;
+        String signature = searchSignature();
+        if (signature.equals(lastSearchSignature)) return;
+        handleSearch();
+    }
+
+    private String searchSignature() {
+        JourneyLocation from = locationPicker.getFrom();
+        JourneyLocation to = locationPicker.getTo();
+        if (from == null || to == null) return "";
+        return from.stableKey() + "|" + to.stableKey() + "|"
+                + (selectedCalendar == null ? "now" : selectedCalendar.getTimeInMillis()) + "|"
+                + isArriving + "|"
+                + journeyPrefs.getString("journeyPreference", "leasttime") + "|"
+                + journeyPrefs.getString("preferredModes", "all") + "|"
+                + journeyPrefs.getBoolean("accessibilityRequired", false);
     }
 
     private void setupDateTimePickers() {
@@ -316,6 +417,7 @@ public class JourneySearchActivity extends AppCompatActivity {
             isArriving = false;
             updateDateTimeUI();
             dialog.dismiss();
+            scheduleAutomaticSearch();
         });
 
         dialog.findViewById(R.id.btnSet).setOnClickListener(v -> {
@@ -329,97 +431,69 @@ public class JourneySearchActivity extends AppCompatActivity {
             selectedCalendar = result;
             updateDateTimeUI();
             dialog.dismiss();
+            scheduleAutomaticSearch();
         });
 
         dialog.show();
     }
 
-    private void showTravelOptionsDialog() {
+    private void showJourneyOptionsDialog() {
         BottomSheetDialog dialog = new BottomSheetDialog(this);
-        dialog.setContentView(R.layout.dialog_travel_options);
-
-        View bottomSheet = (View) dialog.findViewById(com.google.android.material.R.id.design_bottom_sheet);
+        dialog.setContentView(R.layout.dialog_journey_search_options);
+        View bottomSheet = dialog.findViewById(com.google.android.material.R.id.design_bottom_sheet);
         if (bottomSheet != null) bottomSheet.setBackground(new ColorDrawable(Color.TRANSPARENT));
 
-        SwitchMaterial switchAccessibility = dialog.findViewById(R.id.switchAccessibility);
-        RadioGroup radioGroup = dialog.findViewById(R.id.radioGroupPreference);
+        SwitchMaterial accessibility = dialog.findViewById(R.id.switchAccessibility);
+        RadioGroup preferences = dialog.findViewById(R.id.radioGroupPreference);
+        SwitchMaterial train = dialog.findViewById(R.id.switchTrain);
+        SwitchMaterial tram = dialog.findViewById(R.id.switchTram);
+        SwitchMaterial tube = dialog.findViewById(R.id.switchTube);
+        SwitchMaterial bus = dialog.findViewById(R.id.switchBus);
 
-        switchAccessibility.setChecked(journeyPrefs.getBoolean("accessibilityRequired", false));
+        accessibility.setChecked(journeyPrefs.getBoolean("accessibilityRequired", false));
         String currentPref = journeyPrefs.getString("journeyPreference", "leasttime");
+        if ("leastinterchange".equals(currentPref)) preferences.check(R.id.radioChanges);
+        else if ("leastwalking".equals(currentPref)) preferences.check(R.id.radioWalking);
+        else preferences.check(R.id.radioFastest);
 
-        if (currentPref.equals("leastinterchange")) radioGroup.check(R.id.radioChanges);
-        else if (currentPref.equals("leastwalking")) radioGroup.check(R.id.radioWalking);
-        else radioGroup.check(R.id.radioFastest);
+        Set<String> selectedModes = parsePreferredModes(
+                journeyPrefs.getString("preferredModes", null));
+        train.setChecked(hasTrainMode(selectedModes));
+        tube.setChecked(hasUndergroundMode(selectedModes));
+        bus.setChecked(selectedModes.contains("bus"));
+        tram.setChecked(selectedModes.contains("tram"));
 
-        dialog.setOnDismissListener(d -> {
+        dialog.setOnDismissListener(ignored -> {
             SharedPreferences.Editor editor = journeyPrefs.edit();
-            editor.putBoolean("accessibilityRequired", switchAccessibility.isChecked());
-
-            int selectedId = radioGroup.getCheckedRadioButtonId();
-            if (selectedId == R.id.radioChanges) editor.putString("journeyPreference", "leastinterchange");
-            else if (selectedId == R.id.radioWalking) editor.putString("journeyPreference", "leastwalking");
+            editor.putBoolean("accessibilityRequired", accessibility.isChecked());
+            int selected = preferences.getCheckedRadioButtonId();
+            if (selected == R.id.radioChanges) editor.putString("journeyPreference", "leastinterchange");
+            else if (selected == R.id.radioWalking) editor.putString("journeyPreference", "leastwalking");
             else editor.putString("journeyPreference", "leasttime");
 
+            List<String> modes = new ArrayList<>();
+            if (train.isChecked()) {
+                modes.add("national-rail");
+                modes.add("overground");
+                modes.add("elizabeth-line");
+            }
+            if (tram.isChecked()) modes.add("tram");
+            if (tube.isChecked()) {
+                modes.add("tube");
+                modes.add("dlr");
+            }
+            if (bus.isChecked()) modes.add("bus");
+
+            if (modes.isEmpty()) editor.remove("preferredModes");
+            else editor.putString("preferredModes", TextUtils.join(",", modes));
             editor.apply();
             updateSearchOptionsUI();
+            scheduleAutomaticSearch();
         });
-
+        dialog.findViewById(R.id.btnDoneJourneyOptions).setOnClickListener(v -> dialog.dismiss());
         dialog.show();
     }
 
-    private void showPreferredModesDialog() {
-        BottomSheetDialog dialog = new BottomSheetDialog(this);
-        dialog.setContentView(R.layout.dialog_preferred_modes);
-
-        View bottomSheet = (View) dialog.findViewById(com.google.android.material.R.id.design_bottom_sheet);
-        if (bottomSheet != null) bottomSheet.setBackground(new ColorDrawable(Color.TRANSPARENT));
-
-        SwitchMaterial switchTrain = dialog.findViewById(R.id.switchTrain);
-        SwitchMaterial switchTram = dialog.findViewById(R.id.switchTram);
-        SwitchMaterial switchTube = dialog.findViewById(R.id.switchTube);
-        SwitchMaterial switchBus = dialog.findViewById(R.id.switchBus);
-
-        String currentModes = journeyPrefs.getString("preferredModes", null);
-        if (currentModes == null) {
-            switchTrain.setChecked(true);
-            switchTram.setChecked(true);
-            switchTube.setChecked(true);
-            switchBus.setChecked(true);
-        } else {
-            switchTrain.setChecked(currentModes.contains("national-rail"));
-            switchTram.setChecked(currentModes.contains("tram"));
-            switchTube.setChecked(currentModes.contains("tube"));
-            switchBus.setChecked(currentModes.contains("bus"));
-        }
-
-        dialog.setOnDismissListener(d -> {
-            List<String> selectedModes = new ArrayList<>();
-            if (switchTrain.isChecked()) {
-                selectedModes.add("national-rail");
-                selectedModes.add("overground");
-                selectedModes.add("elizabeth-line");
-            }
-            if (switchTram.isChecked()) selectedModes.add("tram");
-            if (switchTube.isChecked()) {
-                selectedModes.add("tube");
-                selectedModes.add("dlr");
-            }
-            if (switchBus.isChecked()) selectedModes.add("bus");
-
-            SharedPreferences.Editor editor = journeyPrefs.edit();
-
-            if (selectedModes.size() >= 6 || selectedModes.isEmpty()) {
-                editor.putString("preferredModes", null);
-            } else {
-                editor.putString("preferredModes", TextUtils.join(",", selectedModes));
-            }
-
-            editor.apply();
-            updateSearchOptionsUI();
-        });
-
-        dialog.show();
-    }
     private boolean canSaveRoute() {
         if (locationPicker == null || !locationPicker.hasBothLocations()) return false;
         JourneyLocation from = locationPicker.getFrom();
@@ -482,17 +556,21 @@ public class JourneySearchActivity extends AppCompatActivity {
     }
 
     private void updateSaveButtonState() {
+        if (savedPlaceEditMode) {
+            if (btnSaveRoute != null) btnSaveRoute.setVisibility(View.GONE);
+            return;
+        }
         if (btnSaveRoute == null || savedRoutesManager == null || locationPicker == null) return;
         boolean valid = canSaveRoute();
         btnSaveRoute.setEnabled(valid);
-        btnSaveRoute.setAlpha(valid ? 1f : 0.4f);
+        btnSaveRoute.setVisibility(valid ? View.VISIBLE : View.INVISIBLE);
         btnSaveRoute.setContentDescription(valid ? "Save or remove route" : "Select two different locations");
         boolean isSaved = valid && savedRoutesManager.isRouteSaved(buildSavedRoute());
         btnSaveRoute.setImageResource(isSaved ? R.drawable.ic_bookmark : R.drawable.ic_bookmark_outline);
         btnSaveRoute.setColorFilter(androidx.core.content.ContextCompat.getColor(this, R.color.brand_primary));
     }
 
-    private void restoreSavedRoute(SavedRoute route, Button btnSearch) {
+    private void restoreSavedRoute(SavedRoute route) {
         JourneySavedPlaces places = new JourneySavedPlaces(this);
         JourneyLocation from = endpointForSavedRoute(route.getFromSource(), route.getFromLocation(),
                 route.getFromName(), route.getFromNaptan(), places);
@@ -512,9 +590,9 @@ public class JourneySearchActivity extends AppCompatActivity {
         if (to != null) locationPicker.setTo(to, slotForSource(route.getToSource()));
         updateSaveButtonState();
         if (fromCurrent || toCurrent) {
-            locationPicker.restoreCurrentLocation(fromCurrent, () -> btnSearch.post(this::handleSearch));
+            locationPicker.restoreCurrentLocation(fromCurrent, this::scheduleAutomaticSearch);
         } else {
-            btnSearch.post(this::handleSearch);
+            scheduleAutomaticSearch();
         }
     }
 
@@ -538,12 +616,9 @@ public class JourneySearchActivity extends AppCompatActivity {
     private void updateDateTimeUI() {
         if (selectedCalendar == null) {
             tvTimeSelection.setText("Leaving now");
-            fadeOutWarningCard();
         } else {
-            String prefix = isArriving ? "Arriving " : "Leaving ";
-            tvTimeSelection.setText(prefix + formatCalendarFriendly(selectedCalendar));
-            cardTextFallbackWarning.setText("Internal fallback routing is unavailable for future dates. Results will rely strictly on TfL.");
-            fadeInWarningCard();
+            tvTimeSelection.setText((isArriving ? "Arrive " : "Leave ")
+                    + formatCalendarFriendly(selectedCalendar));
         }
     }
 
@@ -593,6 +668,12 @@ public class JourneySearchActivity extends AppCompatActivity {
             return;
         }
 
+        searchHandler.removeCallbacks(pendingAutoSearch);
+        lastSearchSignature = searchSignature();
+        final int requestVersion = ++searchVersion;
+        fadeOutWarningCard();
+        tvSearchHint.setVisibility(View.GONE);
+        tvResultsHeading.setVisibility(View.GONE);
         locationPicker.close();
         hideKeyboard();
         shimmerView.stopShimmer();
@@ -603,10 +684,8 @@ public class JourneySearchActivity extends AppCompatActivity {
                 && to.type == JourneyLocation.Type.STATION;
         String fromCrs = bothStations ? StationHelper.getCrsFromName(from.displayName()) : null;
         String toCrs = bothStations ? StationHelper.getCrsFromName(to.displayName()) : null;
-        String fromNaptan = bothStations ? (from.stationId != null ? from.stationId
-                : StationHelper.getNaptanFromName(from.displayName())) : null;
-        String toNaptan = bothStations ? (to.stationId != null ? to.stationId
-                : StationHelper.getNaptanFromName(to.displayName())) : null;
+        String fromNaptan = bothStations ? preferredStationId(from) : null;
+        String toNaptan = bothStations ? preferredStationId(to) : null;
 
         String dateParam = null;
         String timeParam = null;
@@ -619,27 +698,24 @@ public class JourneySearchActivity extends AppCompatActivity {
             timeIsParam = isArriving ? "arriving" : "departing";
         }
 
-        if (!bothStations) {
-            startTflRouting(fromTfl, toTfl, null, null, dateParam, timeParam, timeIsParam);
-        } else if (fromNaptan != null && !fromNaptan.isEmpty()
-                && toNaptan != null && !toNaptan.isEmpty()) {
-            startTflRouting(fromNaptan, toNaptan, fromCrs, toCrs, dateParam, timeParam, timeIsParam);
-        } else if (fromCrs != null && toCrs != null && selectedCalendar == null) {
-            startInternalRouting(fromCrs, toCrs);
+        if (bothStations) {
+            startTflRouting(nonBlank(fromNaptan, fromTfl), nonBlank(toNaptan, toTfl),
+                    fromCrs, toCrs, dateParam, timeParam, timeIsParam, requestVersion);
         } else {
-            Toast.makeText(this, "National Rail-only routing is available for 'Now'. For a future journey, choose TfL-supported stops.", Toast.LENGTH_LONG).show();
+            startTflRouting(fromTfl, toTfl, null, null,
+                    dateParam, timeParam, timeIsParam, requestVersion);
         }
     }
 
     @SuppressLint("SetTextI18n")
-    private void startInternalRouting(String fromCrs, String toCrs) {
+    private void startInternalRouting(String fromCrs, String toCrs, int requestVersion) {
         recyclerSearchResults.setVisibility(View.GONE);
 
         shimmerView.setVisibility(View.VISIBLE);
         shimmerView.startShimmer();
 
         if (plannerEngine != null) {
-            findRoutes(fromCrs, toCrs);
+            findRoutes(fromCrs, toCrs, requestVersion);
         } else {
             cardTextFallbackWarning.setText("Routing engine unavailable. Check your connection.");
             fadeInWarningCard();
@@ -648,79 +724,245 @@ public class JourneySearchActivity extends AppCompatActivity {
         }
     }
 
-    private void startTflRouting(String fromNaptan, String toNaptan, String fromCrs, String toCrs, String date, String time, String timeIs) {
+    private static String nonBlank(String preferred, String fallback) {
+        return preferred != null && !preferred.trim().isEmpty() ? preferred : fallback;
+    }
+
+    private static String preferredStationId(JourneyLocation station) {
+        String name = JourneyLocationPickerController.canonicalStationName(station.displayName());
+        String localId = StationHelper.getNaptanFromName(name);
+        return nonBlank(localId, station.stationId);
+    }
+
+    private static String stationSearchName(JourneyLocation loc) {
+        if (loc == null || loc.type != JourneyLocation.Type.STATION) return null;
+        String name = JourneyLocationPickerController.canonicalStationName(loc.displayName());
+        return name.isEmpty() ? null : name + " Station";
+    }
+
+    private static boolean isLocationResolutionError(String message) {
+        if (message == null) return false;
+        String msg = message.toLowerCase(Locale.UK);
+        return msg.contains("identify") || msg.contains("disambiguat")
+                || msg.contains("not recognis") || msg.contains("not recogniz")
+                || msg.contains("unknown location") || msg.contains("location not found")
+                || msg.contains("invalid location") || msg.contains("could not find")
+                || msg.contains("couldn't find") || msg.contains("one of the locations");
+    }
+
+    private static final class RoutePair {
+        final String from, to;
+        RoutePair(String from, String to) { this.from = from; this.to = to; }
+    }
+
+    private static void addRoutePair(List<RoutePair> attempts, Set<String> seen,
+                                     String from, String to) {
+        if (from == null || to == null || from.trim().isEmpty() || to.trim().isEmpty()) return;
+        if (seen.add(from + "\u0000" + to)) attempts.add(new RoutePair(from, to));
+    }
+
+    private void startTflRouting(String fromValue, String toValue,
+                                 String fromCrs, String toCrs, String date, String time,
+                                 String timeIs, int requestVersion) {
         fadeOutWarningCard();
         recyclerSearchResults.setVisibility(View.GONE);
-
         shimmerView.setVisibility(View.VISIBLE);
         shimmerView.startShimmer();
 
+        List<RoutePair> attempts = new ArrayList<>();
+        Set<String> seen = new LinkedHashSet<>();
+        addRoutePair(attempts, seen, fromValue, toValue);
+
+        JourneyLocation from = locationPicker.getFrom();
+        JourneyLocation to = locationPicker.getTo();
+        String fromName = stationSearchName(from);
+        String toName = stationSearchName(to);
+
+        if (toName != null) addRoutePair(attempts, seen, fromValue, toName);
+        if (fromName != null) addRoutePair(attempts, seen, fromName, toValue);
+        if (fromName != null && toName != null)
+            addRoutePair(attempts, seen, fromName, toName);
+
+        tryTflRouteAttempts(attempts, 0, true, fromValue, toValue,
+                fromCrs, toCrs, date, time, timeIs, requestVersion, null);
+    }
+
+    private void tryTflRouteAttempts(List<RoutePair> attempts, int index,
+                                     boolean allowAddressLookup,
+                                     String originalFrom, String originalTo,
+                                     String fromCrs, String toCrs, String date,
+                                     String time, String timeIs, int requestVersion,
+                                     String previousError) {
+        if (isDestroyed() || requestVersion != searchVersion) return;
+        if (index >= attempts.size()) {
+            if (allowAddressLookup) {
+                tryGeoapifyFallback(originalFrom, originalTo,
+                        fromCrs, toCrs, date, time, timeIs, requestVersion,
+                        previousError);
+            } else {
+                finishTflSearchError(previousError, fromCrs, toCrs, date, requestVersion);
+            }
+            return;
+        }
+
+        RoutePair pair = attempts.get(index);
         String journeyPref = journeyPrefs.getString("journeyPreference", "leasttime");
         String modes = journeyPrefs.getString("preferredModes", null);
-        boolean requiresAccessibility = journeyPrefs.getBoolean("accessibilityRequired", false);
-        String accessPref = requiresAccessibility ? "noSolidStairs" : null;
+        String accessPref = journeyPrefs.getBoolean("accessibilityRequired", false)
+                ? "noSolidStairs" : null;
+        fadeOutWarningCard();
 
-        if (tflPlannerEngine != null) {
-            tflPlannerEngine.findRoutes(fromNaptan, toNaptan, date, time, timeIs, journeyPref, modes, accessPref, new JourneyPlannerEngine.JourneyCallback() {
-                @SuppressLint("SetTextI18n")
-                @Override
-                public void onJourneysFound(List<JourneyOption> journeys) {
-                    if (isDestroyed()) return;
-                    shimmerView.stopShimmer();
-                    shimmerView.setVisibility(View.GONE);
-
-                    if (journeys != null && !journeys.isEmpty()) {
-                        adapter.updateData(journeys);
-                        recyclerSearchResults.setVisibility(View.VISIBLE);
-                    } else {
-                        if (date == null && fromCrs != null && toCrs != null) {
-                            startInternalRouting(fromCrs, toCrs);
-                        } else {
-                            cardTextFallbackWarning.setText("No routes found for the selected time.");
-                            fadeInWarningCard();
-                        }
-                    }
-                }
-
-                @SuppressLint("SetTextI18n")
-                @Override
-                public void onError(String message) {
-                    if (isDestroyed()) return;
-                    if (date == null && fromCrs != null && toCrs != null) {
-                        cardTextFallbackWarning.setText("TfL routing is not available right now, falling back to internal routing\n This may take a moment");
-                        fadeInWarningCard();
-
-                        startInternalRouting(fromCrs, toCrs);
-                    } else {
-                        cardTextFallbackWarning.setText("Search failed: " + message);
-                        fadeInWarningCard();
-                        shimmerView.stopShimmer();
-                        shimmerView.setVisibility(View.GONE);
-                    }
-                }
-
-                @Override
-                public void onStatusUpdate(String message) {
-                    if (isDestroyed()) return;
-                    cardTextFallbackWarning.setText(message);
+        if (tflPlannerEngine == null) {
+            finishTflSearchError("TfL journey planner unavailable", fromCrs, toCrs, date, requestVersion);
+            return;
+        }
+        tflPlannerEngine.findRoutes(pair.from, pair.to, date, time, timeIs,
+                journeyPref, modes, accessPref, new JourneyPlannerEngine.JourneyCallback() {
+            @Override public void onJourneysFound(List<JourneyOption> journeys) {
+                if (isDestroyed() || requestVersion != searchVersion) return;
+                shimmerView.stopShimmer();
+                shimmerView.setVisibility(View.GONE);
+                if (journeys != null && !journeys.isEmpty()) {
+                    fadeOutWarningCard();
+                    adapter.updateData(journeys);
+                    recyclerSearchResults.setVisibility(View.VISIBLE);
+                    tvResultsHeading.setVisibility(View.VISIBLE);
+                } else if (date == null && fromCrs != null && toCrs != null) {
+                    startInternalRouting(fromCrs, toCrs, requestVersion);
+                } else {
+                    cardTextFallbackWarning.setText("No routes found for the selected time.");
                     fadeInWarningCard();
                 }
-            });
+            }
+
+            @Override public void onError(String message) {
+                if (isDestroyed() || requestVersion != searchVersion) return;
+                if (isLocationResolutionError(message)) {
+                    tryTflRouteAttempts(attempts, index + 1, allowAddressLookup,
+                            originalFrom, originalTo, fromCrs, toCrs,
+                            date, time, timeIs, requestVersion, message);
+                } else {
+                    finishTflSearchError(message, fromCrs, toCrs, date, requestVersion);
+                }
+            }
+
+            @Override public void onStatusUpdate(String message) {
+                if (isDestroyed() || requestVersion != searchVersion) return;
+            }
+        });
+    }
+
+    private void finishTflSearchError(String message, String fromCrs, String toCrs,
+                                      String date, int requestVersion) {
+        if (isDestroyed() || requestVersion != searchVersion) return;
+        if (date == null && fromCrs != null && toCrs != null) {
+            startInternalRouting(fromCrs, toCrs, requestVersion);
+        } else {
+            cardTextFallbackWarning.setText("Search failed: "
+                    + (message == null || message.isEmpty()
+                    ? "Could not resolve the station. Try selecting a different suggestion."
+                    : message));
+            fadeInWarningCard();
+            shimmerView.stopShimmer();
+            shimmerView.setVisibility(View.GONE);
         }
     }
 
-    private void findRoutes(String fromCrs, String toCrs) {
+    private interface LocationCoordinateCallback {
+        void onResult(String coordinate);
+    }
+
+    private void resolveStationCoordinates(JourneyLocation loc, int requestVersion,
+                                           LocationCoordinateCallback callback) {
+        String stationName = stationSearchName(loc);
+        if (stationName == null) { callback.onResult(null); return; }
+        APIClient.getClient().create(GeoapifyAutocompleteAPI.class)
+                .suggestions(stationName).enqueue(new Callback<JsonObject>() {
+            @Override public void onResponse(Call<JsonObject> call,
+                                             Response<JsonObject> response) {
+                if (isDestroyed() || requestVersion != searchVersion) return;
+                String coords = null;
+                JsonObject body = response.body();
+                JsonArray results = body != null && body.has("results")
+                        && body.get("results").isJsonArray()
+                        ? body.getAsJsonArray("results") : null;
+                if (response.isSuccessful() && results != null) {
+                    String requiredName = JourneyLocationPickerController.canonicalStationName(
+                            loc.displayName()).toLowerCase(Locale.UK);
+                    for (JsonElement elem : results) {
+                        if (!elem.isJsonObject()) continue;
+                        JsonObject item = elem.getAsJsonObject();
+                        String label = safeJsonString(item, "formatted") + " "
+                                + safeJsonString(item, "address_line1");
+                        String lower = label.toLowerCase(Locale.UK);
+                        if (!lower.contains(requiredName)
+                                || !(lower.contains("station") || lower.contains("railway")
+                                || lower.contains("underground") || lower.contains("transport"))) continue;
+                        try {
+                            if (!item.has("lat") || !item.has("lon")) continue;
+                            double latitude = item.get("lat").getAsDouble();
+                            double longitude = item.get("lon").getAsDouble();
+                            if (latitude < -90 || latitude > 90
+                                    || longitude < -180 || longitude > 180) continue;
+                            coords = String.format(Locale.US, "%.6f,%.6f", latitude, longitude);
+                            break;
+                        } catch (RuntimeException ignored) { }
+                    }
+                }
+                callback.onResult(coords);
+            }
+
+            @Override public void onFailure(Call<JsonObject> call, Throwable t) {
+                if (isDestroyed() || requestVersion != searchVersion) return;
+                callback.onResult(null);
+            }
+        });
+    }
+
+    private static String safeJsonString(JsonObject item, String key) {
+        JsonElement e = item.get(key);
+        if (e == null || e.isJsonNull() || !e.isJsonPrimitive()) return "";
+        try { return e.getAsString(); }
+        catch (RuntimeException ignored) { return ""; }
+    }
+
+    private void tryGeoapifyFallback(String originalFrom, String originalTo,
+                                     String fromCrs, String toCrs,
+                                     String date, String time, String timeIs,
+                                     int requestVersion, String lastError) {
+        JourneyLocation origin = locationPicker.getFrom();
+        JourneyLocation destination = locationPicker.getTo();
+        resolveStationCoordinates(destination, requestVersion, geoTo ->
+                resolveStationCoordinates(origin, requestVersion, geoFrom -> {
+                    List<RoutePair> recovered = new ArrayList<>();
+                    Set<String> seen = new LinkedHashSet<>();
+                    if (geoTo != null) addRoutePair(recovered, seen, originalFrom, geoTo);
+                    if (geoFrom != null) addRoutePair(recovered, seen, geoFrom, originalTo);
+                    if (geoFrom != null && geoTo != null)
+                        addRoutePair(recovered, seen, geoFrom, geoTo);
+                    if (recovered.isEmpty()) {
+                        finishTflSearchError(lastError, fromCrs, toCrs, date, requestVersion);
+                    } else {
+                        tryTflRouteAttempts(recovered, 0, false, originalFrom, originalTo,
+                                fromCrs, toCrs, date, time, timeIs,
+                                requestVersion, lastError);
+                    }
+                }));
+    }
+
+    private void findRoutes(String fromCrs, String toCrs, int requestVersion) {
         plannerEngine.findRoutes(fromCrs, toCrs, new JourneyPlannerEngine.JourneyCallback() {
             @SuppressLint("SetTextI18n")
             @Override
             public void onJourneysFound(List<JourneyOption> journeys) {
-                if (isDestroyed()) return;
+                if (isDestroyed() || requestVersion != searchVersion) return;
                 shimmerView.stopShimmer();
                 shimmerView.setVisibility(View.GONE);
 
                 if (journeys != null && !journeys.isEmpty()) {
                     adapter.updateData(journeys);
                     recyclerSearchResults.setVisibility(View.VISIBLE);
+                    tvResultsHeading.setVisibility(View.VISIBLE);
                 } else {
                     cardTextFallbackWarning.setText("No routes found between these stations.");
                     fadeInWarningCard();
@@ -729,7 +971,7 @@ public class JourneySearchActivity extends AppCompatActivity {
 
             @Override
             public void onError(String message) {
-                if (isDestroyed()) return;
+                if (isDestroyed() || requestVersion != searchVersion) return;
                 cardTextFallbackWarning.setText(message);
                 fadeInWarningCard();
                 shimmerView.stopShimmer();
@@ -738,7 +980,7 @@ public class JourneySearchActivity extends AppCompatActivity {
 
             @Override
             public void onStatusUpdate(String message) {
-                if (isDestroyed()) return;
+                if (isDestroyed() || requestVersion != searchVersion) return;
                 cardTextFallbackWarning.setText(message);
             }
         });
@@ -746,6 +988,7 @@ public class JourneySearchActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
+        searchHandler.removeCallbacksAndMessages(null);
         super.onDestroy();
         if (plannerEngine != null) plannerEngine.shutdown();
         if (tflPlannerEngine != null) tflPlannerEngine.shutdown();

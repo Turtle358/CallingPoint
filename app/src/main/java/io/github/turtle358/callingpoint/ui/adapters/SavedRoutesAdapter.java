@@ -49,31 +49,48 @@ public class SavedRoutesAdapter extends RecyclerView.Adapter<SavedRoutesAdapter.
         holder.textOrigin.setText(shortName(route.getFromName()));
         holder.textDestination.setText(shortName(route.getToName()));
         holder.openButton.setOnClickListener(v -> openRoute(holder));
-        String source = route.getFromSource();
-        if ("CURRENT".equalsIgnoreCase(source)
-                || (route.getFromLocation() != null
-                && route.getFromLocation().type == io.github.turtle358.callingpoint.models.JourneyLocation.Type.CURRENT_LOCATION)
-                || "Current location".equalsIgnoreCase(route.getFromName())) {
-            holder.serviceBranding.setImageResource(R.drawable.ic_saved_current_location);
-            holder.serviceBranding.setColorFilter(androidx.core.content.ContextCompat.getColor(
-                    holder.itemView.getContext(), R.color.brand_primary));
-        } else if ("HOME".equalsIgnoreCase(source)) {
-            holder.serviceBranding.setImageResource(R.drawable.ic_home);
-            holder.serviceBranding.setColorFilter(androidx.core.content.ContextCompat.getColor(
-                    holder.itemView.getContext(), R.color.brand_primary));
-        } else if ("WORK".equalsIgnoreCase(source)) {
-            holder.serviceBranding.setImageResource(R.drawable.ic_work);
-            holder.serviceBranding.setColorFilter(androidx.core.content.ContextCompat.getColor(
-                    holder.itemView.getContext(), R.color.brand_primary));
-        } else if (route.getFromLocation() != null &&
-                   route.getFromLocation().type != io.github.turtle358.callingpoint.models.JourneyLocation.Type.STATION) {
-            holder.serviceBranding.setImageResource(android.R.drawable.ic_menu_mapmode);
-            holder.serviceBranding.setColorFilter(androidx.core.content.ContextCompat.getColor(
-                    holder.itemView.getContext(), R.color.text_secondary));
+        String destinationSource = route.getToSource();
+        String destinationName = route.getToName();
+        io.github.turtle358.callingpoint.models.JourneyLocation destinationLocation = route.getToLocation();
+        String destinationLabel = destinationName == null ? "" : destinationName.trim();
+        boolean isCurrent = "CURRENT".equalsIgnoreCase(destinationSource)
+                || (destinationLocation != null && destinationLocation.type ==
+                io.github.turtle358.callingpoint.models.JourneyLocation.Type.CURRENT_LOCATION)
+                || "Current location".equalsIgnoreCase(destinationLabel);
+        boolean isHome = "HOME".equalsIgnoreCase(destinationSource)
+                || "Home".equalsIgnoreCase(destinationLabel);
+        boolean isWork = "WORK".equalsIgnoreCase(destinationSource)
+                || "Work".equalsIgnoreCase(destinationLabel);
+        boolean isNonStation = destinationLocation != null
+                && destinationLocation.type != io.github.turtle358.callingpoint.models.JourneyLocation.Type.STATION;
+
+        int drawable;
+        int tintColor = 0;
+        if (isCurrent) {
+            drawable = R.drawable.ic_saved_current_location;
+            tintColor = R.color.brand_primary;
+        } else if (isHome) {
+            drawable = R.drawable.ic_home;
+            tintColor = R.color.brand_primary;
+        } else if (isWork) {
+            drawable = R.drawable.ic_work;
+            tintColor = R.color.brand_primary;
+        } else if (isNonStation || "ADDRESS".equalsIgnoreCase(destinationSource)
+                || "POSTCODE".equalsIgnoreCase(destinationSource)) {
+            drawable = R.drawable.ic_location_pin;
+            tintColor = R.color.brand_primary;
         } else {
-            holder.serviceBranding.setImageResource(StationHelper.getIconForStation(route.getFromName()));
+            drawable = StationHelper.getIconForStation(destinationLabel);
+            if (drawable == 0) drawable = R.drawable.ic_train;
+        }
+        holder.serviceBranding.setImageResource(drawable);
+        if (tintColor != 0) {
+            holder.serviceBranding.setColorFilter(androidx.core.content.ContextCompat.getColor(
+                    holder.itemView.getContext(), tintColor));
+        } else {
             holder.serviceBranding.clearColorFilter();
         }
+        holder.serviceBranding.setContentDescription("Destination: " + destinationLabel);
 
         holder.itemView.setOnClickListener(v -> openRoute(holder));
     }

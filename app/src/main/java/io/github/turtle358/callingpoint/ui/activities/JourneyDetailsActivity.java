@@ -1,6 +1,12 @@
 package io.github.turtle358.callingpoint.ui.activities;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
+import android.view.MotionEvent;
+import android.view.ViewGroup;
+import android.view.ViewParent;
 import android.os.Bundle;
 import android.content.Intent;
 import android.view.View;
@@ -48,6 +54,9 @@ public class JourneyDetailsActivity extends AppCompatActivity {
     private JourneyLegAdapter adapter;
     private final Map<String, ServiceDetailsResponse> liveDataMap = new HashMap<>();
     private MapView mapView;
+    private ValueAnimator walkOnlyMapAnimator;
+    private boolean walkOnlyMapExpanded;
+    private boolean walkOnlyMapRendered;
     private final android.os.Handler autoRefreshHandler = new android.os.Handler(android.os.Looper.getMainLooper());
     private Runnable autoRefreshRunnable;
 
@@ -139,28 +148,7 @@ public class JourneyDetailsActivity extends AppCompatActivity {
         if (isWalkOnly) {
             cardTimeline.setVisibility(View.GONE);
             cardWalkOnlyMap.setVisibility(View.VISIBLE);
-
-            mapView.setOnTouchListener((v, event) -> {
-                int action = event.getActionMasked();
-                if (v.getParent() != null) {
-                    if (action == android.view.MotionEvent.ACTION_DOWN
-                            || action == android.view.MotionEvent.ACTION_MOVE) {
-                        v.getParent().requestDisallowInterceptTouchEvent(true);
-                    } else if (action == android.view.MotionEvent.ACTION_UP
-                            || action == android.view.MotionEvent.ACTION_CANCEL) {
-                        v.getParent().requestDisallowInterceptTouchEvent(false);
-                    }
-                }
-                return false;
-            });
-
-            MapLibreWalkingMap.render(this, mapView, origin, dest);
-
-            View fabMap = findViewById(R.id.fabOpenExternalMap);
-            if (fabMap != null) {
-                fabMap.setVisibility(View.GONE);
-            }
-
+            setupWalkOnlyMap(origin, dest, savedInstanceState);
         } else {
             cardTimeline.setVisibility(View.VISIBLE);
             cardWalkOnlyMap.setVisibility(View.GONE);
@@ -173,6 +161,86 @@ public class JourneyDetailsActivity extends AppCompatActivity {
         }
     }
     private static final int MAX_ADDRESS_PARTS = 2;
+
+    @SuppressLint("ClickableViewAccessibility")
+    private void setupWalkOnlyMap(String origin, String destination, Bundle savedState) {
+        View body = findViewById(R.id.walkOnlyMapBody);
+        View toggle = findViewById(R.id.btnWalkOnlyMapToggle);
+        if (body == null || toggle == null || mapView == null) return;
+
+        mapView.getMapAsync(map -> map.getUiSettings().setAllGesturesEnabled(true));
+        mapView.setOnTouchListener((view, event) -> {
+            ViewParent parent = view.getParent();
+            if (parent != null) {
+                int action = event.getActionMasked();
+                parent.requestDisallowInterceptTouchEvent(action != MotionEvent.ACTION_UP
+                        && action != MotionEvent.ACTION_CANCEL);
+            }
+            return false;
+        });
+        View fab = findViewById(R.id.fabOpenExternalMap);
+        if (fab != null) fab.setVisibility(View.GONE);
+
+        walkOnlyMapExpanded = false;
+        body.setVisibility(View.GONE);
+        toggle.setContentDescription("Show walking map");
+        toggle.setOnClickListener(v -> setWalkOnlyMapExpanded(body, toggle,
+                !walkOnlyMapExpanded, true, origin, destination));
+        if (savedState != null && savedState.getBoolean("walk_only_map_expanded", false)) {
+            body.post(() -> setWalkOnlyMapExpanded(body, toggle, true, false, origin, destination));
+        }
+    }
+
+    private void setWalkOnlyMapExpanded(View body, View toggle, boolean expand,
+                                        boolean animate, String origin, String destination) {
+        if (walkOnlyMapAnimator != null) {
+            walkOnlyMapAnimator.cancel();
+            walkOnlyMapAnimator = null;
+        }
+        walkOnlyMapExpanded = expand;
+        toggle.setContentDescription(expand ? "Hide walking map" : "Show walking map");
+        final int target = expand ? Math.round(320 * getResources().getDisplayMetrics().density) : 0;
+        final int start = body.getVisibility() == View.VISIBLE ? body.getHeight() : 0;
+        if (expand) body.setVisibility(View.VISIBLE);
+        if (!animate || start == target) {
+            ViewGroup.LayoutParams lp = body.getLayoutParams();
+            lp.height = target;
+            body.setLayoutParams(lp);
+            if (expand) renderWalkOnlyMap(origin, destination);
+            else body.setVisibility(View.GONE);
+            return;
+        }
+        ValueAnimator animator = ValueAnimator.ofInt(start, target);
+        walkOnlyMapAnimator = animator;
+        animator.setDuration(260);
+        animator.addUpdateListener(value -> {
+            if (walkOnlyMapAnimator != animator) return;
+            ViewGroup.LayoutParams lp = body.getLayoutParams();
+            lp.height = (Integer) value.getAnimatedValue();
+            body.setLayoutParams(lp);
+        });
+        animator.addListener(new AnimatorListenerAdapter() {
+            boolean cancelled;
+            @Override public void onAnimationCancel(Animator animation) { cancelled = true; }
+            @Override public void onAnimationEnd(Animator animation) {
+                if (cancelled || walkOnlyMapAnimator != animator) return;
+                walkOnlyMapAnimator = null;
+                if (expand) renderWalkOnlyMap(origin, destination);
+                else body.setVisibility(View.GONE);
+            }
+        });
+        animator.start();
+    }
+
+    private void renderWalkOnlyMap(String origin, String destination) {
+        if (mapView == null || walkOnlyMapRendered || !walkOnlyMapExpanded) return;
+        mapView.post(() -> {
+            if (!isDestroyed() && walkOnlyMapExpanded && !walkOnlyMapRendered) {
+                walkOnlyMapRendered = true;
+                MapLibreWalkingMap.render(this, mapView, origin, destination);
+            }
+        });
+    }
 
     private void bindHeaderLocation(@NonNull TextView primary,
                                     @NonNull TextView secondary,
@@ -298,6 +366,7 @@ public class JourneyDetailsActivity extends AppCompatActivity {
 
     @Override
     public void onDestroy() {
+        if (walkOnlyMapAnimator != null) { walkOnlyMapAnimator.cancel(); walkOnlyMapAnimator = null; }
         if (adapter != null) adapter.onHostDestroy();
         if (mapView != null) mapView.onDestroy();
         super.onDestroy();
@@ -311,6 +380,7 @@ public class JourneyDetailsActivity extends AppCompatActivity {
 
     @Override
     protected void onSaveInstanceState(@NonNull Bundle outState) {
+        outState.putBoolean("walk_only_map_expanded", walkOnlyMapExpanded);
         super.onSaveInstanceState(outState);
         if (mapView != null) mapView.onSaveInstanceState(outState);
     }

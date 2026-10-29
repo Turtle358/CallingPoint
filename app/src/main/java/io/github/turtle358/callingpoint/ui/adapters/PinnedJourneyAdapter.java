@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Locale;
 
 import io.github.turtle358.callingpoint.R;
+import io.github.turtle358.callingpoint.utils.JourneyPlanner.JourneyChangeSummary;
 import io.github.turtle358.callingpoint.models.JourneyOption;
 import io.github.turtle358.callingpoint.ui.activities.JourneyDetailsActivity;
 import io.github.turtle358.callingpoint.utils.JourneyPlanner.PinnedJourneyManager;
@@ -111,9 +112,10 @@ public class PinnedJourneyAdapter extends RecyclerView.Adapter<PinnedJourneyAdap
         }
 
         holder.tvJourneyDate.setText(getFormattedDate(journey.departureDate));
-
-        holder.tvOriginStation.setText(origin);
-        holder.tvDestStation.setText(dest);
+        holder.tvOriginStation.setText(compactPlaceName(origin));
+        holder.tvDestStation.setText(compactPlaceName(dest));
+        holder.tvOriginStation.setContentDescription(origin == null ? "" : origin);
+        holder.tvDestStation.setContentDescription(dest == null ? "" : dest);
         holder.tvDepTime.setText(journey.departTime != null ? journey.departTime : "--:--");
         holder.tvArrTime.setText(journey.arriveTime != null ? journey.arriveTime : "--:--");
 
@@ -138,18 +140,35 @@ public class PinnedJourneyAdapter extends RecyclerView.Adapter<PinnedJourneyAdap
 
         holder.tvJourneyDuration.setText(journey.duration != null ? journey.duration : "");
 
-        if (journey.changesSummary != null && !journey.changesSummary.isEmpty()) {
-            holder.tvJourneyChanges.setText(journey.changesSummary);
-        } else {
-            int changes = journey.legs != null ? journey.legs.size() - 1 : 0;
-            holder.tvJourneyChanges.setText(changes == 0 ? "Direct" : changes + " change(s)");
-        }
+        holder.tvJourneyChanges.setText(JourneyChangeSummary.label(journey));
 
         holder.itemView.setOnClickListener(v -> {
             Intent intent = new Intent(context, JourneyDetailsActivity.class);
             intent.putExtra("JOURNEY_OPTION", journey);
             context.startActivity(intent);
         });
+    }
+
+    private static String compactPlaceName(String fullName) {
+        if (fullName == null) return "";
+        String place = fullName.trim().replaceAll("\\s+", " ");
+        int comma = place.indexOf(',');
+        if (comma > 0) place = place.substring(0, comma).trim();
+
+        if (!place.isEmpty()
+                && place.equals(place.toUpperCase(Locale.UK))
+                && !place.equals(place.toLowerCase(Locale.UK))) {
+            String[] words = place.toLowerCase(Locale.UK).split(" ");
+            StringBuilder result = new StringBuilder();
+            for (String word : words) {
+                if (word.isEmpty()) continue;
+                if (result.length() > 0) result.append(' ');
+                result.append(Character.toUpperCase(word.charAt(0)));
+                result.append(word.substring(1));
+            }
+            return result.toString();
+        }
+        return place;
     }
 
     private String getFormattedDate(String isoDate) {

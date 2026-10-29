@@ -34,6 +34,7 @@ import io.github.turtle358.callingpoint.ui.adapters.SavedRoutesAdapter;
 import io.github.turtle358.callingpoint.utils.JourneyPlanner.PinnedJourneyManager;
 import io.github.turtle358.callingpoint.utils.JourneyPlanner.SavedRoutesManager;
 import io.github.turtle358.callingpoint.utils.TOCBrandHelper;
+import io.github.turtle358.callingpoint.utils.JourneyPlanner.JourneyLocationCache;
 
 public class JourneyPlannerFragment extends Fragment {
 
@@ -56,6 +57,8 @@ public class JourneyPlannerFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+
+        JourneyLocationCache.warmIfPermitted(requireContext());
 
         recyclerPinnedJourneys = view.findViewById(R.id.recyclerPinnedJourneys);
         recyclerSavedRoutes = view.findViewById(R.id.recyclerSavedRoutes);
@@ -459,6 +462,7 @@ public class JourneyPlannerFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
+        JourneyLocationCache.warmIfPermitted(requireContext());
         loadPinnedJourneys();
         loadSavedRoutes();
     }
