@@ -9,7 +9,7 @@
 [![MapLibre](https://img.shields.io/badge/Maps-MapLibre-396CB2)](https://maplibre.org/)
 [![License: CC BY-NC-ND 4.0](https://img.shields.io/badge/License-CC_BY--NC--ND_4.0-lightgrey)](LICENSE)
 
-**[Website](https://callingpoint.co.uk/)** · **[Download APK](https://github.com/Turtle358/CallingPoint/releases/latest)** · **[Join Google Play testing](https://callingpoint.co.uk/)** · **[Report an issue](https://github.com/Turtle358/CallingPoint/issues)**
+**[Website](https://callingpoint.co.uk/)** · **[Join Google Play testing](https://callingpoint.co.uk/)** · **[Report an issue](https://github.com/Turtle358/CallingPoint/issues)**
 
 </div>
 
