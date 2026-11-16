@@ -1,5 +1,3 @@
-<div align="center">
-
 # CallingPoint
 
 **Live UK train times, smarter journey planning, and disruption updates — all in one Android app.**
@@ -11,15 +9,13 @@
 
 **[Website](https://callingpoint.co.uk/)** · **[Join Google Play testing](https://callingpoint.co.uk/)** · **[Report an issue](https://github.com/Turtle358/CallingPoint/issues)**
 
-</div>
-
 CallingPoint is a native Android companion for travelling on the UK National Rail network and London's public transport. Check live departures and arrivals, follow individual services, plan multi-leg journeys, and keep an eye on disruptions from your home screen.
 
 Built to make everyday journeys easier, CallingPoint combines live transport information, a custom rail-routing engine, Transport for London (TfL) journey planning, and an interactive map. It is free, ad-free, and does not require an account or personal API keys.
 
 ## Preview
 
-<div align="center">
+<div>
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/readmeimg/LiveTrains-Dark.png">
     <source media="(prefers-color-scheme: light)" srcset="docs/readmeimg/LiveTrains-Light.png">
@@ -59,7 +55,7 @@ Built to make everyday journeys easier, CallingPoint combines live transport inf
 - Save regularly used routes and share individual journey itineraries through CallingPoint links.
 - Explore walking connections on MapLibre vector maps, with light and dark map styles.
 
-<div align="center">
+<div>
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/readmeimg/JourneySearch-Dark.png">
     <source media="(prefers-color-scheme: light)" srcset="docs/readmeimg/JourneySearch-Light.png">
@@ -79,7 +75,7 @@ Built to make everyday journeys easier, CallingPoint combines live transport inf
 - Choose which train operating companies to track.
 - Add a home-screen widget for at-a-glance disruption information; Android schedules background refreshes.
 
-<div align="center">
+<div>
   <img src="docs/readmeimg/Widget.png" width="420" alt="CallingPoint disruption home-screen widget">
 </div>
 
@@ -128,8 +124,4 @@ Transport and location information is supported by data and services from Nation
 
 *CallingPoint is an independent app and is not an official National Rail or TfL product. Live data, platforms, accessibility information and journey options can change: check station announcements and operator advice before travelling.*
 
-<div align="center">
-
 **[callingpoint.co.uk](https://callingpoint.co.uk/)**
-
-</div>
