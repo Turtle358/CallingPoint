@@ -4,7 +4,7 @@ import androidx.annotation.Nullable;
 import io.github.turtle358.callingpoint.models.JourneyLeg;
 import io.github.turtle358.callingpoint.models.JourneyOption;
 
-public final class JourneyChangeSummary {
+public class JourneyChangeSummary {
     private JourneyChangeSummary() { }
 
     public static boolean isWalking(@Nullable JourneyLeg leg) {

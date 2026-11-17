@@ -34,7 +34,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Prefer"
+                android:text="Journey preference"
                 android:textColor="@color/text_secondary"
                 android:textStyle="bold"
                 android:textSize="13sp" />
@@ -75,9 +75,16 @@
                 android:layout_width="match_parent"
                 android:layout_height="54dp"
                 android:layout_marginTop="4dp"
-                android:text="Step-free journeys"
+                android:text="Accessible routes"
                 android:textColor="@color/text_primary"
                 android:textSize="16sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/fallback_accessibility_help"
+                android:textColor="@color/text_secondary"
+                android:textSize="12sp" />
 
             <View
                 android:layout_width="match_parent"
@@ -99,7 +106,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="5dp"
                 android:layout_marginBottom="6dp"
-                android:text="Leave all off to include every transport mode"
+                android:text="Walking is included with every selection. Transitous allows up to 60 minutes of walking at each end. Leave all off to include every transport mode."
                 android:textColor="@color/text_secondary"
                 android:textSize="12sp" />
 

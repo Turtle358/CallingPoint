@@ -37,7 +37,7 @@ import java.util.concurrent.Executors;
 import io.github.turtle358.callingpoint.R;
 
 /** Renders a walking leg on a MapLibre vector map. */
-public final class MapLibreWalkingMap {
+public class MapLibreWalkingMap {
     private static final String TAG = "MapLibreWalkingMap";
     private static final String WORKER = "https://callingpoint-api.callingpoint.co.uk";
     private static final ExecutorService ROUTES = Executors.newFixedThreadPool(2);
@@ -75,6 +75,12 @@ public final class MapLibreWalkingMap {
             String destination,
             Runnable onMissingEndpoints
     ) {
+        render(context, mapView, origin, destination, null, onMissingEndpoints);
+    }
+
+    public static void render(Context context, MapView mapView, String origin,
+                              String destination, GeoPoint[] endpoints,
+                              Runnable onMissingEndpoints) {
         final String key = String.valueOf(origin) + "\n"
                 + String.valueOf(destination);
 
@@ -91,9 +97,8 @@ public final class MapLibreWalkingMap {
 
         ROUTES.execute(() -> {
             try {
-                GeoPoint[] located = WalkLocator.resolve(
-                        app, origin, destination
-                );
+                GeoPoint[] located = endpoints != null ? endpoints
+                        : WalkLocator.resolve(app, origin, destination);
 
                 if (located == null
                         || located.length < 2

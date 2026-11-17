@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="transitous_attribution">Journeys from TfL and <a href="https://transitous.org/sources/">Transitous and its data sources</a> · © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a></string>
+    <string name="transitous_accessibility_help">Uses wheelchair routing for walking sections and transfers. Vehicle boarding and station accessibility depend on available data. Check with the operator before travelling.</string>
+    <string name="fallback_accessibility_help">TfL avoids solid stairs. Transitous applies wheelchair routing to walking sections and transfers. Check boarding and station accessibility with the operator. Transitous orders its returned journeys for changes and walking preferences.</string>
+</resources>

@@ -21,7 +21,7 @@ import java.util.zip.GZIPOutputStream;
 import io.github.turtle358.callingpoint.models.JourneyLeg;
 import io.github.turtle358.callingpoint.models.JourneyOption;
 
-public final class SharedJourneyLink {
+public class SharedJourneyLink {
     private static final String BASE_URL = "https://app.callingpoint.co.uk/journey";
     private static final String PREFIX = "v1.";
     private static final int MAX_FRAGMENT_LENGTH = 12000;
@@ -35,10 +35,12 @@ public final class SharedJourneyLink {
             "departureDate", "departTime", "arriveTime", "duration", "changesSummary"
     };
     private static final String[] LEG_FIELDS = {
-            "fromStationCode", "fromStationName", "toStationCode", "toStationName",
+            "fromStationCode", "fromStationCrs", "fromStationName", "toStationCode", "toStationCrs", "toStationName",
             "trainDestination", "departureTime", "arrivalTime", "operatorName",
             "serviceId", "transportMode", "departurePlatform", "arrivalPlatform",
-            "durationMinutes", "intermediateStops"
+            "durationMinutes", "intermediateStops", "scheduledDepartureEpochMillis",
+            "scheduledArrivalEpochMillis", "departureEpochMillis", "arrivalEpochMillis",
+            "fromLatitude", "fromLongitude", "toLatitude", "toLongitude"
     };
     private static final String[] STOP_FIELDS = { "stationName", "time" };
 

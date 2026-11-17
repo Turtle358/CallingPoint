@@ -1,4 +1,4 @@
-package io.github.turtle358.callingpoint.ui.activities;
+package io.github.turtle358.callingpoint.ui.adapters;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
@@ -50,7 +50,6 @@ import io.github.turtle358.callingpoint.api.APIClient;
 import io.github.turtle358.callingpoint.api.GeoapifyAutocompleteAPI;
 import io.github.turtle358.callingpoint.api.TflAPI;
 import io.github.turtle358.callingpoint.models.JourneyLocation;
-import io.github.turtle358.callingpoint.ui.adapters.JourneyLocationSuggestionsAdapter;
 import io.github.turtle358.callingpoint.utils.JourneySavedPlaces;
 import io.github.turtle358.callingpoint.utils.JourneyPlanner.JourneyLocationCache;
 import io.github.turtle358.callingpoint.utils.RecentStationsManager;
@@ -59,7 +58,7 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public final class JourneyLocationPickerController {
+public class JourneyLocationPickerController {
     private final AppCompatActivity activity;
     private final AutoCompleteTextView fromField, toField;
     private final View cardSearchInput, popupView;

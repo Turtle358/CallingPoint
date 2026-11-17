@@ -70,7 +70,7 @@ public class JourneyLocationSuggestionsAdapter extends RecyclerView.Adapter<Jour
         return value;
     }
     @Override public int getItemCount() { return items.size(); }
-    static final class Holder extends RecyclerView.ViewHolder {
+    static class Holder extends RecyclerView.ViewHolder {
         final ImageView icon;
         final TextView name, detail;
         Holder(View v) {

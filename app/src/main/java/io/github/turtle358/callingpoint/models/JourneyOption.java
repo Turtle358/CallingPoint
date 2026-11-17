@@ -3,6 +3,9 @@ package io.github.turtle358.callingpoint.models;
 import java.io.Serializable;
 import java.util.List;
 public class JourneyOption implements Serializable {
+    public int transitousTransfers;
+    public long transitousWalkingSeconds;
+
     public List<JourneyLeg> legs;
     public String departTime;
     public String arriveTime;

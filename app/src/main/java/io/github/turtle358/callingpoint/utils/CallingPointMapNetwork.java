@@ -8,7 +8,7 @@ import org.maplibre.android.module.http.HttpRequestUtil;
 import io.github.turtle358.callingpoint.BuildConfig;
 import okhttp3.OkHttpClient;
 
-public final class CallingPointMapNetwork {
+public class CallingPointMapNetwork {
     private static boolean initialized;
 
     private CallingPointMapNetwork() {}

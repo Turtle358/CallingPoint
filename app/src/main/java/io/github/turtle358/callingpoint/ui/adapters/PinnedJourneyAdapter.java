@@ -152,8 +152,11 @@ public class PinnedJourneyAdapter extends RecyclerView.Adapter<PinnedJourneyAdap
     private static String compactPlaceName(String fullName) {
         if (fullName == null) return "";
         String place = fullName.trim().replaceAll("\\s+", " ");
-        int comma = place.indexOf(',');
-        if (comma > 0) place = place.substring(0, comma).trim();
+        int first = place.indexOf(',');
+        if (first >= 0) {
+            int second = place.indexOf(',', first + 1);
+            if (second > 0) place = place.substring(0, second).trim();
+        }
 
         if (!place.isEmpty()
                 && place.equals(place.toUpperCase(Locale.UK))

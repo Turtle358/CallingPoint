@@ -2,13 +2,11 @@ package io.github.turtle358.callingpoint.ui.activities;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
+
+import io.github.turtle358.callingpoint.ui.adapters.JourneyLocationPickerController;
 import io.github.turtle358.callingpoint.utils.JourneySavedPlaces;
 import android.content.SharedPreferences;
 import android.graphics.Color;
@@ -20,7 +18,6 @@ import android.text.TextUtils;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AutoCompleteTextView;
-import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.NumberPicker;
 import android.widget.RadioGroup;
@@ -36,7 +33,6 @@ import com.facebook.shimmer.ShimmerFrameLayout;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.switchmaterial.SwitchMaterial;
 
-
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
@@ -45,20 +41,18 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 import io.github.turtle358.callingpoint.R;
-import io.github.turtle358.callingpoint.api.APIClient;
-import io.github.turtle358.callingpoint.api.GeoapifyAutocompleteAPI;
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
 import io.github.turtle358.callingpoint.models.JourneyOption;
 import io.github.turtle358.callingpoint.models.SavedRoute;
 import io.github.turtle358.callingpoint.ui.adapters.JourneyAdapter;
 import io.github.turtle358.callingpoint.models.JourneyLocation;
-import io.github.turtle358.callingpoint.utils.JourneyPlanner.GraphManager;
 import io.github.turtle358.callingpoint.utils.JourneyPlanner.JourneyPlannerEngine;
 import io.github.turtle358.callingpoint.utils.JourneyPlanner.SavedRoutesManager;
 import io.github.turtle358.callingpoint.utils.StationHelper;
+import io.github.turtle358.callingpoint.utils.JourneyPlanner.TransitousJourneyPlannerEngine;
 import io.github.turtle358.callingpoint.utils.JourneyPlanner.TflJourneyPlannerEngine;
+import io.github.turtle358.callingpoint.utils.JourneyPlanner.GraphManager;
+import io.github.turtle358.callingpoint.utils.JourneyPlanner.FallbackJourneyPlannerEngine;
+import io.github.turtle358.callingpoint.utils.JourneyPlanner.JourneyEndpointAddressResolver;
 
 public class JourneySearchActivity extends AppCompatActivity {
 
@@ -69,16 +63,19 @@ public class JourneySearchActivity extends AppCompatActivity {
     private RecyclerView recyclerSearchResults;
     private TextView tvTimeSelection;
     private TextView tvTravelOptionsSummary;
-    private TextView tvSearchHint, tvResultsHeading;
 
     private View cardFallbackWarning;
     private TextView cardTextFallbackWarning;
     private View btnTimeSelector;
     private ImageButton btnSaveRoute;
+    private View layoutEmptyState;
+    private TextView tvSearchHintTitle, tvSearchHint, tvResultsHeading;
 
     private JourneyAdapter adapter;
-    private JourneyPlannerEngine plannerEngine;
-    private TflJourneyPlannerEngine tflPlannerEngine;
+    private JourneyEndpointAddressResolver endpointAddresses;
+    private List<JourneyOption> displayedJourneys;
+
+    private FallbackJourneyPlannerEngine fallbackPlannerEngine;
     private SavedRoutesManager savedRoutesManager;
     private SharedPreferences journeyPrefs;
 
@@ -111,8 +108,10 @@ public class JourneySearchActivity extends AppCompatActivity {
         cardTextFallbackWarning = findViewById(R.id.cardTextFallbackWarning);
         btnSaveRoute = findViewById(R.id.btnSaveRoute);
         tvTravelOptionsSummary = findViewById(R.id.tvTravelOptionsSummary);
-        tvSearchHint = findViewById(R.id.tvJourneySearchHint);
         tvResultsHeading = findViewById(R.id.tvJourneyResultsHeading);
+        layoutEmptyState = findViewById(R.id.layoutJourneyEmptyState);
+        tvSearchHintTitle = findViewById(R.id.tvJourneySearchHintTitle);
+        tvSearchHint = findViewById(R.id.tvJourneySearchHint);
 
         findViewById(R.id.btnTravelOptions).setOnClickListener(v -> showJourneyOptionsDialog());
         cardFallbackWarning.setOnClickListener(v -> {
@@ -120,9 +119,10 @@ public class JourneySearchActivity extends AppCompatActivity {
         });
         updateSearchOptionsUI();
 
-        GraphManager graphManager = GraphManager.getInstance(this);
-        plannerEngine = new JourneyPlannerEngine(graphManager);
-        tflPlannerEngine = new TflJourneyPlannerEngine();
+        fallbackPlannerEngine = new FallbackJourneyPlannerEngine(
+                new TflJourneyPlannerEngine(), new TransitousJourneyPlannerEngine(),
+                new JourneyPlannerEngine(GraphManager.getInstance(this)));
+        endpointAddresses = new JourneyEndpointAddressResolver();
         savedRoutesManager = new SavedRoutesManager(this);
 
         locationPicker = new JourneyLocationPickerController(this, StationHelper.getStationNames());
@@ -197,6 +197,7 @@ public class JourneySearchActivity extends AppCompatActivity {
     }
 
     private void configureSavedPlaceEditor(@androidx.annotation.NonNull String slot) {
+        layoutEmptyState.setVisibility(View.GONE);
         savedPlaceEditMode = true;
         boolean home = JourneySavedPlaces.HOME.equals(slot);
         etFromCrs.setImeOptions(android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH);
@@ -208,7 +209,6 @@ public class JourneySearchActivity extends AppCompatActivity {
         findViewById(R.id.btnSwapStations).setVisibility(View.GONE);
         findViewById(R.id.layoutJourneySearchOptions).setVisibility(View.GONE);
         tvResultsHeading.setVisibility(View.GONE);
-        tvSearchHint.setVisibility(View.GONE);
         recyclerSearchResults.setVisibility(View.GONE);
         shimmerView.setVisibility(View.GONE);
         cardFallbackWarning.setVisibility(View.GONE);
@@ -231,7 +231,7 @@ public class JourneySearchActivity extends AppCompatActivity {
         StringBuilder label = new StringBuilder("Options");
         if ("leastinterchange".equals(preference)) label.append(" · Fewest changes");
         else if ("leastwalking".equals(preference)) label.append(" · Least walking");
-        if (stepFree) label.append(" · Step-free");
+        if (stepFree) label.append(" · Accessible");
 
         boolean train = hasTrainMode(selectedModes);
         boolean underground = hasUndergroundMode(selectedModes);
@@ -277,21 +277,28 @@ public class JourneySearchActivity extends AppCompatActivity {
     }
 
     private void onLocationsChanged() {
+        if (!searchSignature().equals(lastSearchSignature)) {
+            searchVersion++;
+            if (fallbackPlannerEngine != null) fallbackPlannerEngine.cancel();
+            if (endpointAddresses != null) endpointAddresses.cancel();
+            displayedJourneys = null;
+        }
         updateSaveButtonState();
         if (!automaticSearchReady) return;
         if (!locationPicker.hasBothLocations()) {
             searchHandler.removeCallbacks(pendingAutoSearch);
-            searchVersion++;
             lastSearchSignature = null;
             if (adapter != null) adapter.updateData(new ArrayList<>());
             recyclerSearchResults.setVisibility(View.GONE);
             shimmerView.stopShimmer();
             shimmerView.setVisibility(View.GONE);
             tvResultsHeading.setVisibility(View.GONE);
-            tvSearchHint.setText(locationPicker.getTo() == null
-                    ? "Choose a destination to see journeys"
-                    : "Choose a starting point to see journeys");
-            tvSearchHint.setVisibility(View.VISIBLE);
+            boolean missingDestination = locationPicker.getTo() == null;
+            tvSearchHintTitle.setText(missingDestination
+                    ? "Choose a destination"
+                    : "Choose a starting point");
+            tvSearchHint.setText("Search for a station, address or postcode to see journeys.");
+            layoutEmptyState.setVisibility(View.VISIBLE);
             fadeOutWarningCard();
         } else {
             scheduleAutomaticSearch();
@@ -301,7 +308,7 @@ public class JourneySearchActivity extends AppCompatActivity {
     private void scheduleAutomaticSearch() {
         if (!automaticSearchReady || locationPicker == null || !locationPicker.hasBothLocations()) return;
         searchHandler.removeCallbacks(pendingAutoSearch);
-        searchHandler.postDelayed(pendingAutoSearch, 180);
+        searchHandler.postDelayed(pendingAutoSearch, 500);
     }
 
     private void searchIfChanged() {
@@ -315,7 +322,8 @@ public class JourneySearchActivity extends AppCompatActivity {
         JourneyLocation from = locationPicker.getFrom();
         JourneyLocation to = locationPicker.getTo();
         if (from == null || to == null) return "";
-        return from.stableKey() + "|" + to.stableKey() + "|"
+        return from.stableKey() + "|" + from.latitude + "," + from.longitude + "|"
+                + to.stableKey() + "|" + to.latitude + "," + to.longitude + "|"
                 + (selectedCalendar == null ? "now" : selectedCalendar.getTimeInMillis()) + "|"
                 + isArriving + "|"
                 + journeyPrefs.getString("journeyPreference", "leasttime") + "|"
@@ -375,12 +383,13 @@ public class JourneySearchActivity extends AppCompatActivity {
         NumberPicker pickerMinute = dialog.findViewById(R.id.pickerMinute);
 
         String[] dateDisplayValues = new String[30];
-        Calendar calIter = Calendar.getInstance();
+        Calendar calIter = Calendar.getInstance(java.util.TimeZone.getTimeZone("Europe/London"));
         for (int i = 0; i < 30; i++) {
             if (i == 0) dateDisplayValues[i] = "Today";
             else if (i == 1) dateDisplayValues[i] = "Tomorrow";
             else {
                 java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("EEE, dd MMM", Locale.UK);
+                sdf.setTimeZone(java.util.TimeZone.getTimeZone("Europe/London"));
                 dateDisplayValues[i] = sdf.format(calIter.getTime());
             }
             calIter.add(Calendar.DAY_OF_YEAR, 1);
@@ -396,9 +405,9 @@ public class JourneySearchActivity extends AppCompatActivity {
         pickerMinute.setMinValue(0);
         pickerMinute.setMaxValue(59);
 
-        Calendar currentSelection = selectedCalendar != null ? selectedCalendar : Calendar.getInstance();
+        Calendar currentSelection = selectedCalendar != null ? selectedCalendar : Calendar.getInstance(java.util.TimeZone.getTimeZone("Europe/London"));
 
-        Calendar today = Calendar.getInstance();
+        Calendar today = Calendar.getInstance(java.util.TimeZone.getTimeZone("Europe/London"));
         today.set(Calendar.HOUR_OF_DAY, 0); today.set(Calendar.MINUTE, 0); today.set(Calendar.SECOND, 0); today.set(Calendar.MILLISECOND, 0);
         Calendar sel = (Calendar) currentSelection.clone();
         sel.set(Calendar.HOUR_OF_DAY, 0); sel.set(Calendar.MINUTE, 0); sel.set(Calendar.SECOND, 0); sel.set(Calendar.MILLISECOND, 0);
@@ -423,7 +432,7 @@ public class JourneySearchActivity extends AppCompatActivity {
         dialog.findViewById(R.id.btnSet).setOnClickListener(v -> {
             isArriving = toggleGroup.getCheckedRadioButtonId() == R.id.radioArrivingBy;
 
-            Calendar result = Calendar.getInstance();
+            Calendar result = Calendar.getInstance(java.util.TimeZone.getTimeZone("Europe/London"));
             result.add(Calendar.DAY_OF_YEAR, pickerDate.getValue());
             result.set(Calendar.HOUR_OF_DAY, pickerHour.getValue());
             result.set(Calendar.MINUTE, pickerMinute.getValue());
@@ -623,11 +632,12 @@ public class JourneySearchActivity extends AppCompatActivity {
     }
 
     private String formatCalendarFriendly(Calendar cal) {
-        Calendar today = Calendar.getInstance();
-        Calendar tomorrow = Calendar.getInstance();
+        Calendar today = Calendar.getInstance(java.util.TimeZone.getTimeZone("Europe/London"));
+        Calendar tomorrow = Calendar.getInstance(java.util.TimeZone.getTimeZone("Europe/London"));
         tomorrow.add(Calendar.DAY_OF_YEAR, 1);
 
         java.text.SimpleDateFormat timeFmt = new java.text.SimpleDateFormat("HH:mm", Locale.UK);
+        timeFmt.setTimeZone(java.util.TimeZone.getTimeZone("Europe/London"));
 
         if (cal.get(Calendar.YEAR) == today.get(Calendar.YEAR) && cal.get(Calendar.DAY_OF_YEAR) == today.get(Calendar.DAY_OF_YEAR)) {
             return "today at " + timeFmt.format(cal.getTime());
@@ -635,6 +645,7 @@ public class JourneySearchActivity extends AppCompatActivity {
             return "tomorrow at " + timeFmt.format(cal.getTime());
         } else {
             java.text.SimpleDateFormat dateFmt = new java.text.SimpleDateFormat("EEE, dd MMM 'at' HH:mm", Locale.UK);
+            dateFmt.setTimeZone(java.util.TimeZone.getTimeZone("Europe/London"));
             return dateFmt.format(cal.getTime());
         }
     }
@@ -658,21 +669,16 @@ public class JourneySearchActivity extends AppCompatActivity {
             Toast.makeText(this, "Origin and destination cannot be the same", Toast.LENGTH_SHORT).show();
             return;
         }
-        final String fromTfl;
-        final String toTfl;
-        try {
-            fromTfl = from.tflValue();
-            toTfl = to.tflValue();
-        } catch (IllegalArgumentException error) {
-            Toast.makeText(this, "Invalid journey location", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
         searchHandler.removeCallbacks(pendingAutoSearch);
         lastSearchSignature = searchSignature();
         final int requestVersion = ++searchVersion;
+        displayedJourneys = null;
+        endpointAddresses.resolve(from, to, () -> {
+            if (isDestroyed() || requestVersion != searchVersion) return;
+            if (endpointAddresses.apply(displayedJourneys)) adapter.updateData(displayedJourneys);
+        });
         fadeOutWarningCard();
-        tvSearchHint.setVisibility(View.GONE);
+        layoutEmptyState.setVisibility(View.GONE);
         tvResultsHeading.setVisibility(View.GONE);
         locationPicker.close();
         hideKeyboard();
@@ -680,318 +686,61 @@ public class JourneySearchActivity extends AppCompatActivity {
         shimmerView.setVisibility(View.GONE);
         updateSaveButtonState();
 
-        boolean bothStations = from.type == JourneyLocation.Type.STATION
-                && to.type == JourneyLocation.Type.STATION;
-        String fromCrs = bothStations ? StationHelper.getCrsFromName(from.displayName()) : null;
-        String toCrs = bothStations ? StationHelper.getCrsFromName(to.displayName()) : null;
-        String fromNaptan = bothStations ? preferredStationId(from) : null;
-        String toNaptan = bothStations ? preferredStationId(to) : null;
-
         String dateParam = null;
         String timeParam = null;
-        String timeIsParam = null;
         if (selectedCalendar != null) {
             java.text.SimpleDateFormat dateFmt = new java.text.SimpleDateFormat("yyyyMMdd", Locale.UK);
             java.text.SimpleDateFormat timeFmt = new java.text.SimpleDateFormat("HHmm", Locale.UK);
+            dateFmt.setTimeZone(java.util.TimeZone.getTimeZone("Europe/London"));
+            timeFmt.setTimeZone(java.util.TimeZone.getTimeZone("Europe/London"));
             dateParam = dateFmt.format(selectedCalendar.getTime());
             timeParam = timeFmt.format(selectedCalendar.getTime());
-            timeIsParam = isArriving ? "arriving" : "departing";
         }
 
-        if (bothStations) {
-            startTflRouting(nonBlank(fromNaptan, fromTfl), nonBlank(toNaptan, toTfl),
-                    fromCrs, toCrs, dateParam, timeParam, timeIsParam, requestVersion);
-        } else {
-            startTflRouting(fromTfl, toTfl, null, null,
-                    dateParam, timeParam, timeIsParam, requestVersion);
-        }
-    }
-
-    @SuppressLint("SetTextI18n")
-    private void startInternalRouting(String fromCrs, String toCrs, int requestVersion) {
-        recyclerSearchResults.setVisibility(View.GONE);
-
-        shimmerView.setVisibility(View.VISIBLE);
-        shimmerView.startShimmer();
-
-        if (plannerEngine != null) {
-            findRoutes(fromCrs, toCrs, requestVersion);
-        } else {
-            cardTextFallbackWarning.setText("Routing engine unavailable. Check your connection.");
-            fadeInWarningCard();
-            shimmerView.stopShimmer();
-            shimmerView.setVisibility(View.GONE);
-        }
-    }
-
-    private static String nonBlank(String preferred, String fallback) {
-        return preferred != null && !preferred.trim().isEmpty() ? preferred : fallback;
-    }
-
-    private static String preferredStationId(JourneyLocation station) {
-        String name = JourneyLocationPickerController.canonicalStationName(station.displayName());
-        String localId = StationHelper.getNaptanFromName(name);
-        return nonBlank(localId, station.stationId);
-    }
-
-    private static String stationSearchName(JourneyLocation loc) {
-        if (loc == null || loc.type != JourneyLocation.Type.STATION) return null;
-        String name = JourneyLocationPickerController.canonicalStationName(loc.displayName());
-        return name.isEmpty() ? null : name + " Station";
-    }
-
-    private static boolean isLocationResolutionError(String message) {
-        if (message == null) return false;
-        String msg = message.toLowerCase(Locale.UK);
-        return msg.contains("identify") || msg.contains("disambiguat")
-                || msg.contains("not recognis") || msg.contains("not recogniz")
-                || msg.contains("unknown location") || msg.contains("location not found")
-                || msg.contains("invalid location") || msg.contains("could not find")
-                || msg.contains("couldn't find") || msg.contains("one of the locations");
-    }
-
-    private static final class RoutePair {
-        final String from, to;
-        RoutePair(String from, String to) { this.from = from; this.to = to; }
-    }
-
-    private static void addRoutePair(List<RoutePair> attempts, Set<String> seen,
-                                     String from, String to) {
-        if (from == null || to == null || from.trim().isEmpty() || to.trim().isEmpty()) return;
-        if (seen.add(from + "\u0000" + to)) attempts.add(new RoutePair(from, to));
-    }
-
-    private void startTflRouting(String fromValue, String toValue,
-                                 String fromCrs, String toCrs, String date, String time,
-                                 String timeIs, int requestVersion) {
-        fadeOutWarningCard();
         recyclerSearchResults.setVisibility(View.GONE);
         shimmerView.setVisibility(View.VISIBLE);
         shimmerView.startShimmer();
-
-        List<RoutePair> attempts = new ArrayList<>();
-        Set<String> seen = new LinkedHashSet<>();
-        addRoutePair(attempts, seen, fromValue, toValue);
-
-        JourneyLocation from = locationPicker.getFrom();
-        JourneyLocation to = locationPicker.getTo();
-        String fromName = stationSearchName(from);
-        String toName = stationSearchName(to);
-
-        if (toName != null) addRoutePair(attempts, seen, fromValue, toName);
-        if (fromName != null) addRoutePair(attempts, seen, fromName, toValue);
-        if (fromName != null && toName != null)
-            addRoutePair(attempts, seen, fromName, toName);
-
-        tryTflRouteAttempts(attempts, 0, true, fromValue, toValue,
-                fromCrs, toCrs, date, time, timeIs, requestVersion, null);
-    }
-
-    private void tryTflRouteAttempts(List<RoutePair> attempts, int index,
-                                     boolean allowAddressLookup,
-                                     String originalFrom, String originalTo,
-                                     String fromCrs, String toCrs, String date,
-                                     String time, String timeIs, int requestVersion,
-                                     String previousError) {
-        if (isDestroyed() || requestVersion != searchVersion) return;
-        if (index >= attempts.size()) {
-            if (allowAddressLookup) {
-                tryGeoapifyFallback(originalFrom, originalTo,
-                        fromCrs, toCrs, date, time, timeIs, requestVersion,
-                        previousError);
-            } else {
-                finishTflSearchError(previousError, fromCrs, toCrs, date, requestVersion);
-            }
-            return;
-        }
-
-        RoutePair pair = attempts.get(index);
-        String journeyPref = journeyPrefs.getString("journeyPreference", "leasttime");
-        String modes = journeyPrefs.getString("preferredModes", null);
-        String accessPref = journeyPrefs.getBoolean("accessibilityRequired", false)
-                ? "noSolidStairs" : null;
-        fadeOutWarningCard();
-
-        if (tflPlannerEngine == null) {
-            finishTflSearchError("TfL journey planner unavailable", fromCrs, toCrs, date, requestVersion);
-            return;
-        }
-        tflPlannerEngine.findRoutes(pair.from, pair.to, date, time, timeIs,
-                journeyPref, modes, accessPref, new JourneyPlannerEngine.JourneyCallback() {
-            @Override public void onJourneysFound(List<JourneyOption> journeys) {
-                if (isDestroyed() || requestVersion != searchVersion) return;
-                shimmerView.stopShimmer();
-                shimmerView.setVisibility(View.GONE);
-                if (journeys != null && !journeys.isEmpty()) {
-                    fadeOutWarningCard();
-                    adapter.updateData(journeys);
-                    recyclerSearchResults.setVisibility(View.VISIBLE);
-                    tvResultsHeading.setVisibility(View.VISIBLE);
-                } else if (date == null && fromCrs != null && toCrs != null) {
-                    startInternalRouting(fromCrs, toCrs, requestVersion);
-                } else {
-                    cardTextFallbackWarning.setText("No routes found for the selected time.");
-                    fadeInWarningCard();
-                }
-            }
-
-            @Override public void onError(String message) {
-                if (isDestroyed() || requestVersion != searchVersion) return;
-                if (isLocationResolutionError(message)) {
-                    tryTflRouteAttempts(attempts, index + 1, allowAddressLookup,
-                            originalFrom, originalTo, fromCrs, toCrs,
-                            date, time, timeIs, requestVersion, message);
-                } else {
-                    finishTflSearchError(message, fromCrs, toCrs, date, requestVersion);
-                }
-            }
-
-            @Override public void onStatusUpdate(String message) {
-                if (isDestroyed() || requestVersion != searchVersion) return;
-            }
-        });
-    }
-
-    private void finishTflSearchError(String message, String fromCrs, String toCrs,
-                                      String date, int requestVersion) {
-        if (isDestroyed() || requestVersion != searchVersion) return;
-        if (date == null && fromCrs != null && toCrs != null) {
-            startInternalRouting(fromCrs, toCrs, requestVersion);
-        } else {
-            cardTextFallbackWarning.setText("Search failed: "
-                    + (message == null || message.isEmpty()
-                    ? "Could not resolve the station. Try selecting a different suggestion."
-                    : message));
-            fadeInWarningCard();
-            shimmerView.stopShimmer();
-            shimmerView.setVisibility(View.GONE);
-        }
-    }
-
-    private interface LocationCoordinateCallback {
-        void onResult(String coordinate);
-    }
-
-    private void resolveStationCoordinates(JourneyLocation loc, int requestVersion,
-                                           LocationCoordinateCallback callback) {
-        String stationName = stationSearchName(loc);
-        if (stationName == null) { callback.onResult(null); return; }
-        APIClient.getClient().create(GeoapifyAutocompleteAPI.class)
-                .suggestions(stationName).enqueue(new Callback<JsonObject>() {
-            @Override public void onResponse(Call<JsonObject> call,
-                                             Response<JsonObject> response) {
-                if (isDestroyed() || requestVersion != searchVersion) return;
-                String coords = null;
-                JsonObject body = response.body();
-                JsonArray results = body != null && body.has("results")
-                        && body.get("results").isJsonArray()
-                        ? body.getAsJsonArray("results") : null;
-                if (response.isSuccessful() && results != null) {
-                    String requiredName = JourneyLocationPickerController.canonicalStationName(
-                            loc.displayName()).toLowerCase(Locale.UK);
-                    for (JsonElement elem : results) {
-                        if (!elem.isJsonObject()) continue;
-                        JsonObject item = elem.getAsJsonObject();
-                        String label = safeJsonString(item, "formatted") + " "
-                                + safeJsonString(item, "address_line1");
-                        String lower = label.toLowerCase(Locale.UK);
-                        if (!lower.contains(requiredName)
-                                || !(lower.contains("station") || lower.contains("railway")
-                                || lower.contains("underground") || lower.contains("transport"))) continue;
-                        try {
-                            if (!item.has("lat") || !item.has("lon")) continue;
-                            double latitude = item.get("lat").getAsDouble();
-                            double longitude = item.get("lon").getAsDouble();
-                            if (latitude < -90 || latitude > 90
-                                    || longitude < -180 || longitude > 180) continue;
-                            coords = String.format(Locale.US, "%.6f,%.6f", latitude, longitude);
-                            break;
-                        } catch (RuntimeException ignored) { }
+        fallbackPlannerEngine.findRoutes(from, to, dateParam, timeParam, isArriving,
+                journeyPrefs.getString("journeyPreference", "leasttime"),
+                journeyPrefs.getString("preferredModes", null),
+                journeyPrefs.getBoolean("accessibilityRequired", false),
+                new JourneyPlannerEngine.JourneyCallback() {
+                    @Override public void onJourneysFound(List<JourneyOption> journeys) {
+                        if (isDestroyed() || requestVersion != searchVersion) return;
+                        shimmerView.stopShimmer();
+                        shimmerView.setVisibility(View.GONE);
+                        fadeOutWarningCard();
+                        layoutEmptyState.setVisibility(View.GONE);
+                        displayedJourneys = journeys;
+                        endpointAddresses.apply(journeys);
+                        adapter.updateData(journeys);
+                        recyclerSearchResults.setVisibility(View.VISIBLE);
+                        tvResultsHeading.setVisibility(View.VISIBLE);
                     }
-                }
-                callback.onResult(coords);
-            }
-
-            @Override public void onFailure(Call<JsonObject> call, Throwable t) {
-                if (isDestroyed() || requestVersion != searchVersion) return;
-                callback.onResult(null);
-            }
-        });
-    }
-
-    private static String safeJsonString(JsonObject item, String key) {
-        JsonElement e = item.get(key);
-        if (e == null || e.isJsonNull() || !e.isJsonPrimitive()) return "";
-        try { return e.getAsString(); }
-        catch (RuntimeException ignored) { return ""; }
-    }
-
-    private void tryGeoapifyFallback(String originalFrom, String originalTo,
-                                     String fromCrs, String toCrs,
-                                     String date, String time, String timeIs,
-                                     int requestVersion, String lastError) {
-        JourneyLocation origin = locationPicker.getFrom();
-        JourneyLocation destination = locationPicker.getTo();
-        resolveStationCoordinates(destination, requestVersion, geoTo ->
-                resolveStationCoordinates(origin, requestVersion, geoFrom -> {
-                    List<RoutePair> recovered = new ArrayList<>();
-                    Set<String> seen = new LinkedHashSet<>();
-                    if (geoTo != null) addRoutePair(recovered, seen, originalFrom, geoTo);
-                    if (geoFrom != null) addRoutePair(recovered, seen, geoFrom, originalTo);
-                    if (geoFrom != null && geoTo != null)
-                        addRoutePair(recovered, seen, geoFrom, geoTo);
-                    if (recovered.isEmpty()) {
-                        finishTflSearchError(lastError, fromCrs, toCrs, date, requestVersion);
-                    } else {
-                        tryTflRouteAttempts(recovered, 0, false, originalFrom, originalTo,
-                                fromCrs, toCrs, date, time, timeIs,
-                                requestVersion, lastError);
+                    @Override public void onError(String message) {
+                        if (isDestroyed() || requestVersion != searchVersion) return;
+                        endpointAddresses.cancel();
+                        shimmerView.stopShimmer();
+                        shimmerView.setVisibility(View.GONE);
+                        layoutEmptyState.setVisibility(View.GONE);
+                        cardTextFallbackWarning.setText(message);
+                        fadeInWarningCard();
                     }
-                }));
-    }
-
-    private void findRoutes(String fromCrs, String toCrs, int requestVersion) {
-        plannerEngine.findRoutes(fromCrs, toCrs, new JourneyPlannerEngine.JourneyCallback() {
-            @SuppressLint("SetTextI18n")
-            @Override
-            public void onJourneysFound(List<JourneyOption> journeys) {
-                if (isDestroyed() || requestVersion != searchVersion) return;
-                shimmerView.stopShimmer();
-                shimmerView.setVisibility(View.GONE);
-
-                if (journeys != null && !journeys.isEmpty()) {
-                    adapter.updateData(journeys);
-                    recyclerSearchResults.setVisibility(View.VISIBLE);
-                    tvResultsHeading.setVisibility(View.VISIBLE);
-                } else {
-                    cardTextFallbackWarning.setText("No routes found between these stations.");
-                    fadeInWarningCard();
-                }
-            }
-
-            @Override
-            public void onError(String message) {
-                if (isDestroyed() || requestVersion != searchVersion) return;
-                cardTextFallbackWarning.setText(message);
-                fadeInWarningCard();
-                shimmerView.stopShimmer();
-                shimmerView.setVisibility(View.GONE);
-            }
-
-            @Override
-            public void onStatusUpdate(String message) {
-                if (isDestroyed() || requestVersion != searchVersion) return;
-                cardTextFallbackWarning.setText(message);
-            }
-        });
+                    @Override public void onStatusUpdate(String message) {
+                        if (isDestroyed() || requestVersion != searchVersion) return;
+                        tvSearchHintTitle.setText("Finding routes");
+                        tvSearchHint.setText(message);
+                        layoutEmptyState.setVisibility(View.VISIBLE);
+                    }
+                });
     }
 
     @Override
     protected void onDestroy() {
         searchHandler.removeCallbacksAndMessages(null);
         super.onDestroy();
-        if (plannerEngine != null) plannerEngine.shutdown();
-        if (tflPlannerEngine != null) tflPlannerEngine.shutdown();
+        if (fallbackPlannerEngine != null) fallbackPlannerEngine.shutdown();
+        if (endpointAddresses != null) endpointAddresses.cancel();
         if (locationPicker != null) locationPicker.destroy();
     }
 

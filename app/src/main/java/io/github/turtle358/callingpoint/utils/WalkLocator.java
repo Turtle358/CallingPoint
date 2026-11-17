@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public final class WalkLocator {
+public class WalkLocator {
 
     private static final String TAG = "WalkLocator";
     private static final double LAT_MIN = 49.8, LAT_MAX = 60.9;

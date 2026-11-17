@@ -29,6 +29,37 @@ class JourneyPlannerEngine(private val graphManager: GraphManager) {
     private val executor: ExecutorService
     private val mainHandler: Handler
 
+    private val generation = java.util.concurrent.atomic.AtomicInteger()
+    private var workerVersion = 0
+    @Volatile private var closed = false
+    private var activeCall: retrofit2.Call<*>? = null
+    private var task: java.util.concurrent.Future<*>? = null
+
+    @Synchronized
+    fun cancel() {
+        generation.incrementAndGet()
+        activeCall?.cancel()
+        task?.cancel(true)
+    }
+
+    private fun checkActive() {
+        if (closed || workerVersion != generation.get() || Thread.currentThread().isInterrupted) {
+            throw java.util.concurrent.CancellationException()
+        }
+    }
+
+    private fun <T> execute(call: retrofit2.Call<T>): retrofit2.Response<T> {
+        synchronized(this) {
+            checkActive()
+            activeCall = call
+        }
+        try {
+            return call.execute()
+        } finally {
+            synchronized(this) { if (activeCall === call) activeCall = null }
+        }
+    }
+
     private var boardCache: MutableMap<String?, StationDepartureResponse?>? = null
     private var detailCache: MutableMap<String?, ServiceDetailsResponse?>? = null
 
@@ -38,24 +69,28 @@ class JourneyPlannerEngine(private val graphManager: GraphManager) {
         this.mainHandler = Handler(Looper.getMainLooper())
     }
 
+    @Synchronized
     fun findRoutes(originCrs: String?, destCrs: String, callback: JourneyCallback) {
-
-        executor.execute {
+        cancel()
+        if (closed) return
+        val version = generation.get()
+        task = executor.submit {
+            workerVersion = version
             boardCache = HashMap()
             detailCache = HashMap()
             val foundJourneys: MutableList<JourneyOption?> = ArrayList()
             try {
                 findDirect(originCrs, destCrs, foundJourneys)
 
-                if (foundJourneys.size < 5) {
+                if (foundJourneys.isEmpty()) {
                     findOneChange(originCrs, destCrs, foundJourneys)
                 }
 
-                if (foundJourneys.size < 3) {
+                if (foundJourneys.isEmpty()) {
                     findCrossCity(originCrs, destCrs, foundJourneys)
                 }
 
-                if (foundJourneys.size < 3) {
+                if (foundJourneys.isEmpty()) {
                     findTwoChange(originCrs, destCrs, foundJourneys)
                 }
 
@@ -64,8 +99,28 @@ class JourneyPlannerEngine(private val graphManager: GraphManager) {
                     val arr2 = if (j2!!.arriveTime != null) j2.arriveTime else "23:59"
                     arr1.compareTo(arr2)
                 })
+                checkActive()
+                val today = TransitousTime.format(System.currentTimeMillis(), "yyyy-MM-dd")
+                for (journey in foundJourneys) {
+                    if (journey == null) continue
+                    var midnight = TransitousTime.parseExact(today, "yyyy-MM-dd")
+                    if (TransitousTime.parseExact(today + journey.departTime, "yyyy-MM-ddHH:mm") < System.currentTimeMillis() - 12 * 3600000L) {
+                        val calendar = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("Europe/London"))
+                        calendar.timeInMillis = midnight
+                        calendar.add(java.util.Calendar.DATE, 1)
+                        midnight = calendar.timeInMillis
+                    }
+                    journey.departureDate = TransitousTime.format(midnight, "yyyy-MM-dd") + "T" + journey.departTime + ":00"
+                }
+                mainHandler.post {
+                    if (!closed && version == generation.get()) callback.onJourneysFound(foundJourneys)
+                }
+            } catch (e: java.util.concurrent.CancellationException) {
             } catch (e: Exception) {
                 Log.e(TAG, "Network error during search", e)
+                mainHandler.post {
+                    if (!closed && version == generation.get()) callback.onError("National Rail fallback search failed.")
+                }
             }
         }
     }
@@ -550,12 +605,13 @@ class JourneyPlannerEngine(private val graphManager: GraphManager) {
     }
 
     private fun getBoard(crs: String?, rows: Int, filter: String?): StationDepartureResponse? {
+        checkActive()
         val cacheKey = crs + "_" + rows + "_" + (if (filter != null) filter else "ALL")
         if (boardCache!!.containsKey(cacheKey)) return boardCache!!.get(cacheKey)
 
         try {
             val filterType = if (filter != null) "to" else null
-            val res = api.getStationDepartures(crs, rows, filter, filterType, 0, 120).execute()
+            val res = execute(api.getStationDepartures(crs, rows, filter, filterType, 0, 120))
             if (res.isSuccessful() && res.body() != null) {
                 boardCache!!.put(cacheKey, res.body())
                 return res.body()
@@ -567,13 +623,14 @@ class JourneyPlannerEngine(private val graphManager: GraphManager) {
     }
 
     private fun getPreciseArrivalTime(serviceId: String?, targetCrs: String): String? {
+        checkActive()
         var details: ServiceDetailsResponse? = null
 
         if (detailCache!!.containsKey(serviceId)) {
             details = detailCache!!.get(serviceId)
         } else {
             try {
-                val res = api.getServiceDetails(serviceId).execute()
+                val res = execute(api.getServiceDetails(serviceId))
                 if (res.isSuccessful() && res.body() != null) {
                     details = res.body()
                     detailCache!!.put(serviceId, details)
@@ -729,7 +786,10 @@ class JourneyPlannerEngine(private val graphManager: GraphManager) {
     }
 
     fun shutdown() {
-        executor.shutdown()
+        closed = true
+        cancel()
+        executor.shutdownNow()
+        mainHandler.removeCallbacksAndMessages(null)
     }
 
     private fun getStationName(crs: String?): String? {

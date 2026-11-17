@@ -193,7 +193,13 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
             holder.tvTrainDestination.setVisibility(View.VISIBLE);
             holder.tvTrainDestination.setText("to " + trainDestination.trim());
         }
-        holder.ivModeIcon.setImageResource(lookupName.equalsIgnoreCase("bus") ? R.drawable.ic_bus : R.drawable.ic_train);
+        boolean isRail = "TRAIN".equalsIgnoreCase(currentLeg.transportMode)
+                || "TUBE".equalsIgnoreCase(currentLeg.transportMode);
+        int modeIcon = android.R.drawable.ic_menu_directions;
+        if (isBus) modeIcon = R.drawable.ic_bus;
+        else if (isRail) modeIcon = R.drawable.ic_train;
+        holder.ivModeIcon.setImageResource(modeIcon);
+        holder.ivManagerLogo.setVisibility(isBus || isRail ? View.VISIBLE : View.GONE);
         holder.ivManagerLogo.setImageResource(TOCBrandHelper.getIconForToc(lookupName));
         holder.ivManagerLogo.setOnClickListener(v -> TOCBrandHelper.showTOCInfoDialog(v.getContext(), lookupName));
 
@@ -884,6 +890,19 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
         });
     }
 
+    private static org.osmdroid.util.GeoPoint[] walkingEndpoints(JourneyLeg leg) {
+        if (leg.fromLatitude == null || leg.fromLongitude == null
+                || leg.toLatitude == null || leg.toLongitude == null) return null;
+        if (!Double.isFinite(leg.fromLatitude) || !Double.isFinite(leg.fromLongitude)
+                || !Double.isFinite(leg.toLatitude) || !Double.isFinite(leg.toLongitude)
+                || Math.abs(leg.fromLatitude) > 90 || Math.abs(leg.toLatitude) > 90
+                || Math.abs(leg.fromLongitude) > 180 || Math.abs(leg.toLongitude) > 180) return null;
+        return new org.osmdroid.util.GeoPoint[] {
+                new org.osmdroid.util.GeoPoint(leg.fromLatitude, leg.fromLongitude),
+                new org.osmdroid.util.GeoPoint(leg.toLatitude, leg.toLongitude)
+        };
+    }
+
     private void showWalkingMap(LegViewHolder holder, JourneyLeg leg) {
         if (!holder.attached || !expandedWalkingMaps.contains(leg)
                 || holder.cardWalkingMap.getVisibility() != View.VISIBLE) return;
@@ -897,6 +916,7 @@ public class JourneyLegAdapter extends RecyclerView.Adapter<JourneyLegAdapter.Le
                 currentMap,
                 leg.fromStationName,
                 leg.toStationName,
+                walkingEndpoints(leg),
                 () -> {
                     int position = holder.getBindingAdapterPosition();
                     if (position == RecyclerView.NO_POSITION || position >= legs.size()

@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import io.github.turtle358.callingpoint.models.JourneyLocation;
 
-public final class JourneySavedPlaces {
+public class JourneySavedPlaces {
     public static final String HOME = "home";
     public static final String WORK = "work";
     private final Gson gson = new Gson();

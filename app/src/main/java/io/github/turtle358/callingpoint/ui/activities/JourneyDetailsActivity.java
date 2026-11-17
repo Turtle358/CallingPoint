@@ -1,5 +1,6 @@
 package io.github.turtle358.callingpoint.ui.activities;
 
+import io.github.turtle358.callingpoint.utils.JourneyPlanner.NationalRailJourneyMatch;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
@@ -414,14 +415,12 @@ public class JourneyDetailsActivity extends AppCompatActivity {
             pinnedManager.toggleJourneyPin(journey);
             boolean isNowPinned = pinnedManager.isJourneyPinned(journey);
             btnPinJourney.setImageResource(isNowPinned ? R.drawable.ic_bookmark : R.drawable.ic_bookmark_outline);
-            Toast.makeText(this, isNowPinned ? "Journey Saved!" : "Journey Removed", Toast.LENGTH_SHORT).show();
         });
     }
 
     private void fetchLiveServiceDetails(JourneyOption journey) {
-        if (!isJourneyToday(journey.departureDate)) {
-            return;
-        }
+        if (!isJourneyToday(journey.departureDate)
+                && journey.legs.stream().noneMatch(leg -> leg.scheduledDepartureEpochMillis > 0)) return;
 
         for (JourneyLeg leg : journey.legs) {
             if ("TRAIN".equals(leg.transportMode)) {
@@ -512,31 +511,27 @@ public class JourneyDetailsActivity extends AppCompatActivity {
     }
 
     private void attemptMatchForLeg(JourneyLeg leg, JourneyOption journey) {
-        String fromCrs = StationHelper.getCrsFromName(leg.fromStationName);
-        String toCrs = StationHelper.getCrsFromName(leg.toStationName);
-        if (fromCrs == null || toCrs == null) return;
+        long now = System.currentTimeMillis();
+        if (!NationalRailJourneyMatch.inBoardWindow(journey, leg, now)) return;
+        String fromCrs = NationalRailJourneyMatch.crs(leg.fromStationCrs, leg.fromStationName);
+        String toCrs = NationalRailJourneyMatch.crs(leg.toStationCrs, leg.toStationName);
+        if (fromCrs == null || fromCrs.isEmpty() || toCrs == null || toCrs.isEmpty()) return;
 
         NationalRailAPI api = APIClient.getClient().create(NationalRailAPI.class);
-        int timeOffset = calculateTimeOffset(leg.departureTime);
+        int timeOffset = NationalRailJourneyMatch.offset(journey, leg, now);
 
         api.getStationDepartures(fromCrs, 40, toCrs, "to", timeOffset, 120).enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<StationDepartureResponse> call, @NonNull Response<StationDepartureResponse> response) {
                 if (response.isSuccessful() && response.body() != null && response.body().trainServices != null) {
-                    for (StationDepartureResponse.TrainService service : response.body().trainServices) {
-                        if (service.scheduledDepartureTime != null && isTimeMatching(service.scheduledDepartureTime, leg.departureTime, 2)) {
-                            leg.serviceId = service.serviceID;
-                            if (service.operatorName != null) {
-                                io.github.turtle358.callingpoint.models.Toc matchedToc = TOCBrandHelper.getTocByName(service.operatorName);
-                                if (matchedToc != null) {
-                                    leg.operatorName = matchedToc.name;
-                                }
-                            }
-
-                            updatePinnedJourneyIfPinned(journey);
-                            fetchDetailsForLeg(leg, journey);
-                            break;
-                        }
+                    StationDepartureResponse.TrainService service =
+                            NationalRailJourneyMatch.select(response.body().trainServices, leg);
+                    if (service != null) {
+                        leg.serviceId = service.serviceID;
+                        if (service.platform != null) leg.departurePlatform = service.platform;
+                        if (service.operatorName != null) leg.operatorName = service.operatorName;
+                        updatePinnedJourneyIfPinned(journey);
+                        fetchDetailsForLeg(leg, journey);
                     }
                 }
             }

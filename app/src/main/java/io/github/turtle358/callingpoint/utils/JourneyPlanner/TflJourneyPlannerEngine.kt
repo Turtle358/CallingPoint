@@ -26,9 +26,17 @@ import kotlin.math.min
 
 class TflJourneyPlannerEngine {
     private val tflApi: TflAPI = APIClient.getClient().create(TflAPI::class.java)
-    private val nationalRailApi: NationalRailAPI = APIClient.getClient().create(NationalRailAPI::class.java)
     private val mainHandler = Handler(Looper.getMainLooper())
     private val executor: ExecutorService = Executors.newSingleThreadExecutor()
+    private var activeCall: Call<JsonObject?>? = null
+    @Volatile private var generation = 0
+    @Volatile private var closed = false
+
+    fun cancel() {
+        generation++
+        activeCall?.cancel()
+        activeCall = null
+    }
 
     fun findRoutes(
         fromNaptan: String?, toNaptan: String?, date: String?, time: String?, timeIs: String?,
@@ -41,21 +49,26 @@ class TflJourneyPlannerEngine {
         journeyPreference: String?, modes: String?, accessibilityPreference: String?,
         nationalSearch: Boolean, callback: JourneyCallback
     ) {
-        tflApi.getJourneyResults(fromNaptan, toNaptan, nationalSearch, date, time, timeIs, journeyPreference, modes, accessibilityPreference)
-            .enqueue(object : Callback<JsonObject?> {
+        cancel()
+        if (closed) return
+        val version = generation
+        val call = tflApi.getJourneyResults(fromNaptan, toNaptan, nationalSearch, date, time, timeIs, journeyPreference, modes, accessibilityPreference)
+        activeCall = call
+        call.enqueue(object : Callback<JsonObject?> {
                 override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
+                    if (closed || version != generation) return
                     if (response.isSuccessful && response.body() != null) {
                         executor.execute {
                             try {
                                 val options = parseTflResponse(response.body()!!)
-                                if (isToday(date)) enrichNationalRailServices(options)
 
                                 mainHandler.post {
+                                    if (closed || version != generation) return@post
                                     if (options.isEmpty()) callback.onError("No TfL routes found.")
-                                    else callback.onJourneysFound(options as MutableList<JourneyOption?>)
+                                    else callback.onJourneysFound(ArrayList<JourneyOption?>(options))
                                 }
                             } catch (e: Exception) {
-                                mainHandler.post { callback.onError("Error processing journey data.") }
+                                mainHandler.post { if (!closed && version == generation) callback.onError("Error processing journey data.") }
                             }
                         }
                     } else {
@@ -68,96 +81,14 @@ class TflJourneyPlannerEngine {
                             in 500..599 -> "TfL service is currently unavailable (${response.code()})."
                             else -> "TfL route request failed (HTTP ${response.code()})."
                         }
-                        mainHandler.post { callback.onError(detail) }
+                        mainHandler.post { if (!closed && version == generation) callback.onError(detail) }
                     }
                 }
 
                 override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
-                    mainHandler.post { callback.onError("Network error contacting TfL.") }
+                    mainHandler.post { if (!closed && version == generation) callback.onError("Network error contacting TfL.") }
                 }
             })
-    }
-
-    private fun isToday(dateStr: String?): Boolean {
-        if (dateStr.isNullOrBlank()) return true
-        return try {
-            SimpleDateFormat("yyyyMMdd", Locale.UK).format(Date()) == dateStr.trim()
-        } catch (e: Exception) { true }
-    }
-
-    private fun enrichNationalRailServices(options: MutableList<JourneyOption>) {
-        options.flatMap { it.legs ?: emptyList() }
-            .filter { it.transportMode == "TRAIN" }
-            .forEach { leg ->
-                val fromCrs = resolveCrs(leg.fromStationName) ?: return@forEach
-                val toCrs = resolveCrs(leg.toStationName) ?: return@forEach
-
-                try {
-                    val timeOffset = calculateTimeOffset(leg.departureTime)
-                    val res = nationalRailApi.getStationDepartures(fromCrs, 40, toCrs, "to", timeOffset, 120).execute()
-
-                    val matchedService = res.body()?.trainServices?.find {
-                        it.scheduledDepartureTime != null && isTimeMatching(it.scheduledDepartureTime, leg.departureTime, 2)
-                    }
-
-                    matchedService?.let { service ->
-                        leg.serviceId = service.serviceID
-                        service.operatorName?.let { op ->
-                            leg.operatorName = TOCBrandHelper.getTocByName(op)?.name ?: op
-                        }
-
-                        if (leg.departurePlatform.isNullOrEmpty()) {
-                            leg.departurePlatform = service.platform
-                        }
-
-                        if (leg.arrivalPlatform.isNullOrEmpty()) {
-                            try {
-                                val arrOffset = calculateTimeOffset(leg.arrivalTime) - 15
-                                val arrRes = nationalRailApi.getStationDepartures(toCrs, 50, null, null, arrOffset, 120).execute()
-
-                                val arrMatch = arrRes.body()?.trainServices?.find {
-                                    it.serviceID == service.serviceID ||
-                                            (it.operatorName == service.operatorName &&
-                                                    (isTimeMatching(it.scheduledArrivalTime ?: "", leg.arrivalTime, 4) ||
-                                                            isTimeMatching(it.scheduledDepartureTime ?: "", leg.arrivalTime, 4)))
-                                }
-
-                                arrMatch?.platform?.let {
-                                    leg.arrivalPlatform = it
-                                }
-                            } catch (e: Exception) {}
-                        }
-                    }
-                } catch (e: Exception) {}
-            }
-    }
-
-    private fun resolveCrs(stationName: String?): String? {
-        if (stationName == null) return null
-        return StationHelper.getCrsFromName(stationName)
-            ?: StationHelper.getCrsFromName(stationName.removePrefix("London "))
-            ?: StationHelper.getCrsFromName("London $stationName")
-    }
-
-    private fun calculateTimeOffset(timeStr: String?): Int {
-        if (timeStr == null || !timeStr.contains(":")) return 0
-        return try {
-            val (h, m) = timeStr.split(":").map { it.trim().toInt() }
-            val now = Calendar.getInstance()
-            val currentMins = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE)
-            val offset = (h * 60 + m) - currentMins - 10
-            max(-120, min(120, offset))
-        } catch (e: Exception) { 0 }
-    }
-
-    private fun isTimeMatching(time1: String, time2: String, toleranceMins: Int): Boolean {
-        return try {
-            val (h1, m1) = time1.split(":").map { it.trim().toInt() }
-            val (h2, m2) = time2.split(":").map { it.trim().toInt() }
-            abs((h1 * 60 + m1) - (h2 * 60 + m2)) <= toleranceMins
-        } catch (e: Exception) {
-            time1.trim().equals(time2.trim(), ignoreCase = true)
-        }
     }
 
     private fun parseTflResponse(root: JsonObject): MutableList<JourneyOption> {
@@ -225,7 +156,12 @@ class TflJourneyPlannerEngine {
                     operatorName, null, transportMode, intermediateStops,
                     null, extractTime(legObj.get("departureTime")?.asString),
                     depPlatform, arrPlatform
-                )
+                ).apply {
+                    fromLatitude = depPoint.get("lat")?.takeUnless { it.isJsonNull }?.asDouble
+                    fromLongitude = depPoint.get("lon")?.takeUnless { it.isJsonNull }?.asDouble
+                    toLatitude = arrPoint.get("lat")?.takeUnless { it.isJsonNull }?.asDouble
+                    toLongitude = arrPoint.get("lon")?.takeUnless { it.isJsonNull }?.asDouble
+                }
             }
 
             if (parsedLegs.isNotEmpty()) {
@@ -243,5 +179,10 @@ class TflJourneyPlannerEngine {
 
     private fun extractTime(isoDate: String?): String = isoDate?.takeIf { it.length >= 16 }?.substring(11, 16) ?: "--:--"
 
-    fun shutdown() = executor.shutdown()
+    fun shutdown() {
+        closed = true
+        cancel()
+        executor.shutdownNow()
+        mainHandler.removeCallbacksAndMessages(null)
+    }
 }

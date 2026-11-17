@@ -377,16 +377,47 @@
         android:textColor="@color/text_primary"
         android:visibility="gone" />
 
-    <TextView
-        android:id="@+id/tvJourneySearchHint"
+    <LinearLayout
+        android:id="@+id/layoutJourneyEmptyState"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginHorizontal="24dp"
-        android:layout_marginTop="28dp"
+        android:layout_height="0dp"
+        android:layout_weight="1"
         android:gravity="center"
-        android:text="Choose a destination to see journeys"
-        android:textColor="@color/text_secondary"
-        android:textSize="15sp" />
+        android:orientation="vertical"
+        android:paddingStart="32dp"
+        android:paddingEnd="32dp"
+        android:paddingBottom="24dp">
+
+        <ImageView
+            android:id="@+id/ivJourneyEmptyIcon"
+            android:layout_width="52dp"
+            android:layout_height="52dp"
+            android:layout_marginBottom="14dp"
+            android:alpha="0.45"
+            android:contentDescription="@null"
+            android:src="@drawable/ic_map"
+            app:tint="@color/text_secondary" />
+
+        <TextView
+            android:id="@+id/tvJourneySearchHintTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="Choose a destination"
+            android:textColor="@color/text_primary"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvJourneySearchHint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:gravity="center"
+            android:text="Search for a station, address or postcode to see journeys."
+            android:textColor="@color/text_secondary"
+            android:textSize="14sp" />
+    </LinearLayout>
 
     <include
         android:id="@+id/shimmer_journey_container"

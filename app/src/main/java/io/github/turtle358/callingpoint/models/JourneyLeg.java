@@ -5,6 +5,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class JourneyLeg implements Serializable {
+    public String transitousTripId;
+    public long scheduledDepartureEpochMillis;
+    public long scheduledArrivalEpochMillis;
+    public long departureEpochMillis;
+    public long arrivalEpochMillis;
+    public boolean transitousRealtime;
+    public Double fromLatitude, fromLongitude, toLatitude, toLongitude;
+
     public String fromStationCrs;
     public String fromStationName;
     public String toStationCrs;

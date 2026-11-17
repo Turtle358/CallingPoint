@@ -15,7 +15,7 @@ import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.tasks.CancellationTokenSource;
 
-public final class JourneyLocationCache {
+public class JourneyLocationCache {
     private static final long MAX_AGE_MS = 90_000L;
     private static final long RETRY_AFTER_MS = 12_000L;
 
