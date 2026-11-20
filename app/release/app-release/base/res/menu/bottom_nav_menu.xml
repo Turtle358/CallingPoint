@@ -1,0 +1,29 @@
+
+Ú
+
+;
+android*http://schemas.android.com/apk/res/androidBmenu*¹
+°item"I
+*http://schemas.android.com/apk/res/androidtitleDeparture Board(áƒ„"n
+*http://schemas.android.com/apk/res/androidicon@drawable/ic_train"(‚€„2
+Íœødrawable/ic_train0"m
+*http://schemas.android.com/apk/res/androidid@+id/nav_departures"(Ğ„2
+‡ƒ øid/nav_departures0+*Í
+Äitem"I
+*http://schemas.android.com/apk/res/androidtitleJourney Planner(áƒ„"‡
+*http://schemas.android.com/apk/res/androidicon@android:drawable/ic_dialog_map"(‚€„2)
+'ª€ android:drawable/ic_dialog_map0"g
+*http://schemas.android.com/apk/res/androidid@+id/nav_journey"(Ğ„2
+‹ƒ øid/nav_journey0+*Ç
+¾item"E
+*http://schemas.android.com/apk/res/androidtitleDisruptions(áƒ„"~
+*http://schemas.android.com/apk/res/androidicon@drawable/ic_alert_diamond"(‚€„2%
+#¥œødrawable/ic_alert_diamond0"o
+*http://schemas.android.com/apk/res/androidid@+id/nav_disruptions"(Ğ„2
+ˆƒ øid/nav_disruptions0'*¾
+µitem"B
+*http://schemas.android.com/apk/res/androidtitleSettings(áƒ„"~
+*http://schemas.android.com/apk/res/androidicon@drawable/ic_settings_icon"(‚€„2%
+#Éœødrawable/ic_settings_icon0"i
+*http://schemas.android.com/apk/res/androidid@+id/nav_settings"(Ğ„2
+Œƒ øid/nav_settings0$B
