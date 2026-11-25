@@ -19,8 +19,8 @@ android {
         applicationId "io.github.turtle358.callingpoint"
         minSdk 26
         targetSdk 36
-        versionCode 61
-        versionName "CallingPoint 16.4.0"
+        versionCode 62
+        versionName "CallingPoint 16.4.1"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField "String", "APP_SECRET", properties.getProperty("APP_SECRET", "\"\"")

@@ -11,6 +11,8 @@ import retrofit2.Call;
 import retrofit2.Response;
 import io.github.turtle358.callingpoint.api.APIClient;
 import io.github.turtle358.callingpoint.api.NationalRailAPI;
+import io.github.turtle358.callingpoint.utils.StationHelper;
+import io.github.turtle358.callingpoint.utils.TOCBrandHelper;
 
 public class DataSyncWorker extends Worker {
 
@@ -30,6 +32,8 @@ public class DataSyncWorker extends Worker {
         boolean stationsSuccess = downloadAndSave(api, STATIONS_URL, "stations_remote.json");
 
         if (tocsSuccess && stationsSuccess) {
+            StationHelper.reload(getApplicationContext());
+            TOCBrandHelper.reload(getApplicationContext());
             return Result.success();
         } else {
             return Result.failure();

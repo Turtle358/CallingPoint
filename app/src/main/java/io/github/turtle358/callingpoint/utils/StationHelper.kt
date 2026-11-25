@@ -11,15 +11,34 @@ object StationHelper{
     fun init(context: Context) {
         if (stationsJson != null) return
 
-        stationsJson = try {
-            val jsonStr = context.assets.open("stations.json").bufferedReader().use { it.readText() }
-            JSONObject(jsonStr)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            JSONObject()
-        }
+        reload(context)
     }
 
+    @JvmStatic
+    @Synchronized
+    fun reload(context: Context) {
+        stationsJson = try {
+            val jsonStr = context.openFileInput("stations_remote.json")
+                .bufferedReader(Charsets.UTF_8)
+                .use { it.readText() }
+
+            JSONObject(jsonStr)
+
+        } catch (e: Exception) {
+            try {
+                val jsonStr = context.assets.open("stations.json")
+                    .bufferedReader(Charsets.UTF_8)
+                    .use { it.readText() }
+
+                JSONObject(jsonStr)
+
+            } catch (e: Exception) {
+                e.printStackTrace()
+                stationsJson ?: JSONObject()
+            }
+        }
+        cachedStationNames = null
+    }
     @JvmStatic
     fun getStationNames() : List<String> {
         cachedStationNames?.let {return it}

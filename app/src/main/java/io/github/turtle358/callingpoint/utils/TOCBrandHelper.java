@@ -3,14 +3,16 @@ package io.github.turtle358.callingpoint.utils;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Color;
+import android.util.Log;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.io.File;
-import java.io.FileInputStream;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -18,54 +20,29 @@ import io.github.turtle358.callingpoint.R;
 import io.github.turtle358.callingpoint.models.Toc;
 
 public class TOCBrandHelper {
-    private static final List<Toc> allTocs = new ArrayList<>();
-    private static JSONObject userColoursJson;
+    private static final String TAG = "TOCBrandHelper";
+    private static volatile List<Toc> allTocs = Collections.emptyList();
+    private static volatile JSONObject userColoursJson;
 
     public static void init(Context context) {
-        String json = null;
+        reload(context);
+    }
+
+    public static synchronized void reload(Context context) {
         try {
-            File file = new File(context.getFilesDir(), "tocs_remote.json");
-            if (file.exists()) {
-                FileInputStream fis = context.openFileInput("tocs_remote.json");
-                int size = fis.available();
-                byte[] buffer = new byte[size];
-                fis.read(buffer);
-                fis.close();
-                json = new String(buffer, StandardCharsets.UTF_8);
-            } else {
-                InputStream is = context.getAssets().open("tocs.json");
-                int size = is.available();
-                byte[] buffer = new byte[size];
-                is.read(buffer);
-                is.close();
-                json = new String(buffer, StandardCharsets.UTF_8);
+            List<Toc> loaded;
+            try {
+                loaded = readTocs(context.openFileInput("tocs_remote.json"));
+                Log.d(TAG, "Loaded " + loaded.size() + " TOCs from tocs_remote.json");
+            } catch (Exception e) {
+                Log.w(TAG, "Remote TOCs unavailable or invalid; using bundled data", e);
+                loaded = readTocs(context.getAssets().open("tocs.json"));
+                Log.d(TAG, "Loaded " + loaded.size() + " TOCs from assets");
             }
 
-            JSONArray array = new JSONArray(json);
-            allTocs.clear();
-
-            for (int i = 0; i < array.length(); i++) {
-                JSONObject obj = array.getJSONObject(i);
-                Toc t = new Toc();
-                t.code = obj.getString("code");
-                t.tflId = obj.optString("tflId", t.code);
-                t.acronym = obj.optString("acronym", t.code);
-                t.name = obj.getString("name");
-                t.colour = obj.getString("colour");
-                t.secondary_colour = obj.optString("secondary_colour", "#ffffff");
-                t.manager = obj.getString("manager");
-                t.shown = obj.optInt("shown", 1);
-                t.delayRepayUrl = obj.optString("delayRepayUrl", null);
-                t.delayRepayMinTime = obj.optInt("delayRepayMinTime", 15);
-                t.delayRepayMessage = obj.optString("delayRepayMessage", "");
-                t.managerDescription = obj.optString("managerDescription", "");
-
-                allTocs.add(t);
-            }
-            allTocs.sort((t1, t2) -> t1.name.compareToIgnoreCase(t2.name));
-
+            allTocs = Collections.unmodifiableList(loaded);
         } catch (Exception e) {
-            e.printStackTrace();
+            Log.e(TAG, "Unable to load TOCs; retaining previous data", e);
         }
 
         SharedPreferences prefs = context.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
@@ -73,8 +50,47 @@ public class TOCBrandHelper {
         try {
             userColoursJson = new JSONObject(jsonString);
         } catch (Exception e) {
-            e.printStackTrace();
+            Log.e(TAG, "Unable to load user TOC colours", e);
         }
+    }
+
+    private static List<Toc> readTocs(InputStream stream) throws Exception {
+        StringBuilder json = new StringBuilder();
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(stream, StandardCharsets.UTF_8))) {
+            char[] buffer = new char[4096];
+            int count;
+            while ((count = reader.read(buffer)) != -1) {
+                json.append(buffer, 0, count);
+            }
+        }
+
+        JSONArray array = new JSONArray(json.toString());
+        if (array.length() == 0) {
+            throw new IllegalArgumentException("TOC list is empty");
+        }
+
+        List<Toc> loaded = new ArrayList<>();
+        for (int i = 0; i < array.length(); i++) {
+            JSONObject obj = array.getJSONObject(i);
+            Toc t = new Toc();
+            t.code = obj.getString("code");
+            t.tflId = obj.optString("tflId", t.code);
+            t.acronym = obj.optString("acronym", t.code);
+            t.name = obj.getString("name");
+            t.colour = obj.getString("colour");
+            t.secondary_colour = obj.optString("secondary_colour", "#ffffff");
+            t.manager = obj.getString("manager");
+            t.shown = obj.optInt("shown", 1);
+            t.delayRepayUrl = obj.optString("delayRepayUrl", null);
+            t.delayRepayMinTime = obj.optInt("delayRepayMinTime", 15);
+            t.delayRepayMessage = obj.optString("delayRepayMessage", "");
+            t.managerDescription = obj.optString("managerDescription", "");
+
+            loaded.add(t);
+        }
+        loaded.sort((t1, t2) -> t1.name.compareToIgnoreCase(t2.name));
+        return loaded;
     }
 
     private static String cleanName(String name) {
@@ -89,8 +105,9 @@ public class TOCBrandHelper {
 
     public static Toc getTocByName(String operatorName) {
         if (operatorName == null) return null;
+        List<Toc> snapshot = allTocs;
 
-        for (Toc t : allTocs) {
+        for (Toc t : snapshot) {
             if (operatorName.equalsIgnoreCase(t.name) || operatorName.equalsIgnoreCase(t.code)) {
                 return t;
             }
@@ -98,13 +115,13 @@ public class TOCBrandHelper {
 
         String cleanInput = cleanName(operatorName);
 
-        for (Toc t : allTocs) {
+        for (Toc t : snapshot) {
             if (cleanInput.equalsIgnoreCase(cleanName(t.name))) {
                 return t;
             }
         }
 
-        for (Toc t : allTocs) {
+        for (Toc t : snapshot) {
             String cleanToc = cleanName(t.name);
             if (cleanInput.equals("northern") && cleanToc.equals("northern")) {
                 return t;
